@@ -1,32 +1,113 @@
-import { useEffect, useRef } from "react";
-import {
-  View,
-  Text,
-  StyleSheet,
-  Animated,
-  // Dimensions removed since it wasn't used
-} from "react-native";
 import { useRouter } from "expo-router";
+import React, { useEffect, useRef } from "react";
+import {
+  Animated,
+  Dimensions,
+  StatusBar,
+  StyleSheet,
+  Text,
+  View,
+} from "react-native";
+// Removed unused 'Defs' and 'Path' to fix ESLint errors
+import Svg, { Circle, Polygon } from "react-native-svg";
+import { Ionicons } from "@expo/vector-icons";
+
+const { width, height } = Dimensions.get("window");
+
+const GeometricBackground = () => (
+  <View style={StyleSheet.absoluteFill}>
+    <Svg height={height} width={width} viewBox={`0 0 ${width} ${height}`}>
+      <Polygon
+        points={`${width},0 ${width},100 ${width - 80},0`}
+        fill="#C5CAE9"
+      />
+      <Circle
+        cx={width - 20}
+        cy={100}
+        r={80}
+        stroke="#FFCC80"
+        strokeWidth="1.5"
+        fill="transparent"
+      />
+      <Circle cx={width - 50} cy={50} r={4} fill="#FF9800" /> 
+      
+      <Circle
+        cx={0}
+        cy={height * 0.4}
+        r={120}
+        stroke="#FFCC80"
+        strokeWidth="1.5"
+        fill="transparent"
+      />
+      <Circle cx={40} cy={height * 0.35} r={8} fill="#FFCC80" opacity={0.6} />
+      <Circle cx={20} cy={height * 0.5} r={4} fill="#64B5F6" />
+
+      <Circle
+        cx={width}
+        cy={height}
+        r={150}
+        stroke="#90CAF9"
+        strokeWidth="1.5"
+        fill="transparent"
+        opacity={0.5}
+      />
+      <Circle
+        cx={width - 40}
+        cy={height + 20}
+        r={120}
+        stroke="#FFAB91"
+        strokeWidth="1.5"
+        fill="transparent"
+        opacity={0.6}
+      />
+      <Polygon
+        points={`${width},${height} ${width},${height-150} ${width-100},${height}`}
+        fill="#FFE0B2"
+        opacity={0.3}
+      />
+      
+      <Circle cx={width * 0.2} cy={height * 0.8} r={3} fill="#90CAF9" />
+      <Circle cx={width * 0.8} cy={height * 0.2} r={3} fill="#FFCC80" />
+    </Svg>
+  </View>
+);
 
 export default function Index() {
   const router = useRouter();
+  const fadeAnim = useRef(new Animated.Value(0)).current;
+  const slideAnim = useRef(new Animated.Value(30)).current;
   const progress = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
-    // Animate progress bar
+    // Entrance Animation
+    Animated.parallel([
+      Animated.timing(fadeAnim, {
+        toValue: 1,
+        duration: 800,
+        useNativeDriver: true,
+      }),
+      Animated.timing(slideAnim, {
+        toValue: 0,
+        duration: 800,
+        useNativeDriver: true,
+      }),
+    ]).start();
+
+    // Loading Bar Animation
     Animated.timing(progress, {
       toValue: 1,
       duration: 3000,
       useNativeDriver: false,
     }).start();
 
-    // Navigate after animation
+    // Navigation Timer
     const timer = setTimeout(() => {
       router.replace("/login");
-    }, 3000);
+    }, 3500);
 
     return () => clearTimeout(timer);
-  }, [progress, router]);
+    // Added missing dependencies to fix react-hooks/exhaustive-deps
+  }, [fadeAnim, progress, router, slideAnim]);
 
   const widthInterpolate = progress.interpolate({
     inputRange: [0, 1],
@@ -35,31 +116,30 @@ export default function Index() {
 
   return (
     <View style={styles.container}>
-      {/* --- Background Decorative Elements --- */}
-      <View style={styles.decoTopRight} />
-      <View style={styles.decoBottomRightOuter} />
-      <View style={styles.decoBottomRightInner} />
-      <View style={styles.decoBottomLeft} />
-      <View style={styles.decoTinyDot} />
+      <StatusBar barStyle="dark-content" backgroundColor="#FFF" />
+      <GeometricBackground />
 
-      {/* --- Main Content --- */}
       <View style={styles.contentContainer}>
-        {/* Logo Container */}
-        <View style={styles.logoBox}>
-          <Text style={styles.logo}>🎓</Text>
-        </View>
+        <Animated.View
+          style={[
+            styles.centerContent,
+            { opacity: fadeAnim, transform: [{ translateY: slideAnim }] },
+          ]}
+        >
+          <View style={styles.logoContainer}>
+            <Ionicons name="school" size={60} color="#3F51B5" />
+          </View>
 
-        <Text style={styles.title}>ClassDesk</Text>
-        <Text style={styles.subtitle}>Empowering Education</Text>
+          <Text style={styles.title}>ClassDesk</Text>
+          <Text style={styles.subtitle}>Empowering Education</Text>
+        </Animated.View>
 
-        {/* Progress Bar */}
-        <View style={styles.progressContainer}>
-          <Animated.View
-            style={[styles.progressBar, { width: widthInterpolate }]}
-          />
-        </View>
-
-        <Text style={styles.loading}>Loading...</Text>
+        <Animated.View style={[styles.bottomSection, { opacity: fadeAnim }]}>
+          <View style={styles.track}>
+            <Animated.View style={[styles.bar, { width: widthInterpolate }]} />
+          </View>
+          <Text style={styles.loadingText}>Loading...</Text>
+        </Animated.View>
       </View>
     </View>
   );
@@ -68,117 +148,98 @@ export default function Index() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#FFFCFC",
-    position: "relative",
-    overflow: "hidden",
+    backgroundColor: "#FFFFFF",
   },
   contentContainer: {
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
-    zIndex: 10,
+    paddingBottom: 50,
   },
-  logoBox: {
-    width: 100,
-    height: 100,
-    backgroundColor: "#EEEDFA",
-    borderRadius: 25,
+  centerContent: {
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: 60,
+  },
+  logoContainer: {
+    width: 120,
+    height: 120,
+    backgroundColor: "#E8EAF6",
+    borderRadius: 35,
     justifyContent: "center",
     alignItems: "center",
     marginBottom: 25,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.05,
-    shadowRadius: 10,
-    elevation: 3,
-  },
-  logo: {
-    fontSize: 50,
+    shadowColor: "#3F51B5",
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.1,
+    shadowRadius: 20,
+    elevation: 5,
   },
   title: {
-    fontSize: 32,
-    fontWeight: "800",
-    color: "#2F3E5C",
-    marginBottom: 5,
-    letterSpacing: 0.5,
+    fontSize: 36,
+    fontWeight: "bold",
+    color: "#2D3748",
+    marginBottom: 8,
   },
   subtitle: {
     fontSize: 18,
-    color: "#9A9AA6",
-    marginBottom: 60,
+    color: "#90A4AE",
     fontWeight: "500",
   },
-  progressContainer: {
-    width: "75%",
-    height: 8,
-    backgroundColor: "#E0E0F5",
-    borderRadius: 10,
+  bottomSection: {
+    width: "70%",
+    alignItems: "center",
+    position: "absolute",
+    bottom: height * 0.25,
+  },
+  track: {
+    width: "100%",
+    height: 10,
+    backgroundColor: "#E3F2FD",
+    borderRadius: 5,
     overflow: "hidden",
+    marginBottom: 15,
   },
-  progressBar: {
+  bar: {
     height: "100%",
-    backgroundColor: "#3B71F7",
-    borderRadius: 10,
+    backgroundColor: "#2962FF",
+    borderRadius: 5,
   },
-  loading: {
-    marginTop: 20,
-    color: "#9A9AA6",
+  loadingText: {
+    color: "#90A4AE",
     fontSize: 14,
     fontWeight: "500",
   },
-  // Decorative Elements
-  decoTopRight: {
-    position: "absolute",
-    top: -50,
-    right: -50,
-    width: 150,
-    height: 150,
-    borderRadius: 75,
-    borderWidth: 1,
-    borderColor: "#2F3E5C",
-    opacity: 0.1,
-  },
-  decoBottomRightOuter: {
-    position: "absolute",
-    bottom: -100,
-    right: -50,
-    width: 300,
-    height: 300,
-    borderRadius: 150,
-    borderWidth: 1,
-    borderColor: "#FFA500",
-    opacity: 0.2,
-  },
-  decoBottomRightInner: {
-    position: "absolute",
-    bottom: -60,
-    right: -60,
-    width: 200,
-    height: 200,
-    backgroundColor: "#FFE5B4",
-    borderRadius: 100,
-    opacity: 0.3,
-  },
-  decoBottomLeft: {
-    position: "absolute",
-    bottom: 50,
-    left: -30,
-    width: 100,
-    height: 100,
-    borderRadius: 50,
-    borderWidth: 2,
-    borderColor: "#3B71F7",
-    opacity: 0.1,
-    transform: [{ translateX: -20 }],
-  },
-  decoTinyDot: {
-    position: "absolute",
-    top: 150,
-    right: 40,
-    width: 10,
-    height: 10,
-    borderRadius: 5,
-    backgroundColor: "#FFA500",
-    opacity: 0.4,
-  },
 });
+
+// import React from "react";
+// import { View, StyleSheet } from "react-native";
+// import { Ionicons } from "@expo/vector-icons";
+
+// export default function Logo() {
+//   return (
+//     <View style={styles.logoContainer}>
+//       <Ionicons name="school" size={60} color="#3F51B5" />
+//     </View>
+//   );
+// }
+
+// const styles = StyleSheet.create({
+//   logoContainer: {
+//     width: 120,
+//     height: 120,
+//     backgroundColor: "#E8EAF6",
+//     borderRadius: 35,
+//     justifyContent: "center",
+//     alignItems: "center",
+
+//     // Shadow (iOS)
+//     shadowColor: "#3F51B5",
+//     shadowOffset: { width: 0, height: 10 },
+//     shadowOpacity: 0.1,
+//     shadowRadius: 20,
+
+//     // Shadow (Android)
+//     elevation: 5,
+//   },
+// });

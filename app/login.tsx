@@ -1,5 +1,4 @@
-import { FontAwesome } from "@expo/vector-icons";
-import { LinearGradient } from "expo-linear-gradient";
+import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import React, { useState } from "react";
 import {
@@ -12,250 +11,399 @@ import {
   TextInput,
   TouchableOpacity,
   View,
+  SafeAreaView,
+  Image,
 } from "react-native";
-import Svg, {
-  Defs,
-  Path,
-  Stop,
-  LinearGradient as SvgGradient,
-} from "react-native-svg";
+import Svg, { Circle, Path } from "react-native-svg";
 
 const { width, height } = Dimensions.get("window");
 
-// --- Custom Background Component (Draws the Waves) ---
-const LoginBackground = () => (
-  <View style={StyleSheet.absoluteFill}>
-    <Svg height={height} width={width} viewBox={`0 0 ${width} ${height}`}>
-      <Defs>
-        {/* Gradient for the Pink Shapes */}
-        <SvgGradient id="gradPink" x1="0%" y1="0%" x2="100%" y2="100%">
-          <Stop offset="0%" stopColor="#D81B60" />
-          <Stop offset="100%" stopColor="#880E4F" />
-        </SvgGradient>
-      </Defs>
+// --- Background Graphics (Geometric Shapes) ---
+const BackgroundDecorations = () => (
+  <View style={StyleSheet.absoluteFill} pointerEvents="none">
+    {/* Top Right Triangle/Shape */}
+    <View style={{ position: "absolute", top: -50, right: -50 }}>
+      <Svg height="200" width="200" viewBox="0 0 100 100">
+        <Path d="M0 0 L100 0 L100 100 Z" fill="#E8F0FE" />
+        <Path d="M60 10 L90 10 L75 35 Z" fill="#4461F2" /> 
+      </Svg>
+    </View>
 
-      {/* Top Right Wave */}
-      <Path
-        d={`M${width} 0 L${width} ${height * 0.25} C${width * 0.6} ${height * 0.25} ${width * 0.5} 0 0 0 Z`}
-        fill="url(#gradPink)"
-      />
+    {/* Top Left Yellow Circle */}
+    <View style={[styles.circle, { top: 40, left: -20, backgroundColor: "#FFF4E3", width: 100, height: 100 }]} />
+    
+    {/* Scattered Dots */}
+    <View style={[styles.dot, { top: 120, right: 80, backgroundColor: "#FF8A65" }]} />
+    <View style={[styles.dot, { top: 250, left: 30, backgroundColor: "#FFB74D" }]} />
+    <View style={[styles.dot, { bottom: 150, right: 20, backgroundColor: "#4FC3F7" }]} />
+    
+    {/* Bottom Left Shapes */}
+    <View style={{ position: "absolute", bottom: 0, left: 0 }}>
+       <Svg height="150" width="150" viewBox="0 0 100 100">
+         <Circle cx="0" cy="100" r="60" fill="#E3F2FD" />
+         <Path d="M10 80 L30 60 L50 90 Z" fill="#4461F2" opacity={0.8}/>
+       </Svg>
+    </View>
 
-      {/* Bottom Dark Wave (Black/Grey layer) */}
-      <Path
-        d={`M0 ${height} L${width} ${height} L${width} ${height * 0.85} C${width * 0.6} ${height * 0.95} ${width * 0.2} ${height * 0.75} 0 ${height * 0.85} Z`}
-        fill="#212121"
-      />
-
-      {/* Bottom Pink Wave (Overlapping) */}
-      <Path
-        d={`M0 ${height * 0.85} C${width * 0.3} ${height * 0.75} ${width * 0.8} ${height * 0.9} ${width} ${height * 0.7} L${width} ${height} L0 ${height} Z`}
-        fill="url(#gradPink)"
-        opacity="0.9"
-      />
-    </Svg>
+    {/* Bottom Right Corner */}
+    <View style={{ position: "absolute", bottom: -20, right: -20 }}>
+      <View style={{ width: 120, height: 120, backgroundColor: "#FFCC80", borderRadius: 60, opacity: 0.5 }} />
+       <View style={{ position: 'absolute', bottom: 10, right: 10, width: 80, height: 80, backgroundColor: "#FFAB91", borderRadius: 40 }} />
+    </View>
   </View>
 );
 
 export default function Login() {
   const router = useRouter();
 
-  const [username, setUsername] = useState("");
+  // State
+  const [role, setRole] = useState<"admin" | "teacher" | "student">("student");
+  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [secure, setSecure] = useState(true);
+  const [isPasswordVisible, setIsPasswordVisible] = useState(false);
 
   const handleLogin = () => {
-    if (!username || !password) {
-      alert("Please fill all fields");
+    // 1. Validation
+    if (!email || !password) {
+      alert("Please fill in your credentials.");
       return;
     }
-    console.log("Logging in:", username);
-    // Add logic here
+
+    // 2. Mock Logic / Redirection based on Role
+    console.log(`Logging in as ${role} with ${email}`);
+    
+    switch (role) {
+      case "admin":
+        // Replace with your actual admin route
+        router.replace("/admin/dashboard"); 
+        break;
+      case "teacher":
+         // Replace with your actual teacher route
+        router.replace("/teacher/dashboard");
+        break;
+      case "student":
+      default:
+         // Replace with your actual student route
+        router.replace("/student/dashboard");
+        break;
+    }
   };
 
   return (
-    <View style={styles.container}>
-      {/* 1. The Background Art */}
-      <LoginBackground />
+    <SafeAreaView style={styles.container}>
+      <BackgroundDecorations />
 
-      {/* 2. The Content */}
       <KeyboardAvoidingView
         behavior={Platform.OS === "ios" ? "padding" : "height"}
-        style={styles.keyboardView}
+        style={{ flex: 1 }}
       >
         <ScrollView
           contentContainerStyle={styles.scrollContent}
           showsVerticalScrollIndicator={false}
         >
-          <View style={styles.headerSpacer} />
+          {/* --- Header Section --- */}
+          <View style={styles.headerContainer}>
+            <View style={styles.logoBox}>
+              <Ionicons name="school" size={40} color="white" />
+            </View>
+            <Text style={styles.appName}>ClassDesk</Text>
+            <Text style={styles.welcomeText}>Welcome back to your classroom</Text>
+          </View>
 
-          <Text style={styles.title}>Log In</Text>
+          {/* --- Role Toggle (New Feature) --- */}
+          <View style={styles.roleContainer}>
+            {(["admin", "teacher", "student"] as const).map((r) => (
+              <TouchableOpacity
+                key={r}
+                onPress={() => setRole(r)}
+                style={[
+                  styles.roleButton,
+                  role === r && styles.roleButtonActive,
+                ]}
+              >
+                <Text
+                  style={[
+                    styles.roleText,
+                    role === r && styles.roleTextActive,
+                  ]}
+                >
+                  {r.charAt(0).toUpperCase() + r.slice(1)}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </View>
 
+          {/* --- Form Section --- */}
           <View style={styles.formContainer}>
-            {/* Username Input */}
-            <TextInput
-              placeholder="Username"
-              placeholderTextColor="#9E9E9E"
-              style={styles.input}
-              value={username}
-              onChangeText={setUsername}
-            />
+            {/* Username/Email Input */}
+            <Text style={styles.inputLabel}>Username or Email</Text>
+            <View style={styles.inputWrapper}>
+              <Ionicons name="person" size={20} color="#BDBDBD" style={styles.inputIcon} />
+              <TextInput
+                placeholder="e.g. alex_smith"
+                placeholderTextColor="#BDBDBD"
+                style={styles.textInput}
+                value={email}
+                onChangeText={setEmail}
+                autoCapitalize="none"
+              />
+            </View>
 
             {/* Password Input */}
-            <TextInput
-              placeholder="Password"
-              placeholderTextColor="#9E9E9E"
-              secureTextEntry={secure}
-              style={styles.input}
-              value={password}
-              onChangeText={setPassword}
-            />
+            <Text style={styles.inputLabel}>Password</Text>
+            <View style={styles.inputWrapper}>
+              <Ionicons name="lock-closed" size={20} color="#BDBDBD" style={styles.inputIcon} />
+              <TextInput
+                placeholder="Enter your password"
+                placeholderTextColor="#BDBDBD"
+                style={styles.textInput}
+                value={password}
+                onChangeText={setPassword}
+                secureTextEntry={!isPasswordVisible}
+              />
+              <TouchableOpacity onPress={() => setIsPasswordVisible(!isPasswordVisible)}>
+                <Ionicons 
+                  name={isPasswordVisible ? "eye" : "eye-off"} 
+                  size={22} 
+                  color="#4461F2" 
+                />
+              </TouchableOpacity>
+            </View>
 
-            {/* Remember Me */}
-            <TouchableOpacity style={styles.rememberContainer}>
-              <Text style={styles.rememberText}>REMEMBER ME</Text>
+            {/* Forgot Password */}
+            <TouchableOpacity style={styles.forgotContainer}>
+              <Text style={styles.forgotText}>Forgot Password?</Text>
             </TouchableOpacity>
 
             {/* Login Button */}
-            <TouchableOpacity onPress={handleLogin} style={styles.buttonShadow}>
-              <LinearGradient
-                colors={["#D81B60", "#C2185B"]}
-                style={styles.button}
-              >
-                <Text style={styles.buttonText}>Log In</Text>
-              </LinearGradient>
+            <TouchableOpacity onPress={handleLogin} style={styles.loginButton}>
+              <Text style={styles.loginButtonText}>Login</Text>
             </TouchableOpacity>
 
-            {/* Sign Up Link */}
-            <TouchableOpacity
-              onPress={() => router.push("/signup")}
-              style={styles.linkContainer}
-            >
-              <Text style={styles.linkText}>Dont Have An Account? Sign Up</Text>
+            {/* OR Divider */}
+            <View style={styles.dividerContainer}>
+              <View style={styles.dividerLine} />
+              <Text style={styles.dividerText}>OR</Text>
+              <View style={styles.dividerLine} />
+            </View>
+
+            {/* Google Login Button */}
+            <TouchableOpacity style={styles.googleButton}>
+               {/* Using an icon for Google for simplicity, ideally use an Image asset */}
+              <MaterialCommunityIcons name="google" size={20} color="#EA4335" />
+              <Text style={styles.googleButtonText}>Continue with Google</Text>
             </TouchableOpacity>
 
-            {/* Social Login */}
-            <View style={styles.socialContainer}>
-              <Text style={styles.orText}>or Log In with</Text>
-              <View style={styles.socialIcons}>
-                <TouchableOpacity style={styles.iconButton}>
-                  <LinearGradient
-                    colors={["#E1306C", "#C13584"]}
-                    style={styles.iconGradient}
-                  >
-                    <FontAwesome name="instagram" size={20} color="white" />
-                  </LinearGradient>
-                </TouchableOpacity>
-                <TouchableOpacity style={styles.iconButton}>
-                  <LinearGradient
-                    colors={["#1DA1F2", "#1DA1F2"]}
-                    style={styles.iconGradient}
-                  >
-                    <FontAwesome name="twitter" size={20} color="white" />
-                  </LinearGradient>
-                </TouchableOpacity>
-              </View>
+            {/* Sign Up Footer */}
+            <View style={styles.footerContainer}>
+              <Text style={styles.footerText}>Don't have an account? </Text>
+              <TouchableOpacity onPress={() => router.push("/signup")}>
+                <Text style={styles.signupText}>Sign Up</Text>
+              </TouchableOpacity>
             </View>
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
-    </View>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#FFFFFF",
-  },
-  keyboardView: {
-    flex: 1,
+    backgroundColor: "#FFFCF9", // Very light warm white
   },
   scrollContent: {
     flexGrow: 1,
-    justifyContent: "center",
-    paddingBottom: 50,
-  },
-  headerSpacer: {
-    height: height * 0.15, // Pushes content down from the top wave
-  },
-  title: {
-    fontSize: 36,
-    fontWeight: "bold",
-    color: "#C2185B",
-    textAlign: "center",
-    marginBottom: 40,
-    letterSpacing: 1,
-  },
-  formContainer: {
-    paddingHorizontal: 40,
-  },
-  input: {
-    backgroundColor: "#E0E0E0", // Light grey background
-    borderRadius: 30, // Fully rounded pill shape
-    paddingVertical: 15,
     paddingHorizontal: 25,
-    fontSize: 16,
-    color: "#424242",
-    marginBottom: 20,
+    paddingBottom: 40,
+    justifyContent: "center",
   },
-  rememberContainer: {
+  
+  // --- Decoration Styles ---
+  circle: {
+    position: "absolute",
+    borderRadius: 999,
+  },
+  dot: {
+    position: "absolute",
+    width: 12,
+    height: 12,
+    borderRadius: 6,
+  },
+
+  // --- Header Styles ---
+  headerContainer: {
     alignItems: "center",
-    marginBottom: 30,
-  },
-  rememberText: {
-    color: "#757575",
-    fontSize: 12,
-    fontWeight: "600",
-    letterSpacing: 1,
-  },
-  buttonShadow: {
     marginBottom: 20,
-    shadowColor: "#C2185B",
+    marginTop: 40,
+  },
+  logoBox: {
+    width: 80,
+    height: 80,
+    backgroundColor: "#4461F2", // The bright blue from the image
+    borderRadius: 20,
+    justifyContent: "center",
+    alignItems: "center",
+    marginBottom: 20,
+    shadowColor: "#4461F2",
     shadowOffset: { width: 0, height: 10 },
     shadowOpacity: 0.3,
     shadowRadius: 10,
     elevation: 8,
   },
-  button: {
-    borderRadius: 30,
-    paddingVertical: 15,
-    alignItems: "center",
+  appName: {
+    fontSize: 32,
+    fontWeight: "bold",
+    color: "#1A1A1A",
+    marginBottom: 8,
   },
-  buttonText: {
+  welcomeText: {
+    fontSize: 16,
+    color: "#52525B", // Zinc-600
+    marginBottom: 10,
+  },
+
+  // --- Role Switcher Styles ---
+  roleContainer: {
+    flexDirection: "row",
+    backgroundColor: "#F4F4F5",
+    borderRadius: 12,
+    padding: 4,
+    marginBottom: 25,
+  },
+  roleButton: {
+    flex: 1,
+    paddingVertical: 10,
+    alignItems: "center",
+    borderRadius: 10,
+  },
+  roleButtonActive: {
+    backgroundColor: "#FFFFFF",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    elevation: 2,
+  },
+  roleText: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: "#A1A1AA",
+  },
+  roleTextActive: {
+    color: "#4461F2",
+  },
+
+  // --- Form Styles ---
+  formContainer: {
+    width: "100%",
+  },
+  inputLabel: {
+    fontSize: 15,
+    fontWeight: "600",
+    color: "#1A1A1A",
+    marginBottom: 8,
+    marginTop: 10,
+  },
+  inputWrapper: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#FFF5EE", // Very light peach/grey tint from image
+    borderWidth: 1,
+    borderColor: "#F0E0D0",
+    borderRadius: 15,
+    paddingHorizontal: 15,
+    height: 55,
+    marginBottom: 5,
+  },
+  inputIcon: {
+    marginRight: 10,
+  },
+  textInput: {
+    flex: 1,
+    fontSize: 16,
+    color: "#333",
+  },
+  forgotContainer: {
+    alignItems: "flex-end",
+    marginTop: 10,
+    marginBottom: 25,
+  },
+  forgotText: {
+    color: "#4461F2",
+    fontWeight: "600",
+    fontSize: 14,
+  },
+  loginButton: {
+    backgroundColor: "#4461F2",
+    borderRadius: 15,
+    height: 55,
+    justifyContent: "center",
+    alignItems: "center",
+    shadowColor: "#4461F2",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 5,
+    elevation: 5,
+    marginBottom: 25,
+  },
+  loginButtonText: {
     color: "white",
     fontSize: 18,
     fontWeight: "bold",
   },
-  linkContainer: {
+  
+  // --- Divider ---
+  dividerContainer: {
+    flexDirection: "row",
     alignItems: "center",
-    marginBottom: 40,
+    marginBottom: 25,
   },
-  linkText: {
-    color: "#757575",
-    fontSize: 14,
+  dividerLine: {
+    flex: 1,
+    height: 1,
+    backgroundColor: "#E4E4E7",
   },
-  socialContainer: {
-    alignItems: "center",
-  },
-  orText: {
-    color: "#757575",
+  dividerText: {
+    marginHorizontal: 15,
+    color: "#71717A",
     fontSize: 12,
-    marginBottom: 15,
+    fontWeight: "600",
   },
-  socialIcons: {
+
+  // --- Google Button ---
+  googleButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "white",
+    borderWidth: 1,
+    borderColor: "#E4E4E7",
+    borderRadius: 15,
+    height: 55,
+    marginBottom: 30,
+  },
+  googleButtonText: {
+    marginLeft: 10,
+    fontSize: 16,
+    fontWeight: "600",
+    color: "#1A1A1A",
+  },
+
+  // --- Footer ---
+  footerContainer: {
     flexDirection: "row",
     justifyContent: "center",
-    gap: 20,
+    marginBottom: 20,
   },
-  iconButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    overflow: "hidden",
+  footerText: {
+    color: "#71717A",
+    fontSize: 14,
   },
-  iconGradient: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
+  signupText: {
+    color: "#4461F2",
+    fontWeight: "bold",
+    fontSize: 14,
   },
 });
