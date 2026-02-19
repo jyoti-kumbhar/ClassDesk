@@ -11,8 +11,7 @@ import {
   TextInput,
   TouchableOpacity,
   View,
-  SafeAreaView,
-  Image,
+  SafeAreaView
 } from "react-native";
 import Svg, { Circle, Path } from "react-native-svg";
 
@@ -74,16 +73,13 @@ export default function Login() {
     
     switch (role) {
       case "admin":
-        // Replace with your actual admin route
         router.replace("/admin/dashboard"); 
         break;
       case "teacher":
-         // Replace with your actual teacher route
         router.replace("/teacher/dashboard");
         break;
       case "student":
       default:
-         // Replace with your actual student route
         router.replace("/student/dashboard");
         break;
     }
@@ -196,7 +192,7 @@ export default function Login() {
 
             {/* Sign Up Footer */}
             <View style={styles.footerContainer}>
-              <Text style={styles.footerText}>Don't have an account? </Text>
+              <Text style={styles.footerText}>Dont have an account? </Text>
               <TouchableOpacity onPress={() => router.push("/signup")}>
                 <Text style={styles.signupText}>Sign Up</Text>
               </TouchableOpacity>
@@ -309,9 +305,9 @@ const styles = StyleSheet.create({
   inputWrapper: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#FFF5EE", // Very light peach/grey tint from image
+    backgroundColor: "#FFFFFF", 
     borderWidth: 1,
-    borderColor: "#F0E0D0",
+    borderColor: "#E2E8F0",
     borderRadius: 15,
     paddingHorizontal: 15,
     height: 55,
@@ -407,3 +403,37 @@ const styles = StyleSheet.create({
     fontSize: 14,
   },
 });
+
+// backgroundColor: "#FFFCF9"
+
+// import React from "react";
+// import { View, StyleSheet } from "react-native";
+// import { Ionicons } from "@expo/vector-icons";
+
+// export default function AppLogo() {
+//   return (
+//     <View style={styles.logoBox}>
+//       <Ionicons name="school" size={40} color="white" />
+//     </View>
+//   );
+// }
+
+// const styles = StyleSheet.create({
+//   logoBox: {
+//     width: 80,
+//     height: 80,
+//     backgroundColor: "#4461F2",
+//     borderRadius: 20,
+//     justifyContent: "center",
+//     alignItems: "center",
+
+//     // Shadow (iOS)
+//     shadowColor: "#4461F2",
+//     shadowOffset: { width: 0, height: 10 },
+//     shadowOpacity: 0.3,
+//     shadowRadius: 10,
+
+//     // Shadow (Android)
+//     elevation: 8,
+//   },
+// });

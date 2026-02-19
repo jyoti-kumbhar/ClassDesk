@@ -1,24 +1,32 @@
+import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
+import { useRouter } from "expo-router";
 import React, { useState } from "react";
 import {
-  View,
+  Alert,
+  Dimensions,
+  FlatList,
+  KeyboardAvoidingView,
+  ListRenderItem,
+  Modal,
+  Platform,
+  ScrollView,
+  StyleSheet,
   Text,
   TextInput,
   TouchableOpacity,
-  StyleSheet,
-  ScrollView,
-  KeyboardAvoidingView,
-  Platform,
-  Dimensions,
-  Modal,
-  FlatList,
-  ListRenderItem,
+  View,
 } from "react-native";
-import { useRouter } from "expo-router";
-import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import Svg, { Circle, Path } from "react-native-svg";
 
-const { width, height } = Dimensions.get("window");
+// Firebase imports
+import {
+  createUserWithEmailAndPassword,
+  sendEmailVerification,
+} from "firebase/auth";
+import { auth, db } from "./firebase/firebaseConfig";
+import { doc, setDoc } from "firebase/firestore";
 
+const { width, height } = Dimensions.get("window");
 
 // ---------------- Background Art ----------------
 const BackgroundArt = () => (
@@ -26,12 +34,21 @@ const BackgroundArt = () => (
     <View style={{ position: "absolute", top: -30, right: -20 }}>
       <Svg height="150" width="150" viewBox="0 0 100 100">
         <Path d="M80 20 L100 50 L60 60 Z" fill="#4461F2" opacity={0.8} />
-        <Circle cx="80" cy="80" r="35" stroke="#FFCC80" strokeWidth="2" fill="transparent" />
+        <Circle
+          cx="80"
+          cy="80"
+          r="35"
+          stroke="#FFCC80"
+          strokeWidth="2"
+          fill="transparent"
+        />
       </Svg>
     </View>
 
     <View style={{ position: "absolute", top: height * 0.3, left: 20 }}>
-      <View style={{ width: 10, height: 10, borderRadius: 5, backgroundColor: "#FFB74D" }} />
+      <View
+        style={{ width: 10, height: 10, borderRadius: 5, backgroundColor: "#FFB74D" }}
+      />
     </View>
 
     <View style={{ position: "absolute", bottom: 80, left: -20 }}>
@@ -58,7 +75,6 @@ const BackgroundArt = () => (
   </View>
 );
 
-
 // ---------------- Signup Screen ----------------
 export default function Signup() {
   const router = useRouter();
@@ -73,12 +89,50 @@ export default function Signup() {
 
   const roles: string[] = ["Student", "Teacher", "Admin"];
 
-  const handleSignup = () => {
-    console.log("Signing up:", { username, email, password, role });
-    router.push("/login");
+  // ---------------- Firebase Signup ----------------
+  const handleSignup = async () => {
+    if (!username.trim() || !email.trim() || !password.trim()) {
+      Alert.alert("Error", "Please fill all fields");
+      return;
+    }
+
+    try {
+      // 1️⃣ Create user in Firebase Auth
+      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+      const user = userCredential.user;
+
+      // 2️⃣ Save extra details in Firestore
+      await setDoc(doc(db, "users", user.uid), {
+        name: username,
+        email: user.email,
+        role: role,
+        createdAt: new Date(),
+      });
+
+      // 3️⃣ Send email verification
+      await sendEmailVerification(user);
+
+      Alert.alert(
+        "Success",
+        "Account created successfully! Please verify your email before login."
+      );
+
+      console.log("User signed up and saved to Firestore:", user.uid);
+      router.push("/login");
+    } catch (error: any) {
+      console.log("Signup error:", error);
+      let message = "Signup failed";
+      if (error.code === "auth/email-already-in-use") {
+        message = "This email is already in use";
+      } else if (error.code === "auth/invalid-email") {
+        message = "Invalid email address";
+      } else if (error.code === "auth/weak-password") {
+        message = "Password should be at least 6 characters";
+      }
+      Alert.alert("Error", message);
+    }
   };
 
-  // ✅ Fully typed render function
   const renderRoleItem: ListRenderItem<string> = ({ item }) => (
     <TouchableOpacity
       style={styles.modalItem}
@@ -102,12 +156,14 @@ export default function Signup() {
         behavior={Platform.OS === "ios" ? "padding" : "height"}
         style={{ flex: 1 }}
       >
-        <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-          
-          {/* ⭐ Exact Splash Logo */}
+        <ScrollView
+          contentContainerStyle={styles.scrollContent}
+          showsVerticalScrollIndicator={false}
+        >
+          {/* App Logo */}
           <View style={styles.headerIconContainer}>
-            <View style={styles.logoContainer}>
-              <Ionicons name="school" size={60} color="#3F51B5" />
+            <View style={styles.logoBox}>
+              <Ionicons name="school" size={40} color="white" />
             </View>
           </View>
 
@@ -119,7 +175,6 @@ export default function Signup() {
 
           {/* Form */}
           <View style={styles.formContainer}>
-            
             {/* Role */}
             <Text style={styles.label}>I am a</Text>
             <TouchableOpacity
@@ -235,7 +290,6 @@ export default function Signup() {
   );
 }
 
-
 // ---------------- Styles ----------------
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: "#FFFCF9" },
@@ -243,46 +297,24 @@ const styles = StyleSheet.create({
 
   headerIconContainer: { alignItems: "center", marginBottom: 20 },
 
-  // ⭐ Splash Logo Style
-  logoContainer: {
-    width: 120,
-    height: 120,
-    backgroundColor: "#E8EAF6",
-    borderRadius: 35,
+  logoBox: {
+    width: 80,
+    height: 80,
+    backgroundColor: "#4461F2",
+    borderRadius: 20,
     justifyContent: "center",
     alignItems: "center",
-    shadowColor: "#3F51B5",
+    shadowColor: "#4461F2",
     shadowOffset: { width: 0, height: 10 },
-    shadowOpacity: 0.1,
-    shadowRadius: 20,
-    elevation: 5,
+    shadowOpacity: 0.3,
+    shadowRadius: 10,
+    elevation: 8,
   },
 
-  title: {
-    fontSize: 28,
-    fontWeight: "bold",
-    color: "#1A202C",
-    textAlign: "center",
-    marginBottom: 10,
-  },
-
-  subtitle: {
-    fontSize: 14,
-    color: "#718096",
-    textAlign: "center",
-    marginBottom: 30,
-  },
-
+  title: { fontSize: 28, fontWeight: "bold", color: "#1A202C", textAlign: "center", marginBottom: 10 },
+  subtitle: { fontSize: 14, color: "#718096", textAlign: "center", marginBottom: 30 },
   formContainer: { width: "100%" },
-
-  label: {
-    fontSize: 16,
-    fontWeight: "600",
-    color: "#2D3748",
-    marginBottom: 8,
-    marginTop: 10,
-  },
-
+  label: { fontSize: 16, fontWeight: "600", color: "#2D3748", marginBottom: 8, marginTop: 10 },
   inputWrapper: {
     flexDirection: "row",
     alignItems: "center",
@@ -293,7 +325,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 15,
     height: 55,
   },
-
   inputIcon: { marginRight: 10 },
   textInput: { flex: 1, fontSize: 16, color: "#2D3748" },
   inputText: { flex: 1, fontSize: 16, color: "#2D3748" },
@@ -308,13 +339,10 @@ const styles = StyleSheet.create({
     marginBottom: 20,
     elevation: 4,
   },
-
   signupButtonText: { color: "white", fontSize: 18, fontWeight: "bold" },
-
   dividerContainer: { flexDirection: "row", alignItems: "center", marginBottom: 20 },
   dividerLine: { flex: 1, height: 1, backgroundColor: "#E2E8F0" },
   dividerText: { marginHorizontal: 10, color: "#A0AEC0", fontSize: 12, fontWeight: "600" },
-
   googleButton: {
     flexDirection: "row",
     alignItems: "center",
@@ -325,37 +353,14 @@ const styles = StyleSheet.create({
     height: 55,
     marginBottom: 30,
   },
-
   googleButtonText: { marginLeft: 10, fontSize: 16, fontWeight: "600", color: "#2D3748" },
-
   footer: { flexDirection: "row", justifyContent: "center", alignItems: "center" },
   footerText: { color: "#718096", fontSize: 14 },
   linkText: { color: "#2563EB", fontWeight: "bold", fontSize: 14 },
-
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: "rgba(0,0,0,0.3)",
-    justifyContent: "center",
-    alignItems: "center",
-  },
-
-  modalContent: {
-    width: width * 0.8,
-    backgroundColor: "white",
-    borderRadius: 20,
-    padding: 20,
-  },
-
+  modalOverlay: { flex: 1, backgroundColor: "rgba(0,0,0,0.3)", justifyContent: "center", alignItems: "center" },
+  modalContent: { width: width * 0.8, backgroundColor: "white", borderRadius: 20, padding: 20 },
   modalTitle: { fontSize: 18, fontWeight: "bold", marginBottom: 15, textAlign: "center" },
-
-  modalItem: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    paddingVertical: 15,
-    borderBottomWidth: 1,
-    borderBottomColor: "#F7FAFC",
-  },
-
+  modalItem: { flexDirection: "row", justifyContent: "space-between", paddingVertical: 15, borderBottomWidth: 1, borderBottomColor: "#F7FAFC" },
   modalItemText: { fontSize: 16, color: "#4A5568" },
   selectedModalItemText: { color: "#2563EB", fontWeight: "bold" },
 });

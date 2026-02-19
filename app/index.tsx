@@ -211,35 +211,3 @@ const styles = StyleSheet.create({
     fontWeight: "500",
   },
 });
-
-// import React from "react";
-// import { View, StyleSheet } from "react-native";
-// import { Ionicons } from "@expo/vector-icons";
-
-// export default function Logo() {
-//   return (
-//     <View style={styles.logoContainer}>
-//       <Ionicons name="school" size={60} color="#3F51B5" />
-//     </View>
-//   );
-// }
-
-// const styles = StyleSheet.create({
-//   logoContainer: {
-//     width: 120,
-//     height: 120,
-//     backgroundColor: "#E8EAF6",
-//     borderRadius: 35,
-//     justifyContent: "center",
-//     alignItems: "center",
-
-//     // Shadow (iOS)
-//     shadowColor: "#3F51B5",
-//     shadowOffset: { width: 0, height: 10 },
-//     shadowOpacity: 0.1,
-//     shadowRadius: 20,
-
-//     // Shadow (Android)
-//     elevation: 5,
-//   },
-// });
