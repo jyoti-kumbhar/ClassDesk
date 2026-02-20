@@ -23,31 +23,31 @@ const BackgroundDecorations = () => (
     {/* Top Right Triangle/Shape */}
     <View style={{ position: "absolute", top: -50, right: -50 }}>
       <Svg height="200" width="200" viewBox="0 0 100 100">
-        <Path d="M0 0 L100 0 L100 100 Z" fill="#E8F0FE" />
+        <Path d="M0 0 L100 0 L100 100 Z" fill="#b9cbe9" />
         <Path d="M60 10 L90 10 L75 35 Z" fill="#4461F2" /> 
       </Svg>
     </View>
 
     {/* Top Left Yellow Circle */}
-    <View style={[styles.circle, { top: 40, left: -20, backgroundColor: "#FFF4E3", width: 100, height: 100 }]} />
+    <View style={[styles.circle, { top: 40, left: -20, backgroundColor: "#f5dfbff6", width: 100, height: 100 }]} />
     
     {/* Scattered Dots */}
     <View style={[styles.dot, { top: 120, right: 80, backgroundColor: "#FF8A65" }]} />
     <View style={[styles.dot, { top: 250, left: 30, backgroundColor: "#FFB74D" }]} />
-    <View style={[styles.dot, { bottom: 150, right: 20, backgroundColor: "#4FC3F7" }]} />
+    <View style={[styles.dot, { bottom: 150, right: 20, backgroundColor: "#3aafe6" }]} />
     
     {/* Bottom Left Shapes */}
     <View style={{ position: "absolute", bottom: 0, left: 0 }}>
        <Svg height="150" width="150" viewBox="0 0 100 100">
-         <Circle cx="0" cy="100" r="60" fill="#E3F2FD" />
-         <Path d="M10 80 L30 60 L50 90 Z" fill="#4461F2" opacity={0.8}/>
+         <Circle cx="0" cy="100" r="60" fill="#9dcff3c9" />
+         <Path d="M10 80 L30 60 L50 90 Z" fill="#4461F2" opacity={1}/>
        </Svg>
     </View>
 
     {/* Bottom Right Corner */}
     <View style={{ position: "absolute", bottom: -20, right: -20 }}>
-      <View style={{ width: 120, height: 120, backgroundColor: "#FFCC80", borderRadius: 60, opacity: 0.5 }} />
-       <View style={{ position: 'absolute', bottom: 10, right: 10, width: 80, height: 80, backgroundColor: "#FFAB91", borderRadius: 40 }} />
+      <View style={{ width: 120, height: 120, backgroundColor: "#f3b963", borderRadius: 60, opacity: 0.5 }} />
+       <View style={{ position: 'absolute', bottom: 10, right: 10, width: 80, height: 80, backgroundColor: "#e9967c", borderRadius: 40 }} />
     </View>
   </View>
 );
@@ -403,37 +403,3 @@ const styles = StyleSheet.create({
     fontSize: 14,
   },
 });
-
-// backgroundColor: "#FFFCF9"
-
-// import React from "react";
-// import { View, StyleSheet } from "react-native";
-// import { Ionicons } from "@expo/vector-icons";
-
-// export default function AppLogo() {
-//   return (
-//     <View style={styles.logoBox}>
-//       <Ionicons name="school" size={40} color="white" />
-//     </View>
-//   );
-// }
-
-// const styles = StyleSheet.create({
-//   logoBox: {
-//     width: 80,
-//     height: 80,
-//     backgroundColor: "#4461F2",
-//     borderRadius: 20,
-//     justifyContent: "center",
-//     alignItems: "center",
-
-//     // Shadow (iOS)
-//     shadowColor: "#4461F2",
-//     shadowOffset: { width: 0, height: 10 },
-//     shadowOpacity: 0.3,
-//     shadowRadius: 10,
-
-//     // Shadow (Android)
-//     elevation: 8,
-//   },
-// });

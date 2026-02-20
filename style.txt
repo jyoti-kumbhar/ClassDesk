@@ -1,0 +1,145 @@
+top bar style
+import React from 'react';
+import { View, Text, TouchableOpacity, Image, StyleSheet } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
+import { useRouter } from 'expo-router';
+
+// --- Types ---
+interface AppLogoProps {
+  scale?: number;
+}
+
+// --- App Logo Component ---
+export const AppLogo = ({ scale = 1 }: AppLogoProps) => (
+  <View style={[styles.logoBox, { transform: [{ scale }] }]}>
+    <Ionicons name="school" size={40} color="white" />
+  </View>
+);
+
+// --- Main Top Bar Component ---
+export default function TopBar() {
+  const router = useRouter();
+
+  return (
+    <View style={styles.header}>
+      
+      {/* Left Side: Logo & App Name */}
+      <View style={styles.rowCenter}>
+        <AppLogo scale={0.5} />
+        <Text style={styles.logoText}>ClassDesk</Text>
+      </View>
+
+      {/* Right Side: Notifications & Avatar */}
+      <View style={styles.rowCenter}>
+        
+        {/* Notification Bell */}
+        <TouchableOpacity style={styles.notifBtn}>
+          <View style={styles.badge} />
+          <Ionicons name="notifications" size={24} color="#374151" />
+        </TouchableOpacity>
+
+        {/* Profile Avatar */}
+        <TouchableOpacity onPress={() => router.push("/admin/profile")}>
+          <Image
+            source={{ uri: "https://api.dicebear.com/7.x/avataaars/png?seed=Admin" }}
+            style={styles.avatar}
+          />
+        </TouchableOpacity>
+        
+      </View>
+      
+    </View>
+  );
+}
+
+// --- Styles ---
+const styles = StyleSheet.create({
+  // Layout Helpers
+  header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 20,
+  },
+  rowCenter: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+
+  // App Logo Styles
+  logoBox: {
+    width: 80,
+    height: 80,
+    backgroundColor: "#4461F2",
+    borderRadius: 20,
+    justifyContent: "center",
+    alignItems: "center",
+    shadowColor: "#4461F2",
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.3,
+    shadowRadius: 10,
+    elevation: 8,
+  },
+  logoText: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: '#000',
+  },
+
+  // Notification Styles
+  notifBtn: {
+    marginRight: 15,
+    position: 'relative',
+  },
+  badge: {
+    position: 'absolute',
+    top: 0,
+    right: 2,
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: '#EF4444',
+    zIndex: 10,
+  },
+
+  // Profile Avatar Styles
+  avatar: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    borderWidth: 2,
+    borderColor: '#FFF',
+  },
+});
+
+
+logo style
+
+backgroundColor: "#FFFCF9"
+
+import React from "react";
+import { View, StyleSheet } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
+
+export default function AppLogo() {
+  return (
+    <View style={styles.logoBox}>
+      <Ionicons name="school" size={40} color="white" />
+    </View>
+  );
+}
+
+const styles = StyleSheet.create({
+  logoBox: {
+    width: 80,
+    height: 80,
+    backgroundColor: "#4461F2",
+    borderRadius: 9,
+    justifyContent: "center",
+    alignItems: "center",
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.3,
+    shadowRadius: 10,
+    elevation: 8,
+  },
+});

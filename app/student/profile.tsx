@@ -121,7 +121,10 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: "#F4F0EA" },
   scrollContent: { padding: 20, paddingBottom: 100 },
   header: { ...rowBetween, marginTop: 30, marginBottom: 20 },
+  
+  // Adjusted text style to match the Dashboard perfectly
   logoText: { fontSize: 20, fontWeight: '700', color: '#000', marginLeft: -10 },
+  
   title: { fontSize: 28, fontWeight: "800", color: "#2D3142", marginBottom: 20 },
   profileSection: { alignItems: "center", marginBottom: 25 },
   avatarContainer: { shadowColor: "#000", shadowOffset: { width: 4, height: 4 }, shadowOpacity: 0.1, shadowRadius: 10 },

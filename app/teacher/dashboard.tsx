@@ -1,8 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
-import { useRouter } from 'expo-router'; // <--- Import useRouter
+import { useRouter } from 'expo-router';
 import React from 'react';
 import {
-  Dimensions,
   Image,
   Platform,
   SafeAreaView,
@@ -13,9 +12,7 @@ import {
   TouchableOpacity,
   View
 } from 'react-native';
-import Svg, { Circle, Path, Rect, G } from "react-native-svg";
-
-const { width } = Dimensions.get('window');
+import Svg, { Circle, Path, Rect } from "react-native-svg";
 
 // --- Types ---
 
@@ -80,6 +77,8 @@ const BackgroundDecorations = () => (
             <Path d="M30 10 Q 60 40 30 70 T 30 130" stroke="#4FC3F7" strokeWidth="4" fill="none" />
         </Svg>
     </View>
+
+    
 
     {/* 4. Dots */}
     <View style={[styles.bgDot, { top: 120, right: 70, backgroundColor: "#FF8A65" }]} />
@@ -153,20 +152,14 @@ const ActionCard = ({ icon, label, isPrimary = false }: ActionCardProps) => (
 
 const NavItem = ({ icon, label, isActive = false }: NavItemProps) => (
   <TouchableOpacity style={styles.navItem}>
-    <Ionicons name={icon} size={24} color={isActive ? "#4461F2" : "#C4C4C4"} />
+    <Ionicons name={icon} size={24} color={isActive ? "#fff" : "#9CA3AF"} />
     <Text style={[styles.navText, isActive && styles.navTextActive]}>{label}</Text>
   </TouchableOpacity>
 );
-
 // --- Main Dashboard Screen ---
 
 export default function TeacherDashboard() {
-  const router = useRouter(); // <--- Initialize Router
-
-  const handleLogout = () => {
-    // Navigate to login page
-    router.replace('/login');
-  };
+  const router = useRouter();
 
   return (
     <SafeAreaView style={styles.container}>
@@ -185,16 +178,14 @@ export default function TeacherDashboard() {
           </View>
           
           <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-            <Image 
-                source={{ uri: "https://api.dicebear.com/7.x/avataaars/png?seed=ProfSmith" }} 
-                style={styles.avatar} 
-            />
-            {/* --- LOGOUT BUTTON --- */}
-            <TouchableOpacity onPress={handleLogout} style={styles.logoutBtn}>
-                <Ionicons name="log-out-outline" size={24} color="#EF4444" />
+            {/* --- PROFILE NAVIGATION --- */}
+            <TouchableOpacity onPress={() => router.push('/teacher/profile')}>
+                <Image 
+                    source={{ uri: "https://api.dicebear.com/7.x/avataaars/png?seed=ProfSmith" }} 
+                    style={styles.avatar} 
+                />
             </TouchableOpacity>
           </View>
-
         </View>
 
         {/* Welcome */}
@@ -263,7 +254,7 @@ export default function TeacherDashboard() {
         {/* Floating Add Button */}
         <View style={styles.fabContainer}>
           <TouchableOpacity style={styles.fab}>
-            <Ionicons name="add" size={30} color="white" />
+            <Ionicons name="add" size={30} color="#4461F2" />
           </TouchableOpacity>
           <Text style={styles.fabLabel}>Create</Text>
         </View>
@@ -276,280 +267,114 @@ export default function TeacherDashboard() {
   );
 }
 
-// --- Styles ---
+// --- Shared Reusable Styles ---
+const flexCenter = { justifyContent: 'center' as const, alignItems: 'center' as const };
+const rowCenter = { flexDirection: 'row' as const, alignItems: 'center' as const };
+const shadowBase = { shadowColor: "#000", shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 5, elevation: 2 };
 
+// --- Compressed Stylesheet ---
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#FFFCF9', 
+  container: { flex: 1, backgroundColor: '#FFFCF9' },
+  bgCircle: { position: "absolute", borderRadius: 999 },
+  bgDot: { position: "absolute", width: 12, height: 12, borderRadius: 6 },
+  scrollContent: { padding: 20, paddingTop: 10 },
+  header: { ...rowCenter, justifyContent: 'space-between', marginBottom: 25 },
+  headerLeft: { ...rowCenter, marginLeft: -15 },
+  appName: { fontSize: 20, fontWeight: '700', color: '#1E3A8A', marginLeft: -10 },
+  avatar: { width: 40, height: 40, borderRadius: 20, borderWidth: 2, borderColor: '#FFF' },
+  section: { marginBottom: 25 },
+  dateText: { color: '#9CA3AF', fontSize: 14, fontWeight: '500' },
+  greetingText: { fontSize: 24, fontWeight: '800', color: '#1F2937', marginTop: 4 },
+  statsRow: { ...rowCenter, justifyContent: 'space-between', marginBottom: 25 },
+  statCard: { ...flexCenter, ...shadowBase, backgroundColor: '#FFF', width: '31%', padding: 15, borderRadius: 16 },
+  statLabel: { fontSize: 9, fontWeight: '700', color: '#9CA3AF', textTransform: 'uppercase', textAlign: 'center', marginBottom: 5 },
+  statValue: { fontSize: 22, fontWeight: '800', color: '#4461F2' },
+  sectionHeader: { ...rowCenter, justifyContent: 'space-between', marginBottom: 15 },
+  sectionTitle: { fontSize: 18, fontWeight: '700', color: '#1F2937', marginBottom: 10 },
+  linkText: { color: '#4461F2', fontWeight: '600' },
+  grid: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between' },
+  actionCard: { ...shadowBase, width: '48%', height: 120, backgroundColor: '#FFF', padding: 16, borderRadius: 16, marginBottom: 15, justifyContent: 'center', alignItems: 'flex-start' },
+  actionCardPrimary: { backgroundColor: '#4461F2' },
+  iconBox: { ...flexCenter, width: 40, height: 40, borderRadius: 10, marginBottom: 10 },
+  iconBoxDefault: { backgroundColor: '#EFF6FF' },
+  iconBoxPrimary: { backgroundColor: 'rgba(255,255,255,0.2)' },
+  actionLabel: { fontSize: 14, fontWeight: '700', color: '#1F2937', lineHeight: 20 },
+  textWhite: { color: '#FFF' },
+  feedCard: { backgroundColor: '#FFF', padding: 16, borderRadius: 16, borderWidth: 1, borderColor: '#F3F4F6' },
+  feedTop: { flexDirection: 'row', alignItems: 'flex-start', marginBottom: 15 },
+  fileIcon: { ...flexCenter, width: 45, height: 45, backgroundColor: '#FFF7ED', borderRadius: 12, marginRight: 12 },
+  feedContent: { flex: 1 },
+  feedTitle: { fontSize: 15, fontWeight: '700', color: '#1F2937' },
+  feedSubtitle: { fontSize: 12, color: '#9CA3AF', marginTop: 2 },
+  feedFooter: { ...rowCenter, justifyContent: 'space-between' },
+  feedTime: rowCenter,
+  timeText: { fontSize: 11, color: '#9CA3AF', marginLeft: 4, fontWeight: '500' },
+  badge: { backgroundColor: '#ECFDF5', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 20 },
+  badgeText: { color: '#059669', fontSize: 10, fontWeight: '700' },
+// --- Perfectly Aligned Bottom Nav Styles --- 
+  bottomNav: { 
+    position: 'absolute', 
+    bottom: 0,
+    left: 0, 
+    right: 0, 
+    backgroundColor: '#4461F2', 
+    flexDirection: 'row', 
+    justifyContent: 'space-evenly', 
+    alignItems: 'center', 
+    height: Platform.OS === 'ios' ? 90 : 70, // 1. Fixed height prevents the bar from stretching
+    paddingBottom: Platform.OS === 'ios' ? 20 : 0, 
+    borderTopLeftRadius: 30,
+    borderTopRightRadius: 30,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: -4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 10,
+    elevation: 15,
+  },  
+  navItem: {
+    alignItems: 'center', 
+    justifyContent: 'flex-end', // 2. Forces content to sit at the bottom of the box
+    height: 45, // 3. All items get the exact same box height
+    width: 65, 
   },
-  // Background Element Styles
-  bgCircle: {
-    position: "absolute",
-    borderRadius: 999,
+  navText: { 
+    fontSize: 10, 
+    fontWeight: '600', 
+    color: '#9CA3AF', 
+    marginTop: 4 
   },
-  bgDot: {
-    position: "absolute",
-    width: 12,
-    height: 12,
-    borderRadius: 6,
+  navTextActive: { 
+    color: '#fff' 
   },
   
-  // Dashboard Styles
-  scrollContent: {
-    padding: 20,
-    paddingTop: 10,
-  },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
+  // --- Floating Action Button (FAB) Styles ---
+  fabContainer: { 
     alignItems: 'center',
-    marginBottom: 25,
+    justifyContent: 'flex-end', 
+    height: 45, 
+    width: 65,
   },
-  headerLeft: {
-    flexDirection: 'row',
+  fab: { 
+    position: 'absolute', 
+    top: -28, 
+    width: 56, 
+    height: 56, 
+    backgroundColor: '#fff', 
+    borderRadius: 28, 
+    borderWidth: 4, 
+    borderColor: '#4461F2',
     alignItems: 'center',
-    marginLeft: -15,
-  },
-  appName: {
-    fontSize: 20,
-    fontWeight: '700',
-    color: '#1E3A8A',
-    marginLeft: -10,
-  },
-  avatar: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    borderWidth: 2,
-    borderColor: '#FFF',
-  },
-  // --- New Logout Button Style ---
-  logoutBtn: {
-    marginLeft: 10,
-    padding: 6,
-    backgroundColor: '#FEF2F2', // Light red background
-    borderRadius: 12,
     justifyContent: 'center',
-    alignItems: 'center',
+    shadowColor: "#000", 
+    shadowOffset: { width: 0, height: 4 }, 
+    shadowOpacity: 0.2, 
+    shadowRadius: 5, 
+    elevation: 8 
   },
-  section: {
-    marginBottom: 25,
-  },
-  dateText: {
-    color: '#9CA3AF',
-    fontSize: 14,
-    fontWeight: '500',
-  },
-  greetingText: {
-    fontSize: 24,
-    fontWeight: '800',
-    color: '#1F2937',
-    marginTop: 4,
-  },
-  statsRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: 25,
-  },
-  statCard: {
-    backgroundColor: '#FFF',
-    width: '31%',
-    padding: 15,
-    borderRadius: 16,
-    alignItems: 'center',
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 5,
-    elevation: 2,
-  },
-  statLabel: {
-    fontSize: 9,
-    fontWeight: '700',
-    color: '#9CA3AF',
-    textTransform: 'uppercase',
-    textAlign: 'center',
-    marginBottom: 5,
-  },
-  statValue: {
-    fontSize: 22,
-    fontWeight: '800',
-    color: '#4461F2',
-  },
-  sectionHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 15,
-  },
-  sectionTitle: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: '#1F2937',
-    marginBottom: 10,
-  },
-  linkText: {
-    color: '#4461F2',
-    fontWeight: '600',
-  },
-  grid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    justifyContent: 'space-between',
-    // gap is supported in newer RN versions, but margins are safer for exact grid alignment in older ones
-  },
-  actionCard: {
-    width: '48%', // Ensures exactly 2 cards per row with space in middle
-    height: 120,  // FIXED HEIGHT to ensure uniformity
-    backgroundColor: '#FFF',
-    padding: 16,
-    borderRadius: 16,
-    marginBottom: 15, // Consistent vertical spacing
-    justifyContent: 'center', // Vertically center content
-    alignItems: 'flex-start', // Align text/icon to left
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 5,
-    elevation: 2,
-  },
-  actionCardPrimary: {
-    backgroundColor: '#4461F2',
-  },
-  iconBox: {
-    width: 40,
-    height: 40,
-    borderRadius: 10,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 10,
-  },
-  iconBoxDefault: {
-    backgroundColor: '#EFF6FF',
-  },
-  iconBoxPrimary: {
-    backgroundColor: 'rgba(255,255,255,0.2)',
-  },
-  actionLabel: {
-    fontSize: 14,
-    fontWeight: '700',
-    color: '#1F2937',
-    lineHeight: 20, // Helps with text wrapping alignment
-  },
-  textWhite: {
-    color: '#FFF',
-  },
-  feedCard: {
-    backgroundColor: '#FFF',
-    padding: 16,
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: '#F3F4F6',
-  },
-  feedTop: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    marginBottom: 15,
-  },
-  fileIcon: {
-    width: 45,
-    height: 45,
-    backgroundColor: '#FFF7ED',
-    borderRadius: 12,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: 12,
-  },
-  feedContent: {
-    flex: 1,
-  },
-  feedTitle: {
-    fontSize: 15,
-    fontWeight: '700',
-    color: '#1F2937',
-  },
-  feedSubtitle: {
-    fontSize: 12,
-    color: '#9CA3AF',
-    marginTop: 2,
-  },
-  feedFooter: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  feedTime: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  timeText: {
-    fontSize: 11,
-    color: '#9CA3AF',
-    marginLeft: 4,
-    fontWeight: '500',
-  },
-  badge: {
-    backgroundColor: '#ECFDF5',
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 20,
-  },
-  badgeText: {
-    color: '#059669',
-    fontSize: 10,
-    fontWeight: '700',
-  },
-  bottomNav: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    backgroundColor: '#FFF',
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-    alignItems: 'center',
-    paddingVertical: 10,
-    paddingHorizontal: 20,
-    paddingBottom: Platform.OS === 'ios' ? 25 : 10,
-    borderTopWidth: 1,
-    borderTopColor: '#F3F4F6',
-  },
-  navItem: {
-    alignItems: 'center',
-  },
-  navText: {
-    fontSize: 10,
-    fontWeight: '500',
-    color: '#C4C4C4',
-    marginTop: 4,
-  },
-  navTextActive: {
-    color: '#4461F2',
-  },
-  fabContainer: {
-    top: -25,
-    alignItems: 'center',
-  },
-  fab: {
-    width: 56,
-    height: 56,
-    backgroundColor: '#4461F2',
-    borderRadius: 28,
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderWidth: 4,
-    borderColor: '#FFFCF9', // Updated to match the new background
-    shadowColor: "#4461F2",
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.4,
-    shadowRadius: 8,
-    elevation: 8,
-  },
-  fabLabel: {
-    fontSize: 10,
-    fontWeight: '700',
-    color: '#4461F2',
-    marginTop: 4,
+  fabLabel: { 
+    fontSize: 10, 
+    fontWeight: '700', 
+    color: '#fff', 
+    marginTop: 18
   }
 });

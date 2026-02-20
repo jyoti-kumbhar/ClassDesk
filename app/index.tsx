@@ -8,7 +8,7 @@ import {
   Text,
   View,
 } from "react-native";
-// Removed unused 'Defs' and 'Path' to fix ESLint errors
+// background graphics
 import Svg, { Circle, Polygon } from "react-native-svg";
 import { Ionicons } from "@expo/vector-icons";
 
@@ -127,7 +127,7 @@ export default function Index() {
           ]}
         >
           <View style={styles.logoContainer}>
-            <Ionicons name="school" size={60} color="#3F51B5" />
+            <Ionicons name="school" size={60} color="white" />
           </View>
 
           <Text style={styles.title}>ClassDesk</Text>
@@ -164,12 +164,12 @@ const styles = StyleSheet.create({
   logoContainer: {
     width: 120,
     height: 120,
-    backgroundColor: "#E8EAF6",
+    backgroundColor: "#4461F2",
     borderRadius: 35,
     justifyContent: "center",
     alignItems: "center",
     marginBottom: 25,
-    shadowColor: "#3F51B5",
+    shadowColor: "#4461F2",
     shadowOffset: { width: 0, height: 10 },
     shadowOpacity: 0.1,
     shadowRadius: 20,
