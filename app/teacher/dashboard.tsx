@@ -311,70 +311,74 @@ const styles = StyleSheet.create({
   timeText: { fontSize: 11, color: '#9CA3AF', marginLeft: 4, fontWeight: '500' },
   badge: { backgroundColor: '#ECFDF5', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 20 },
   badgeText: { color: '#059669', fontSize: 10, fontWeight: '700' },
+
 // --- Perfectly Aligned Bottom Nav Styles --- 
-  bottomNav: { 
-    position: 'absolute', 
-    bottom: 0,
-    left: 0, 
-    right: 0, 
-    backgroundColor: '#4461F2', 
-    flexDirection: 'row', 
-    justifyContent: 'space-evenly', 
-    alignItems: 'center', 
-    height: Platform.OS === 'ios' ? 90 : 70, // 1. Fixed height prevents the bar from stretching
-    paddingBottom: Platform.OS === 'ios' ? 20 : 0, 
-    borderTopLeftRadius: 30,
-    borderTopRightRadius: 30,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: -4 },
-    shadowOpacity: 0.1,
-    shadowRadius: 10,
-    elevation: 15,
-  },  
-  navItem: {
-    alignItems: 'center', 
-    justifyContent: 'flex-end', // 2. Forces content to sit at the bottom of the box
-    height: 45, // 3. All items get the exact same box height
-    width: 65, 
-  },
-  navText: { 
-    fontSize: 10, 
-    fontWeight: '600', 
-    color: '#9CA3AF', 
-    marginTop: 4 
-  },
-  navTextActive: { 
-    color: '#fff' 
-  },
-  
-  // --- Floating Action Button (FAB) Styles ---
-  fabContainer: { 
-    alignItems: 'center',
-    justifyContent: 'flex-end', 
-    height: 45, 
-    width: 65,
-  },
-  fab: { 
-    position: 'absolute', 
-    top: -28, 
-    width: 56, 
-    height: 56, 
-    backgroundColor: '#fff', 
-    borderRadius: 28, 
-    borderWidth: 4, 
-    borderColor: '#4461F2',
-    alignItems: 'center',
-    justifyContent: 'center',
-    shadowColor: "#000", 
-    shadowOffset: { width: 0, height: 4 }, 
-    shadowOpacity: 0.2, 
-    shadowRadius: 5, 
-    elevation: 8 
-  },
-  fabLabel: { 
-    fontSize: 10, 
-    fontWeight: '700', 
-    color: '#fff', 
-    marginTop: 18
-  }
+bottomNav: { 
+  position: 'absolute', 
+  bottom: 0,
+  left: 0, 
+  right: 0, 
+  backgroundColor: '#4461F2', 
+  flexDirection: 'row', 
+  alignItems: 'center', 
+  height: 85,              
+  paddingBottom: 10,       
+  paddingHorizontal: 8, 
+  borderTopLeftRadius: 30,
+  borderTopRightRadius: 30,
+  shadowColor: "#000",
+  shadowOffset: { width: 0, height: -4 },
+  shadowOpacity: 0.1,
+  shadowRadius: 10,
+  elevation: 15,
+}, 
+
+navItem: {
+  flex: 1,
+  alignItems: 'center',
+  justifyContent: 'center',
+},
+
+navText: { 
+  fontSize: 11, 
+  fontWeight: '600', 
+  color: '#9CA3AF', 
+  marginTop: 4 
+},
+
+navTextActive: { 
+  color: '#fff' 
+},
+
+// --- Floating Action Button (FAB) Styles ---
+fabContainer: { 
+  flex: 1,
+  alignItems: 'center',
+  justifyContent: 'center',
+},
+
+fab: { 
+  position: 'absolute', 
+  top: -30, 
+  width: 60, 
+  height: 60, 
+  backgroundColor: '#fff', 
+  borderRadius: 30, 
+  borderWidth: 4, 
+  borderColor: '#4461F2',
+  alignItems: 'center',
+  justifyContent: 'center',
+  shadowColor: "#000", 
+  shadowOffset: { width: 0, height: 4 }, 
+  shadowOpacity: 0.2, 
+  shadowRadius: 5, 
+  elevation: 8 
+},
+
+fabLabel: { 
+  fontSize: 11, 
+  fontWeight: '700', 
+  color: '#fff', 
+  marginTop: 34
+}
 });
