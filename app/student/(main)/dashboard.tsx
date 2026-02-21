@@ -6,6 +6,7 @@ import Svg, { Circle, G, Path } from "react-native-svg";
 const { width: W, height: H } = Dimensions.get('window');
 
 const BackgroundDecorations = () => (
+  
   <View style={StyleSheet.absoluteFill} pointerEvents="none">
     {/* Base cream background */}
     <View style={[StyleSheet.absoluteFill, { backgroundColor: '#FFF9F0' }]} />

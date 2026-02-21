@@ -1,10 +1,11 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Platform, Image, StatusBar, Dimensions } from 'react-native';
-import { Tabs, useRouter, usePathname } from 'expo-router'; // <-- Imported usePathname
+import { Tabs, useRouter, usePathname } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import Svg, { Circle, G, Path } from "react-native-svg";
 
 const { width: W } = Dimensions.get('window');
+
 const DynamicTopBarGraphics = ({ pathname }: { pathname: string }) => {
 
   // 1. DASHBOARD GRAPHICS (Yellow & Blue)
@@ -63,12 +64,11 @@ const DynamicTopBarGraphics = ({ pathname }: { pathname: string }) => {
     );
   }
 
-  // Fallback for any other routes (keeps the background blank instead of crashing)
   return null;
 };
 
 // --- Top Bar Component ---
-const AppLogo = ({ scale = 1 }) => (
+const AppLogo = ({ scale = 1 }: { scale?: number }) => (
   <View style={[styles.logoBox, { transform: [{ scale }] }]}>
     <Ionicons name="school" size={50} color="#4461F2" />
   </View>
@@ -76,14 +76,12 @@ const AppLogo = ({ scale = 1 }) => (
 
 const TopBar = () => {
   const router = useRouter();
-  const pathname = usePathname(); // Get the current active route!
+  const pathname = usePathname();
 
   return (
     <View style={styles.header}>
-      {/* Dynamic Background inserted here! */}
       <DynamicTopBarGraphics pathname={pathname} />
 
-      {/* Header Content Wrapper to stay above background */}
       <View style={styles.headerContent}>
         <View style={{ flexDirection: 'row', alignItems: 'center' }}>
           <AppLogo scale={0.65} />
@@ -122,19 +120,20 @@ function CustomBottomNav({ state, descriptors, navigation }: any) {
           }
         };
 
+        // Match icons from Snippet 1
         let iconName: keyof typeof Ionicons.glyphMap = "home";
         if (route.name === "dashboard") iconName = "home";
-        if (route.name === "classes") iconName = "book";
-        if (route.name === "exam") iconName = "document-text"; 
+        if (route.name === "classes") iconName = "grid-outline"; 
+        if (route.name === "exam") iconName = "clipboard-outline"; 
         if (route.name === "attendance") iconName = "people-outline";
 
-        return (
+        const NavItemBlock = (
           <TouchableOpacity 
-            key={index} 
+            key={route.key} 
             onPress={onPress} 
-            style={[styles.navItem, isFocused && styles.navItemActive]}
+            style={styles.navItem}
           >
-            <Ionicons name={iconName} size={22} color={isFocused ? "#FFF" : "#9CA3AF"} />
+            <Ionicons name={iconName} size={24} color={isFocused ? "#FFF" : "#9CA3AF"} />
             <Text 
               style={[styles.navText, isFocused && styles.navTextActive]}
               numberOfLines={1} 
@@ -144,6 +143,23 @@ function CustomBottomNav({ state, descriptors, navigation }: any) {
             </Text>
           </TouchableOpacity>
         );
+
+        // Inject Floating Action Button after the second item (index 1)
+        if (index === 1) {
+          return (
+            <React.Fragment key={route.key + "_fragment"}>
+              {NavItemBlock}
+              <View style={styles.fabContainer} key="fab">
+                <TouchableOpacity style={styles.fab}>
+                  <Ionicons name="add" size={30} color="#4461F2" />
+                </TouchableOpacity>
+                <Text style={styles.fabLabel}>Create</Text>
+              </View>
+            </React.Fragment>
+          );
+        }
+
+        return NavItemBlock;
       })}
     </View>
   );
@@ -178,11 +194,11 @@ const styles = StyleSheet.create({
   
   // Top Bar 
   header: { 
-    backgroundColor: '#FFF9F0', // Base color
+    backgroundColor: '#FFF9F0', 
     borderBottomLeftRadius: 30, 
     borderBottomRightRadius: 30,
     zIndex: 10,
-    overflow: 'hidden', // Keeps the dynamic SVGs inside the rounded corners
+    overflow: 'hidden', 
   },
   headerContent: {
     flexDirection: 'row', 
@@ -191,7 +207,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingTop: Platform.OS === 'android' ? 50 : 60, 
     paddingBottom: 20, 
-    zIndex: 2, // Keeps buttons above the dynamic background
+    zIndex: 2, 
   },
   logoBox: { 
     width: 60, height: 60, 
@@ -204,21 +220,73 @@ const styles = StyleSheet.create({
   badge: { position: 'absolute', top: 0, right: 2, width: 8, height: 8, borderRadius: 4, backgroundColor: '#EF4444', zIndex: 10 },
   avatar: { width: 40, height: 40, borderRadius: 20, borderWidth: 2, borderColor: '#4461F2' }, 
 
-  // Bottom Nav 
+  // --- Replaced Bottom Nav Styles from Snippet 1 ---
   bottomNav: { 
+    position: 'absolute', 
+    bottom: 0,
+    left: 0, 
+    right: 0, 
     backgroundColor: '#4461F2', 
     flexDirection: 'row', 
-    justifyContent: 'space-around', 
     alignItems: 'center', 
-    paddingHorizontal: 10, 
-    paddingTop: 12, 
-    paddingBottom: Platform.OS === 'ios' ? 30 : 20, 
+    height: 85,              
+    paddingBottom: 10,        
+    paddingHorizontal: 8, 
     borderTopLeftRadius: 30,
     borderTopRightRadius: 30,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: -4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 10,
     elevation: 15,
+  }, 
+
+  navItem: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  navItem: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingVertical: 8, borderRadius: 16, paddingHorizontal: 4 },
-  navItemActive: { backgroundColor: 'rgba(255,255,255,0.1)' }, 
-  navText: { fontSize: 10, color: '#9CA3AF', marginTop: 4, textAlign: 'center' },
-  navTextActive: { color: '#fff', fontWeight: '700' },
+
+  navText: { 
+    fontSize: 11, 
+    fontWeight: '600', 
+    color: '#9CA3AF', 
+    marginTop: 4 
+  },
+
+  navTextActive: { 
+    color: '#fff' 
+  },
+
+  // --- Floating Action Button (FAB) Styles from Snippet 1 ---
+  fabContainer: { 
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+
+  fab: { 
+    position: 'absolute', 
+    top: -30, 
+    width: 60, 
+    height: 60, 
+    backgroundColor: '#fff', 
+    borderRadius: 30, 
+    borderWidth: 4, 
+    borderColor: '#4461F2',
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: "#000", 
+    shadowOffset: { width: 0, height: 4 }, 
+    shadowOpacity: 0.2, 
+    shadowRadius: 5, 
+    elevation: 8 
+  },
+
+  fabLabel: { 
+    fontSize: 11, 
+    fontWeight: '700', 
+    color: '#fff', 
+    marginTop: 34
+  }
 });

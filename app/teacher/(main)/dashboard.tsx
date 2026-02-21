@@ -1,9 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
-import { useRouter } from 'expo-router';
 import React from 'react';
 import {
-  Image,
-  Platform,
   SafeAreaView,
   ScrollView,
   StatusBar,
@@ -27,16 +24,6 @@ interface ActionCardProps {
   icon: IconName;
   label: string;
   isPrimary?: boolean;
-}
-
-interface NavItemProps {
-  icon: IconName;
-  label: string;
-  isActive?: boolean;
-}
-
-interface AppLogoProps {
-  scale?: number;
 }
 
 // --- Background Graphics ---
@@ -78,8 +65,6 @@ const BackgroundDecorations = () => (
         </Svg>
     </View>
 
-    
-
     {/* 4. Dots */}
     <View style={[styles.bgDot, { top: 120, right: 70, backgroundColor: "#FF8A65" }]} />
     <View style={[styles.bgDot, { top: 280, left: 40, backgroundColor: "#FFB74D", width: 8, height: 8 }]} />
@@ -110,30 +95,6 @@ const BackgroundDecorations = () => (
 
 // --- Components ---
 
-const AppLogo = ({ scale = 1 }: AppLogoProps) => {
-  return (
-    <View style={[logoStyles.logoBox, { transform: [{ scale: scale }] }]}>
-      <Ionicons name="school" size={40} color="white" />
-    </View>
-  );
-};
-
-const logoStyles = StyleSheet.create({
-  logoBox: {
-    width: 80,
-    height: 80,
-    backgroundColor: "#4461F2",
-    borderRadius: 20,
-    justifyContent: "center",
-    alignItems: "center",
-    shadowColor: "#4461F2",
-    shadowOffset: { width: 0, height: 10 },
-    shadowOpacity: 0.3,
-    shadowRadius: 10,
-    elevation: 8,
-  },
-});
-
 const StatCard = ({ label, value }: StatCardProps) => (
   <View style={styles.statCard}>
     <Text style={styles.statLabel}>{label}</Text>
@@ -150,17 +111,9 @@ const ActionCard = ({ icon, label, isPrimary = false }: ActionCardProps) => (
   </TouchableOpacity>
 );
 
-const NavItem = ({ icon, label, isActive = false }: NavItemProps) => (
-  <TouchableOpacity style={styles.navItem}>
-    <Ionicons name={icon} size={24} color={isActive ? "#fff" : "#9CA3AF"} />
-    <Text style={[styles.navText, isActive && styles.navTextActive]}>{label}</Text>
-  </TouchableOpacity>
-);
 // --- Main Dashboard Screen ---
 
 export default function TeacherDashboard() {
-  const router = useRouter();
-
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="dark-content" />
@@ -170,24 +123,6 @@ export default function TeacherDashboard() {
 
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
         
-        {/* Header */}
-        <View style={styles.header}>
-          <View style={styles.headerLeft}>
-            <AppLogo scale={0.6} />
-            <Text style={styles.appName}>ClassDesk</Text>
-          </View>
-          
-          <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-            {/* --- PROFILE NAVIGATION --- */}
-            <TouchableOpacity onPress={() => router.push('/teacher/profile')}>
-                <Image 
-                    source={{ uri: "https://api.dicebear.com/7.x/avataaars/png?seed=ProfSmith" }} 
-                    style={styles.avatar} 
-                />
-            </TouchableOpacity>
-          </View>
-        </View>
-
         {/* Welcome */}
         <View style={styles.section}>
           <Text style={styles.dateText}>Monday, Oct 23rd</Text>
@@ -213,7 +148,7 @@ export default function TeacherDashboard() {
         </View>
 
         {/* Classroom Feed */}
-        <View style={[styles.section, { marginBottom: 100 }]}>
+        <View style={styles.section}>
           <View style={styles.sectionHeader}>
             <Text style={styles.sectionTitle}>Classroom Feed</Text>
             <TouchableOpacity><Text style={styles.linkText}>View All</Text></TouchableOpacity>
@@ -246,23 +181,6 @@ export default function TeacherDashboard() {
 
       </ScrollView>
 
-      {/* Bottom Navigation */}
-      <View style={styles.bottomNav}>
-        <NavItem icon="home" label="Home" isActive />
-        <NavItem icon="grid-outline" label="Classes" />
-        
-        {/* Floating Add Button */}
-        <View style={styles.fabContainer}>
-          <TouchableOpacity style={styles.fab}>
-            <Ionicons name="add" size={30} color="#4461F2" />
-          </TouchableOpacity>
-          <Text style={styles.fabLabel}>Create</Text>
-        </View>
-
-        <NavItem icon="clipboard-outline" label="Exams" />
-        <NavItem icon="people-outline" label="Attendance" />
-      </View>
-
     </SafeAreaView>
   );
 }
@@ -275,13 +193,8 @@ const shadowBase = { shadowColor: "#000", shadowOffset: { width: 0, height: 2 },
 // --- Compressed Stylesheet ---
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#FFFCF9' },
-  bgCircle: { position: "absolute", borderRadius: 999 },
   bgDot: { position: "absolute", width: 12, height: 12, borderRadius: 6 },
   scrollContent: { padding: 20, paddingTop: 10 },
-  header: { ...rowCenter, justifyContent: 'space-between', marginBottom: 25 },
-  headerLeft: { ...rowCenter, marginLeft: -15 },
-  appName: { fontSize: 20, fontWeight: '700', color: '#1E3A8A', marginLeft: -10 },
-  avatar: { width: 40, height: 40, borderRadius: 20, borderWidth: 2, borderColor: '#FFF' },
   section: { marginBottom: 25 },
   dateText: { color: '#9CA3AF', fontSize: 14, fontWeight: '500' },
   greetingText: { fontSize: 24, fontWeight: '800', color: '#1F2937', marginTop: 4 },
@@ -310,75 +223,5 @@ const styles = StyleSheet.create({
   feedTime: rowCenter,
   timeText: { fontSize: 11, color: '#9CA3AF', marginLeft: 4, fontWeight: '500' },
   badge: { backgroundColor: '#ECFDF5', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 20 },
-  badgeText: { color: '#059669', fontSize: 10, fontWeight: '700' },
-
-// --- Perfectly Aligned Bottom Nav Styles --- 
-bottomNav: { 
-  position: 'absolute', 
-  bottom: 0,
-  left: 0, 
-  right: 0, 
-  backgroundColor: '#4461F2', 
-  flexDirection: 'row', 
-  alignItems: 'center', 
-  height: 85,              
-  paddingBottom: 10,       
-  paddingHorizontal: 8, 
-  borderTopLeftRadius: 30,
-  borderTopRightRadius: 30,
-  shadowColor: "#000",
-  shadowOffset: { width: 0, height: -4 },
-  shadowOpacity: 0.1,
-  shadowRadius: 10,
-  elevation: 15,
-}, 
-
-navItem: {
-  flex: 1,
-  alignItems: 'center',
-  justifyContent: 'center',
-},
-
-navText: { 
-  fontSize: 11, 
-  fontWeight: '600', 
-  color: '#9CA3AF', 
-  marginTop: 4 
-},
-
-navTextActive: { 
-  color: '#fff' 
-},
-
-// --- Floating Action Button (FAB) Styles ---
-fabContainer: { 
-  flex: 1,
-  alignItems: 'center',
-  justifyContent: 'center',
-},
-
-fab: { 
-  position: 'absolute', 
-  top: -30, 
-  width: 60, 
-  height: 60, 
-  backgroundColor: '#fff', 
-  borderRadius: 30, 
-  borderWidth: 4, 
-  borderColor: '#4461F2',
-  alignItems: 'center',
-  justifyContent: 'center',
-  shadowColor: "#000", 
-  shadowOffset: { width: 0, height: 4 }, 
-  shadowOpacity: 0.2, 
-  shadowRadius: 5, 
-  elevation: 8 
-},
-
-fabLabel: { 
-  fontSize: 11, 
-  fontWeight: '700', 
-  color: '#fff', 
-  marginTop: 34
-}
+  badgeText: { color: '#059669', fontSize: 10, fontWeight: '700' }
 });
