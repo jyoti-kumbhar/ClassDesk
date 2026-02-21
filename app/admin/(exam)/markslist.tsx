@@ -91,7 +91,7 @@ export default function MarksListScreen() {
       {/* Header */}
       <View style={styles.header}>
         {/* Updated back button */}
-        <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+        <TouchableOpacity onPress={() => router.push('/admin/exam' as any)} style={styles.backButton}>
           <Ionicons name="chevron-back" size={24} color="#111827" />
         </TouchableOpacity>
         <View style={styles.headerTextContainer}>

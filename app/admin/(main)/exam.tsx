@@ -82,7 +82,7 @@ export default function AdminExamsScreen() {
 <TouchableOpacity 
   style={styles.createButton} 
   activeOpacity={0.8}
-  onPress={() => router.push('/admin/CreateExam' as any)} 
+  onPress={() => router.push('/admin/createexam' as any)} 
 >
   <Ionicons name="add" size={24} color="#FFF" style={styles.createIcon} />
   <Text style={styles.createButtonText}>Create Exam</Text>
@@ -171,7 +171,7 @@ export default function AdminExamsScreen() {
 <View style={styles.actionsRow}>
   <TouchableOpacity 
     style={styles.actionBtnPrimary}
-    onPress={() => router.push({ pathname: '/admin/EditExam' as any, params: { examId: exam.id } })}
+    onPress={() => router.push({ pathname: '/admin/editexam' as any, params: { examId: exam.id } })}
   >
     <Ionicons name="pencil" size={16} color="#4B5563" />
     <Text style={styles.actionBtnText}>EDIT</Text>
@@ -180,7 +180,7 @@ export default function AdminExamsScreen() {
   <TouchableOpacity 
     style={styles.actionBtnPrimary}
     onPress={() => router.push({ pathname: '/admin/markslist' as any, params: { examId: exam.id } })}
-  >
+  >``
     <Ionicons name="bar-chart" size={16} color="#4B5563" />
     <Text style={styles.actionBtnText}>VIEW MARKS</Text>
   </TouchableOpacity>

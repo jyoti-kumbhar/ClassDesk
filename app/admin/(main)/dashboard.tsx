@@ -31,12 +31,6 @@ interface PerformanceCardProps {
   trend: 'up' | 'stable' | 'down';
 }
 
-interface NavItemProps {
-  icon: IconName;
-  label: string;
-  isActive?: boolean;
-}
-
 interface AppLogoProps {
   scale?: number;
 }
@@ -173,13 +167,6 @@ const ClassPerformanceCard = ({ grade, students, attendance, trend }: Performanc
   );
 };
 
-// --- UPDATED NAV ITEM ---
-const NavItem = ({ icon, label, isActive = false }: NavItemProps) => (
-  <TouchableOpacity style={[styles.navItem, isActive && styles.navItemActive]}>
-    <Ionicons name={icon} size={22} color={isActive ? "#FFF" : "#9CA3AF"} />
-    <Text style={[styles.navText, isActive && styles.navTextActive]}>{label}</Text>
-  </TouchableOpacity>
-);
 
 // --- MAIN SCREEN ---
 
@@ -235,8 +222,8 @@ export default function AdminDashboard() {
           <SummaryCard icon="checkmark-circle" label="Exams Done" value="12" />
         </View>
 
-        {/* Performance */}
-        <View style={[styles.section, { marginBottom: 80 }]}>
+        {/* Performance (Adjusted marginBottom since navbar is removed) */}
+        <View style={[styles.section, { marginBottom: 20 }]}>
           <Text style={styles.sectionTitle}>Class Performance</Text>
           <ClassPerformanceCard grade="Grade 10-A" students="35 Students" attendance="94%" trend="up" />
           <ClassPerformanceCard grade="Grade 11-B" students="28 Students" attendance="91%" trend="stable" />
@@ -244,15 +231,6 @@ export default function AdminDashboard() {
         </View>
 
       </ScrollView>
-
-      {/* Bottom Nav */}
-      <View style={styles.bottomNav}>
-        <NavItem icon="home" label="Home" isActive />
-        <NavItem icon="people" label="Users" />
-        <NavItem icon="book" label="Classes" />
-        <NavItem icon="document-text" label="Exams" />
-        <NavItem icon="bar-chart" label="Reports" />
-      </View>
 
     </SafeAreaView>
   );
@@ -285,28 +263,4 @@ const styles = StyleSheet.create({
   perfTitle: { fontSize: 15, fontWeight: '700', color: '#111827' },
   perfSubtitle: { fontSize: 12, color: '#6B7280' },
   perfPercent: { fontSize: 15, fontWeight: '800' },
-  
-// Base Bottom Nav Styles 
-  bottomNav: { 
-    position: 'absolute', 
-    bottom: 0, 
-    left: 0, 
-    right: 0, 
-    backgroundColor: '#4461F2', 
-    flexDirection: 'row', 
-    justifyContent: 'space-around', 
-    alignItems: 'center', 
-    paddingVertical: 12, 
-    borderTopLeftRadius: 30,
-    borderTopRightRadius: 30,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: -4 },
-    shadowOpacity: 0.1,
-    shadowRadius: 12,
-    elevation: 15,
-  }, 
-  navItem: { alignItems: 'center', justifyContent: 'center', width: 65, paddingVertical: 8, borderRadius: 16 },
-  navItemActive: { backgroundColor: '#4461F2' },
-  navText: { fontSize: 10, color: '#9CA3AF', marginTop: 4 },
-  navTextActive: { color: '#fff', fontWeight: '700' },
 });

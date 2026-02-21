@@ -10,7 +10,7 @@ import {
   Platform 
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { useNavigation } from '@react-navigation/native';
+import { useRouter } from 'expo-router'; 
 
 // --- Mock Data ---
 const STUDENT_INFO = {
@@ -61,7 +61,7 @@ const QUESTIONS_DATA = [
 ];
 
 export default function EvaluateResponseScreen() {
-  const navigation = useNavigation();
+  const router = useRouter(); 
   const [marksObtained, setMarksObtained] = useState('0.0');
   const [feedback, setFeedback] = useState('Great work on the application part...');
 
@@ -72,7 +72,7 @@ export default function EvaluateResponseScreen() {
     >
       {/* Header */}
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
+        <TouchableOpacity onPress={() => router.push('/admin/exam' as any)} style={styles.backButton}>
           <Ionicons name="chevron-back" size={24} color="#111827" />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Evaluate Response</Text>
