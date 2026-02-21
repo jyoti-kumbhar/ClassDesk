@@ -3,28 +3,23 @@ import { View, Text, TouchableOpacity, Image, StyleSheet, Platform, SafeAreaView
 import { Tabs, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 
-// --- Types ---
-interface AppLogoProps {
-  scale?: number;
-}
-
-// --- Top Bar (Modified with Hamburger) ---
-const AppLogo = ({ scale = 1 }: AppLogoProps) => (
-  <View style={[styles.logoBox, { transform: [{ scale }] }]}>
-    <Ionicons name="school" size={40} color="white" />
-  </View>
-);
-
+// --- Top Bar (Modified with Hamburger and Back Button) ---
 const TopBar = ({ toggleSidebar }: { toggleSidebar: () => void }) => {
   const router = useRouter();
 
   return (
     <View style={styles.header}>
       <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+        {/* Hamburger Menu */}
         <TouchableOpacity onPress={toggleSidebar} style={styles.hamburgerBtn}>
           <Ionicons name="menu" size={28} color="#374151" />
         </TouchableOpacity>
-        <AppLogo scale={0.4} />
+        
+        {/* Back Button */}
+        <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+          <Ionicons name="chevron-back" size={26} color="#111827" />
+        </TouchableOpacity>
+        
         <Text style={styles.logoText}>ClassDesk</Text>
       </View>
 
@@ -71,7 +66,7 @@ function CustomBottomNav({ state, descriptors, navigation }: any) {
             onPress={onPress} 
             style={[styles.navItem, isFocused && styles.navItemActive]}
           >
-            <Ionicons name={iconName} size={22} color={isFocused ? "#FFF" : "#9CA3AF"} />
+            <Ionicons name={iconName} size={22} color={isFocused ? "#1D4ED8" : "#9CA3AF"} />
             <Text 
               style={[styles.navText, isFocused && styles.navTextActive]}
               numberOfLines={1} 
@@ -156,8 +151,8 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFF', borderBottomWidth: 1, borderBottomColor: '#E5E7EB'
   },
   hamburgerBtn: { marginRight: 15 },
-  logoBox: { width: 50, height: 50, backgroundColor: "#4461F2", borderRadius: 12, justifyContent: "center", alignItems: "center" },
-  logoText: { fontSize: 20, fontWeight: '700', color: '#111827', marginLeft: 8 },
+  backButton: { marginRight: 6 },
+  logoText: { fontSize: 20, fontWeight: '700', color: '#111827', marginLeft: 2 },
   notifBtn: { marginRight: 15, position: 'relative' },
   badge: { position: 'absolute', top: 0, right: 2, width: 8, height: 8, borderRadius: 4, backgroundColor: '#EF4444', zIndex: 10 },
   avatar: { width: 40, height: 40, borderRadius: 20, borderWidth: 2, borderColor: '#F3F4F6' },
@@ -171,17 +166,17 @@ const styles = StyleSheet.create({
   sidebarTextActive: { color: '#FFF' },
   sidebarAddItem: { width: 50, height: 50, borderRadius: 25, backgroundColor: '#FFF', borderWidth: 1, borderColor: '#E5E7EB', justifyContent: 'center', alignItems: 'center' },
 
-  // Exact Bottom Nav Styles Provided
+  // Bottom Nav Styles
   bottomNav: { 
     position: 'absolute', bottom: 0, left: 0, right: 0, 
-    backgroundColor: '#FFF', // Changed to white to match your new image's look (or keep #4461F2 if you prefer the blue bar)
+    backgroundColor: '#FFF', 
     flexDirection: 'row', justifyContent: 'space-around', alignItems: 'center', 
     paddingVertical: 12, paddingBottom: Platform.OS === 'ios' ? 30 : 12,
     borderTopLeftRadius: 30, borderTopRightRadius: 30,
     shadowColor: "#000", shadowOffset: { width: 0, height: -4 }, shadowOpacity: 0.1, shadowRadius: 12, elevation: 15,
   },
   navItem: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingVertical: 8, borderRadius: 16, paddingHorizontal: 4 },
-  navItemActive: { backgroundColor: '#EEF2FF' }, // Lighter background since nav is white
+  navItemActive: { backgroundColor: '#EEF2FF' }, 
   navText: { fontSize: 10, color: '#9CA3AF', marginTop: 4 },
   navTextActive: { color: '#1D4ED8', fontWeight: '700' },
 });
