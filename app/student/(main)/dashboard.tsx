@@ -1,101 +1,77 @@
-import { Ionicons } from '@expo/vector-icons';
 import React from 'react';
-import { ScrollView, StyleSheet, Text, TouchableOpacity, View ,Dimensions} from 'react-native';
-import Svg, { Circle, G, Path } from "react-native-svg";
+import { 
+  ScrollView, 
+  StyleSheet, 
+  Text, 
+  TouchableOpacity, 
+  View, 
+  Dimensions, 
+  SafeAreaView, 
+  StatusBar 
+} from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
+import Svg, { Circle, Path } from "react-native-svg";
 
 const { width: W, height: H } = Dimensions.get('window');
 
+// --- Background Component ---
 const BackgroundDecorations = () => (
-  
   <View style={StyleSheet.absoluteFill} pointerEvents="none">
-    {/* Base cream background */}
-    <View style={[StyleSheet.absoluteFill, { backgroundColor: '#FFF9F0' }]} />
+    {/* Soft Flowing Background Lines */}
+    <View style={StyleSheet.absoluteFill}>
+      <Svg height="100%" width="100%">
+        <Path d="M-50 150 Q 150 50 450 250" stroke="#93C5FD" strokeWidth="2" fill="none" opacity={0.4} />
+        <Path d="M-20 350 Q 150 450 400 300" stroke="#6EE7B7" strokeWidth="2" strokeDasharray="6, 6" fill="none" opacity={0.5} />
+        <Path d="M-50 600 Q 200 750 450 550" stroke="#F9A8D4" strokeWidth="2" fill="none" opacity={0.4} />
+      </Svg>
+    </View>
 
-    <Svg height="100%" width="100%" viewBox={`0 0 ${W} ${H}`}>
-      {/* 1. TOP LEFT: Large Yellow Wedge */}
-      <G transform={`translate(${-W * 0.1}, ${H * 0.05}) rotate(-15)`}>
-        <Path 
-          d="M 40 140 A 70 70 0 1 1 160 40 L 100 90 Z" 
-          fill="#F4B76D" 
-          opacity={0.7}
-        />
-      </G>
+    {/* Top Right: Orbs */}
+    <View style={{ position: "absolute", top: -60, right: -40, opacity: 0.6 }}>
+      <Svg height="300" width="400" viewBox="0 0 100 100">
+        <Circle cx="90" cy="70" r="50" fill="#93C5FD" opacity={0.5} />
+        <Circle cx="30" cy="80" r="40" fill="#C4B5FD" opacity={0.5} />
+        <Circle cx="60" cy="70" r="25" fill="#F9A8D4" opacity={0.6} />
+      </Svg>
+    </View>
 
-      {/* 2. TOP RIGHT: Small Blue Accent */}
-      <Path 
-        d={`M ${W - 40} 60 L ${W + 10} 20 L ${W + 10} 100 Z`} 
-        fill="#5C73D1" 
-        opacity={0.8} 
-      />
+    {/* Middle Left: Bubble */}
+    <View style={{ position: "absolute", top: 300, left: -40, opacity: 0.5 }}>
+      <Svg height="150" width="150" viewBox="0 0 100 100">
+        <Circle cx="40" cy="50" r="40" fill="#6EE7B7" opacity={0.4} />
+        <Circle cx="60" cy="30" r="15" fill="#93C5FD" opacity={0.6} />
+      </Svg>
+    </View>
 
-      {/* 3. CENTER-ISH: Balanced Flowing Waves */}
-      <G fill="none" strokeWidth="2.5" opacity={0.3}>
-        <Path 
-          d={`M -20 ${H * 0.4} C ${W * 0.3} ${H * 0.3}, ${W * 0.7} ${H * 0.5}, ${W + 20} ${H * 0.4}`} 
-          stroke="#4461F2" 
-        />
-        <Path 
-          d={`M -20 ${H * 0.43} C ${W * 0.3} ${H * 0.33}, ${W * 0.7} ${H * 0.53}, ${W + 20} ${H * 0.43}`} 
-          stroke="#E25865" 
-        />
-      </G>
+    {/* Bottom Right: Orbs */}
+    <View style={{ position: "absolute", bottom: -50, right: -20, opacity: 0.6 }}>
+      <Svg height="200" width="300" viewBox="0 0 100 100">
+        <Circle cx="50" cy="80" r="60" fill="#FDBA74" opacity={0.5} />
+        <Circle cx="80" cy="40" r="30" fill="#FCA5A5" opacity={0.4} />
+      </Svg>
+    </View>
 
-      {/* 4. MIDDLE LEFT: Reddish/Pink Wedge */}
-      <G transform={`translate(${-20}, ${H * 0.55})`}>
-        <Path 
-          d="M 0 0 A 60 60 0 0 1 80 60 L 0 60 Z" 
-          fill="#E25865" 
-          opacity={0.6}
-        />
-      </G>
-
-      {/* 5. BOTTOM RIGHT: Large Coral/Red Wedge */}
-      <G transform={`translate(${W * 0.7}, ${H * 0.85}) rotate(180)`}>
-        <Path 
-          d="M 0 100 A 80 80 0 1 1 140 0 L 70 50 Z" 
-          fill="#E25865" 
-          opacity={0.7}
-        />
-      </G>
-
-      {/* 6. BOTTOM LEFT: Small Yellow Pacman */}
-      <G transform={`translate(${30}, ${H * 0.9})`}>
-        <Path 
-          d="M 0 40 A 30 30 0 1 1 40 0 L 20 20 Z" 
-          fill="#F4B76D" 
-          opacity={0.6}
-        />
-      </G>
-
-      {/* 7. SCATTERED ACCENTS: Distributed Rings and Dots */}
-      <G opacity={0.4}>
-        {/* Top Section */}
-        <Circle cx={W * 0.6} cy={H * 0.15} r="8" stroke="#B89C94" strokeWidth="2" fill="none" />
-        {/* Middle Section */}
-        <Circle cx={W * 0.85} cy={H * 0.5} r="12" stroke="#B89C94" strokeWidth="2" fill="none" />
-        <Circle cx={W * 0.2} cy={H * 0.3} r="4" fill="#E25865" />
-        {/* Bottom Section */}
-        <Circle cx={W * 0.4} cy={H * 0.8} r="15" stroke="#B89C94" strokeWidth="1.5" fill="none" />
-        <Circle cx={W * 0.15} cy={H * 0.7} r="3" fill="#5C73D1" />
-      </G>
-    </Svg>
+    {/* Floating Mini Bubbles */}
+    <View style={[styles.dot, { top: 180, left: 40, backgroundColor: "#93C5FD", width: 14, height: 14, opacity: 0.7 }]} />
+    <View style={[styles.dot, { top: 350, right: 60, backgroundColor: "#C4B5FD", width: 20, height: 20, opacity: 0.6 }]} />
+    <View style={[styles.dot, { bottom: 120, left: 80, backgroundColor: "#F9A8D4", width: 10, height: 10, opacity: 0.8 }]} />
   </View>
 );
 
 export default function StudentDashboard() {
   return (
-    <View style={styles.container}>
-      {/* 1. Background Layer */}
+    <SafeAreaView style={styles.container}>
+      <StatusBar barStyle="dark-content" />
       <BackgroundDecorations />
-
-      {/* 2. Content Layer */}
+      
       <View style={styles.contentWrapper}>
-        <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
-          
-          {/* Welcome Section */}
+        <ScrollView 
+          showsVerticalScrollIndicator={false} 
+          contentContainerStyle={styles.scrollContent}
+        >
+          {/* Welcome Section - Reduced Top Spacing */}
           <View style={styles.welcomeSection}>
             <Text style={styles.greetingText}>Good morning, Alex</Text>
-            <Text style={styles.subGreeting}>Ready to tackle your goals today?</Text>
           </View>
 
           {/* Stats Section */}
@@ -185,21 +161,22 @@ export default function StudentDashboard() {
           
         </ScrollView>
       </View>
-    </View>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#F8FAFC' },
+  container: { flex: 1, backgroundColor: '#FFF9F0' },
   contentWrapper: { flex: 1, paddingHorizontal: 20 },
-  scrollContent: { paddingTop: 60, paddingBottom: 120 },
   
-  blurNode: { position: 'absolute', zIndex: -1 },
+  // Reduced paddingTop from 60 to 15 for tighter top spacing
+  scrollContent: { paddingTop: 15, paddingBottom: 100 },
+  
+  dot: { position: 'absolute', borderRadius: 100 },
 
   // Welcome Section
-  welcomeSection: { marginBottom: 25 },
+  welcomeSection: { marginBottom: 20 },
   greetingText: { fontSize: 26, fontWeight: '800', color: '#1E293B' },
-  subGreeting: { fontSize: 14, color: '#64748B', marginTop: 4 },
 
   // Stats Section
   statsRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 25 },
@@ -238,7 +215,7 @@ const styles = StyleSheet.create({
   // Feed Section
   feedHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 15 },
   seeAllText: { fontSize: 14, color: '#4461F2', fontWeight: '600' },
-  feedCard: { backgroundColor: '#FFF', borderRadius: 20, padding: 16, marginBottom: 15, elevation: 1 },
+  feedCard: { backgroundColor: 'rgba(255, 255, 255, 0.9)', borderRadius: 20, padding: 16, marginBottom: 15, elevation: 1 },
   feedTopRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 12 },
   feedIconLight: { width: 44, height: 44, borderRadius: 12, backgroundColor: '#EEF2FF', alignItems: 'center', justifyContent: 'center', marginRight: 12 },
   feedTextContent: { flex: 1 },

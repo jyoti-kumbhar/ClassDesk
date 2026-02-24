@@ -1,70 +1,24 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Platform, Image, StatusBar, Dimensions } from 'react-native';
-import { Tabs, useRouter, usePathname } from 'expo-router'; // <-- Imported usePathname
+import { Tabs, useRouter, usePathname } from 'expo-router'; 
 import { Ionicons } from '@expo/vector-icons';
-import Svg, { Circle, G, Path } from "react-native-svg";
+import Svg, { Circle, Path } from "react-native-svg";
 
 const { width: W } = Dimensions.get('window');
 const DynamicTopBarGraphics = ({ pathname }: { pathname: string }) => {
-
-  // 1. DASHBOARD GRAPHICS (Yellow & Blue)
-  if (pathname.includes('dashboard') || pathname === '/') {
-    return (
-      <View style={[StyleSheet.absoluteFill, { zIndex: 1 }]}>
-        <Svg height="100%" width="100%">
-          <G transform={`translate(${-W * 0.1}, -10) rotate(-15)`}>
-            <Path d="M 40 140 A 70 70 0 1 1 160 40 L 100 90 Z" fill="#F4B76D" opacity={0.7} />
-          </G>
-          <Path d={`M ${W - 40} 60 L ${W + 10} 20 L ${W + 10} 100 Z`} fill="#5C73D1" opacity={0.8} />
-          <Circle cx={W * 0.6} cy={30} r="8" stroke="#B89C94" strokeWidth="2" fill="none" opacity={0.4} />
-        </Svg>
-      </View>
-    );
-  }
-
-  // 2. CLASSES GRAPHICS (Green & Purple)
-  if (pathname.includes('classes')) {
-    return (
-      <View style={[StyleSheet.absoluteFill, { zIndex: 1 }]}>
-        <Svg height="100%" width="100%">
-          <Circle cx={0} cy={0} r={80} fill="#A7F3D0" opacity={0.6} />
-          <Path d={`M ${W - 60} -20 Q ${W} 80 ${W + 20} 20 Z`} fill="#C4B5FD" opacity={0.7} />
-          <Circle cx={W * 0.8} cy={60} r="12" stroke="#6EE7B7" strokeWidth="3" fill="none" opacity={0.5} />
-        </Svg>
-      </View>
-    );
-  }
-
-  // 3. EXAM GRAPHICS (Red & Coral)
-  if (pathname.includes('exam')) {
-    return (
-      <View style={[StyleSheet.absoluteFill, { zIndex: 1 }]}>
-        <Svg height="100%" width="100%">
-          <G transform={`translate(${W - 80}, -40)`}>
-            <Path d="M 0 100 A 80 80 0 1 1 140 0 L 70 50 Z" fill="#E25865" opacity={0.7} />
-          </G>
-          <Circle cx={40} cy={80} r={20} fill="#FDA4AF" opacity={0.5} />
-          <Circle cx={W * 0.3} cy={20} r="5" fill="#E25865" opacity={0.6} />
-        </Svg>
-      </View>
-    );
-  }
-
-  // 4. ATTENDANCE GRAPHICS (Mint & Pink)
-  if (pathname.includes('attendance')) {
-    return (
-      <View style={[StyleSheet.absoluteFill, { zIndex: 1 }]}>
-        <Svg height="100%" width="100%">
-          <Path d={`M -20 100 Q ${W * 0.5} -50 ${W + 20} 80 L ${W} 0 L 0 0 Z`} fill="#FFD1DC" opacity={0.5} />
-          <Circle cx={W - 30} cy={90} r={40} fill="#BDE0FE" opacity={0.6} />
-          <Circle cx={W * 0.5} cy={40} r="6" fill="#A2D2FF" opacity={0.8} />
-        </Svg>
-      </View>
-    );
-  }
-
-  // Fallback for any other routes (keeps the background blank instead of crashing)
-  return null;
+  return (
+    <View style={[StyleSheet.absoluteFill, { zIndex: 1 }]}>
+      <Svg height="100%" width="100%">
+        <Path 
+            d={`M -20 100 Q ${W * 0.5} -50 ${W + 20} 80 L ${W} 0 L 0 0 Z`} 
+            fill="#FFD1DC" 
+            opacity={0.5} 
+        />
+        <Circle cx={W - 30} cy={60} r={40} fill="#bdfee8" opacity={0.6} />
+        <Circle cx={W * 0.5} cy={40} r="6" fill="#a2ffc1" opacity={0.8} />
+      </Svg>
+    </View>
+  );
 };
 
 // --- Top Bar Component ---
@@ -76,14 +30,14 @@ const AppLogo = ({ scale = 1 }) => (
 
 const TopBar = () => {
   const router = useRouter();
-  const pathname = usePathname(); // Get the current active route!
+  const pathname = usePathname();
 
   return (
     <View style={styles.header}>
-      {/* Dynamic Background inserted here! */}
+      {/* Background Graphics */}
       <DynamicTopBarGraphics pathname={pathname} />
 
-      {/* Header Content Wrapper to stay above background */}
+      {/* Header Content Wrapper */}
       <View style={styles.headerContent}>
         <View style={{ flexDirection: 'row', alignItems: 'center' }}>
           <AppLogo scale={0.65} />
@@ -112,7 +66,12 @@ function CustomBottomNav({ state, descriptors, navigation }: any) {
     <View style={styles.bottomNav}>
       {state.routes.map((route: any, index: number) => {
         const { options } = descriptors[route.key];
-        const label = options.title !== undefined ? options.title : route.name;
+        const label = options.tabBarLabel !== undefined 
+            ? options.tabBarLabel 
+            : options.title !== undefined 
+            ? options.title 
+            : route.name;
+            
         const isFocused = state.index === index;
 
         const onPress = () => {
@@ -126,7 +85,7 @@ function CustomBottomNav({ state, descriptors, navigation }: any) {
         if (route.name === "dashboard") iconName = "home";
         if (route.name === "classes") iconName = "book";
         if (route.name === "exam") iconName = "document-text"; 
-        if (route.name === "attendance") iconName = "people-outline";
+        if (route.name === "attendance") iconName = "people";
 
         return (
           <TouchableOpacity 
@@ -175,14 +134,12 @@ export default function StudentLayout() {
 // --- Layout Styles ---
 const styles = StyleSheet.create({
   safeArea: { flex: 1, backgroundColor: '#FFF9F0' },
-  
-  // Top Bar 
   header: { 
-    backgroundColor: '#FFF9F0', // Base color
+    backgroundColor: '#FFF9F0',
     borderBottomLeftRadius: 30, 
     borderBottomRightRadius: 30,
     zIndex: 10,
-    overflow: 'hidden', // Keeps the dynamic SVGs inside the rounded corners
+    overflow: 'hidden',
   },
   headerContent: {
     flexDirection: 'row', 
@@ -191,7 +148,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingTop: Platform.OS === 'android' ? 50 : 60, 
     paddingBottom: 20, 
-    zIndex: 2, // Keeps buttons above the dynamic background
+    zIndex: 2,
   },
   logoBox: { 
     width: 60, height: 60, 
@@ -204,7 +161,6 @@ const styles = StyleSheet.create({
   badge: { position: 'absolute', top: 0, right: 2, width: 8, height: 8, borderRadius: 4, backgroundColor: '#EF4444', zIndex: 10 },
   avatar: { width: 40, height: 40, borderRadius: 20, borderWidth: 2, borderColor: '#4461F2' }, 
 
-  // Bottom Nav 
   bottomNav: { 
     backgroundColor: '#4461F2', 
     flexDirection: 'row', 

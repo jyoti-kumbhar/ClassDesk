@@ -2,6 +2,52 @@ import React, { useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, Modal, SafeAreaView, StatusBar, Platform } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
+// Added SVG imports
+import Svg, { Path, Circle } from 'react-native-svg';
+
+// --- Background Component ---
+const BackgroundDecorations = () => (
+  <View style={StyleSheet.absoluteFill} pointerEvents="none">
+    {/* Soft Flowing Background Lines */}
+    <View style={StyleSheet.absoluteFill}>
+      <Svg height="100%" width="100%">
+        <Path d="M-50 150 Q 150 50 450 250" stroke="#93C5FD" strokeWidth="2" fill="none" opacity={0.4} />
+        <Path d="M-20 350 Q 150 450 400 300" stroke="#6EE7B7" strokeWidth="2" strokeDasharray="6, 6" fill="none" opacity={0.5} />
+        <Path d="M-50 600 Q 200 750 450 550" stroke="#F9A8D4" strokeWidth="2" fill="none" opacity={0.4} />
+      </Svg>
+    </View>
+
+    {/* Top Right Orbs */}
+    <View style={{ position: "absolute", top: -60, right: -40, opacity: 0.6 }}>
+      <Svg height="300" width="400" viewBox="0 0 100 100">
+        <Circle cx="90" cy="70" r="50" fill="#93C5FD" opacity={0.5} />
+        <Circle cx="30" cy="80" r="40" fill="#C4B5FD" opacity={0.5} />
+        <Circle cx="60" cy="70" r="25" fill="#F9A8D4" opacity={0.6} />
+      </Svg>
+    </View>
+
+    {/* Middle Left Bubble */}
+    <View style={{ position: "absolute", top: 300, left: -40, opacity: 0.5 }}>
+      <Svg height="150" width="150" viewBox="0 0 100 100">
+        <Circle cx="40" cy="50" r="40" fill="#6EE7B7" opacity={0.4} />
+        <Circle cx="60" cy="30" r="15" fill="#93C5FD" opacity={0.6} />
+      </Svg>
+    </View>
+
+    {/* Bottom Right Orbs */}
+    <View style={{ position: "absolute", bottom: -50, right: -20, opacity: 0.6 }}>
+      <Svg height="200" width="300" viewBox="0 0 100 100">
+        <Circle cx="50" cy="80" r="60" fill="#FDBA74" opacity={0.5} />
+        <Circle cx="80" cy="40" r="30" fill="#FCA5A5" opacity={0.4} />
+      </Svg>
+    </View>
+
+    {/* Floating Mini Bubbles */}
+    <View style={[styles.dot, { top: 180, left: 40, backgroundColor: "#93C5FD", width: 14, height: 14, opacity: 0.7 }]} />
+    <View style={[styles.dot, { top: 350, right: 60, backgroundColor: "#C4B5FD", width: 20, height: 20, opacity: 0.6 }]} />
+    <View style={[styles.dot, { bottom: 120, left: 80, backgroundColor: "#F9A8D4", width: 10, height: 10, opacity: 0.8 }]} />
+  </View>
+);
 
 export default function RegisterScreen() {
   const router = useRouter();
@@ -12,6 +58,9 @@ export default function RegisterScreen() {
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="dark-content" backgroundColor="#F9FAFB" />
       
+      {/* Background stays behind the scroll content */}
+      <BackgroundDecorations />
+
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
         
         {/* Logo Header */}
@@ -45,10 +94,9 @@ export default function RegisterScreen() {
           {/* Email Address */}
           <View style={styles.inputGroup}>
             <Text style={styles.inputLabel}>Email Address</Text>
-            <View style={[styles.inputWrapper, { backgroundColor: '#F9FAFB' }]}>
+            <View style={[styles.inputWrapper, { backgroundColor: 'rgba(249, 250, 251, 0.8)' }]}>
               <Ionicons name="at" size={18} color="#9CA3AF" style={styles.inputIcon} />
               <TextInput 
-                // 1. FIXED: Moved color into the style array
                 style={[styles.inputField, { color: '#6B7280' }]} 
                 value="robert.fox@classdesk.edu" 
                 editable={false}
@@ -137,37 +185,34 @@ export default function RegisterScreen() {
       </ScrollView>
 
       {/* --- SUCCESS MODAL --- */}
-      <Modal visible={showSuccessModal} transparent={false} animationType="fade">
+      <Modal visible={showSuccessModal} transparent={true} animationType="fade">
         <View style={styles.successModalContainer}>
+          {/* We repeat the decoration in the modal since transparent={true} overlays it */}
+          <BackgroundDecorations />
           
           <View style={styles.successContent}>
-            {/* Success Icon */}
             <View style={styles.successIconOuter}>
               <View style={styles.successIconInner}>
                 <Ionicons name="checkmark" size={40} color="#FFF" />
               </View>
             </View>
 
-            {/* Success Texts */}
             <Text style={styles.successTitle}>Success</Text>
             <Text style={styles.successSubtitle}>
               Invitation link has been sent to{'\n'}the email address.
             </Text>
 
-            {/* Done Button */}
             <TouchableOpacity 
               style={styles.doneBtn} 
               activeOpacity={0.8}
               onPress={() => {
                 setShowSuccessModal(false);
-                // 2. FIXED: Router is now utilized
                 router.back(); 
               }}
             >
               <Text style={styles.doneBtnText}>Done</Text>
             </TouchableOpacity>
           </View>
-
         </View>
       </Modal>
 
@@ -175,11 +220,14 @@ export default function RegisterScreen() {
   );
 }
 
-// --- Styles ---
 const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#F9FAFB',
+  },
+  dot: {
+    position: 'absolute',
+    borderRadius: 100,
   },
   scrollContent: {
     flexGrow: 1,
@@ -188,8 +236,6 @@ const styles = StyleSheet.create({
     paddingBottom: 40,
     alignItems: 'center',
   },
-
-  // Header
   logoHeader: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -222,11 +268,9 @@ const styles = StyleSheet.create({
     marginBottom: 30,
     textAlign: 'center',
   },
-
-  // Form Card
   formCard: {
     width: '100%',
-    backgroundColor: '#FFF',
+    backgroundColor: 'rgba(255, 255, 255, 0.9)',
     borderRadius: 24,
     padding: 24,
     shadowColor: '#000',
@@ -253,7 +297,7 @@ const styles = StyleSheet.create({
     borderColor: '#E5E7EB',
     borderRadius: 12,
     paddingHorizontal: 14,
-    backgroundColor: '#FFF',
+    backgroundColor: 'rgba(255, 255, 255, 0.6)',
   },
   inputIcon: {
     marginRight: 10,
@@ -263,8 +307,6 @@ const styles = StyleSheet.create({
     fontSize: 15,
     color: '#111827',
   },
-
-  // Password Strength
   strengthContainer: {
     marginTop: 10,
   },
@@ -287,8 +329,6 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#3B3CFF',
   },
-
-  // Register Button
   registerBtn: {
     backgroundColor: '#3B3CFF',
     height: 54,
@@ -307,8 +347,6 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '700',
   },
-
-  // Footer / Redirects
   loginRedirectRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -330,8 +368,6 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     lineHeight: 20,
   },
-
-  // --- Success Modal Styles ---
   successModalContainer: {
     flex: 1,
     backgroundColor: '#FFF',
@@ -342,12 +378,13 @@ const styles = StyleSheet.create({
   successContent: {
     width: '100%',
     alignItems: 'center',
+    zIndex: 1,
   },
   successIconOuter: {
     width: 120,
     height: 120,
     borderRadius: 60,
-    backgroundColor: '#ECFDF5', 
+    backgroundColor: 'rgba(236, 253, 245, 0.8)', 
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 24,

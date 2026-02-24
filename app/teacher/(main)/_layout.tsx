@@ -1,92 +1,83 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Platform, Image, StatusBar, Dimensions } from 'react-native';
-import { Tabs, useRouter, usePathname } from 'expo-router';
+import { Tabs, useRouter } from 'expo-router'; 
 import { Ionicons } from '@expo/vector-icons';
-import Svg, { Circle, G, Path } from "react-native-svg";
+import Svg, { Circle, Path, Line, Defs, LinearGradient, Stop } from "react-native-svg";
+import { BottomTabBarProps } from '@react-navigation/bottom-tabs';
 
 const { width: W } = Dimensions.get('window');
 
-const DynamicTopBarGraphics = ({ pathname }: { pathname: string }) => {
+// --- Updated Graphics Component (Pastel Design) ---
+const TopBarGraphics = () => {
+  return (
+    <View style={[StyleSheet.absoluteFill, { zIndex: 1, overflow: 'hidden', borderBottomLeftRadius: 30, borderBottomRightRadius: 30 }]}>
+      <Svg height="100%" width="100%">
+        <Defs>
+          <LinearGradient id="grad" x1="0" y1="0" x2="0" y2="1">
+            <Stop offset="0" stopColor="#FFF9F0" stopOpacity="1" />
+            <Stop offset="1" stopColor="#EEF2FF" stopOpacity="1" />
+          </LinearGradient>
+        </Defs>
 
-  // 1. DASHBOARD GRAPHICS (Yellow & Blue)
-  if (pathname.includes('dashboard') || pathname === '/') {
-    return (
-      <View style={[StyleSheet.absoluteFill, { zIndex: 1 }]}>
-        <Svg height="100%" width="100%">
-          <G transform={`translate(${-W * 0.1}, -10) rotate(-15)`}>
-            <Path d="M 40 140 A 70 70 0 1 1 160 40 L 100 90 Z" fill="#F4B76D" opacity={0.7} />
-          </G>
-          <Path d={`M ${W - 40} 60 L ${W + 10} 20 L ${W + 10} 100 Z`} fill="#5C73D1" opacity={0.8} />
-          <Circle cx={W * 0.6} cy={30} r="8" stroke="#B89C94" strokeWidth="2" fill="none" opacity={0.4} />
-        </Svg>
-      </View>
-    );
-  }
+        {/* 1. Base Background with Soft Curve */}
+        <Path 
+          d={`M 0 0 L ${W} 0 L ${W} 100 Q ${W * 0.5} 140 0 100 Z`} 
+          fill="url(#grad)" 
+        />
 
-  // 2. CLASSES GRAPHICS (Green & Purple)
-  if (pathname.includes('classes')) {
-    return (
-      <View style={[StyleSheet.absoluteFill, { zIndex: 1 }]}>
-        <Svg height="100%" width="100%">
-          <Circle cx={0} cy={0} r={80} fill="#A7F3D0" opacity={0.6} />
-          <Path d={`M ${W - 60} -20 Q ${W} 80 ${W + 20} 20 Z`} fill="#C4B5FD" opacity={0.7} />
-          <Circle cx={W * 0.8} cy={60} r="12" stroke="#6EE7B7" strokeWidth="3" fill="none" opacity={0.5} />
-        </Svg>
-      </View>
-    );
-  }
+        {/* 2. Large Hollow Circle (Pastel Purple - Top Right) */}
+        <Circle 
+          cx={W * 0.85} 
+          cy={20} 
+          r={60} 
+          stroke="#E9D5FF" 
+          strokeWidth={6} 
+          fill="transparent" 
+          opacity={0.6} 
+        />
 
-  // 3. EXAM GRAPHICS (Red & Coral)
-  if (pathname.includes('exam')) {
-    return (
-      <View style={[StyleSheet.absoluteFill, { zIndex: 1 }]}>
-        <Svg height="100%" width="100%">
-          <G transform={`translate(${W - 80}, -40)`}>
-            <Path d="M 0 100 A 80 80 0 1 1 140 0 L 70 50 Z" fill="#E25865" opacity={0.7} />
-          </G>
-          <Circle cx={40} cy={80} r={20} fill="#FDA4AF" opacity={0.5} />
-          <Circle cx={W * 0.3} cy={20} r="5" fill="#E25865" opacity={0.6} />
-        </Svg>
-      </View>
-    );
-  }
+        {/* 3. Solid Circle (Pastel Pink - Left) */}
+        <Circle 
+          cx={W * 0.2} 
+          cy={55} 
+          r={20} 
+          fill="#FBCFE8" 
+          opacity={0.8} 
+        />
 
-  // 4. ATTENDANCE GRAPHICS (Mint & Pink)
-  if (pathname.includes('attendance')) {
-    return (
-      <View style={[StyleSheet.absoluteFill, { zIndex: 1 }]}>
-        <Svg height="100%" width="100%">
-          <Path d={`M -20 100 Q ${W * 0.5} -50 ${W + 20} 80 L ${W} 0 L 0 0 Z`} fill="#FFD1DC" opacity={0.5} />
-          <Circle cx={W - 30} cy={90} r={40} fill="#BDE0FE" opacity={0.6} />
-          <Circle cx={W * 0.5} cy={40} r="6" fill="#A2D2FF" opacity={0.8} />
-        </Svg>
-      </View>
-    );
-  }
-
-  return null;
+        {/* 4. Small Hollow Ring (Pastel Blue - Center Left) */}
+        <Circle 
+          cx={W * 0.25} 
+          cy={100} 
+          r={8} 
+          stroke="#BAE6FD" 
+          strokeWidth={3} 
+          fill="transparent" 
+        />
+      </Svg>
+    </View>
+  );
 };
 
-// --- Top Bar Component ---
-const AppLogo = ({ scale = 1 }: { scale?: number }) => (
-  <View style={[styles.logoBox, { transform: [{ scale }] }]}>
-    <Ionicons name="school" size={50} color="#4461F2" />
+const AppLogo = () => (
+  <View style={[styles.logoBox, { backgroundColor: 'rgba(68, 97, 242, 0.1)' }]}>
+    <Ionicons name="school" size={40} color="#4461F2" />
   </View>
 );
 
 const TopBar = () => {
   const router = useRouter();
-  const pathname = usePathname();
 
   return (
     <View style={styles.header}>
-      <DynamicTopBarGraphics pathname={pathname} />
+      <TopBarGraphics />
 
       <View style={styles.headerContent}>
         <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-          <AppLogo scale={0.65} />
-          <Text style={styles.logoText}>ClassDesk</Text>
+          <AppLogo />
+          <Text style={[styles.logoText, { color: '#1F2937' }]}>ClassDesk</Text>
         </View>
+
         <View style={{ flexDirection: 'row', alignItems: 'center' }}>
           <TouchableOpacity style={styles.notifBtn}>
             <View style={styles.badge} />
@@ -104,11 +95,11 @@ const TopBar = () => {
   );
 };
 
-// --- Custom Bottom Nav Adapter ---
-function CustomBottomNav({ state, descriptors, navigation }: any) {
+// --- Custom Bottom Nav Adapter (Fixed Types) ---
+function CustomBottomNav({ state, descriptors, navigation }: BottomTabBarProps) {
   return (
     <View style={styles.bottomNav}>
-      {state.routes.map((route: any, index: number) => {
+      {state.routes.map((route, index) => {
         const { options } = descriptors[route.key];
         const label = options.title !== undefined ? options.title : route.name;
         const isFocused = state.index === index;
@@ -120,8 +111,9 @@ function CustomBottomNav({ state, descriptors, navigation }: any) {
           }
         };
 
-        // Match icons from Snippet 1
+        // Explicitly type the icon name so TypeScript accepts it
         let iconName: keyof typeof Ionicons.glyphMap = "home";
+        
         if (route.name === "dashboard") iconName = "home";
         if (route.name === "classes") iconName = "grid-outline"; 
         if (route.name === "exam") iconName = "clipboard-outline"; 
@@ -139,12 +131,11 @@ function CustomBottomNav({ state, descriptors, navigation }: any) {
               numberOfLines={1} 
               adjustsFontSizeToFit 
             >
-              {label}
+              {typeof label === 'string' ? label : route.name}
             </Text>
           </TouchableOpacity>
         );
 
-        // Inject Floating Action Button after the second item (index 1)
         if (index === 1) {
           return (
             <React.Fragment key={route.key + "_fragment"}>
@@ -199,6 +190,7 @@ const styles = StyleSheet.create({
     borderBottomRightRadius: 30,
     zIndex: 10,
     overflow: 'hidden', 
+    paddingBottom: 30, 
   },
   headerContent: {
     flexDirection: 'row', 
@@ -206,21 +198,19 @@ const styles = StyleSheet.create({
     alignItems: 'center', 
     paddingHorizontal: 20,
     paddingTop: Platform.OS === 'android' ? 50 : 60, 
-    paddingBottom: 20, 
     zIndex: 2, 
   },
   logoBox: { 
-    width: 60, height: 60, 
-    backgroundColor: "rgba(68, 97, 242, 0.1)", 
+    width: 50, height: 50, 
     borderRadius: 15, 
     justifyContent: "center", alignItems: "center" 
   },
-  logoText: { fontSize: 22, fontWeight: '700', color: '#1F2937', marginLeft: 10 },
+  logoText: { fontSize: 22, fontWeight: '700', marginLeft: 10 },
   notifBtn: { marginRight: 15, position: 'relative' },
   badge: { position: 'absolute', top: 0, right: 2, width: 8, height: 8, borderRadius: 4, backgroundColor: '#EF4444', zIndex: 10 },
   avatar: { width: 40, height: 40, borderRadius: 20, borderWidth: 2, borderColor: '#4461F2' }, 
 
-  // --- Replaced Bottom Nav Styles from Snippet 1 ---
+  // --- Bottom Nav Styles ---
   bottomNav: { 
     position: 'absolute', 
     bottom: 0,
@@ -258,7 +248,7 @@ const styles = StyleSheet.create({
     color: '#fff' 
   },
 
-  // --- Floating Action Button (FAB) Styles from Snippet 1 ---
+  // --- FAB Styles ---
   fabContainer: { 
     flex: 1,
     alignItems: 'center',

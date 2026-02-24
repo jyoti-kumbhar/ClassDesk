@@ -1,6 +1,16 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
+import { 
+  View, 
+  Text, 
+  StyleSheet, 
+  ScrollView, 
+  TouchableOpacity,
+  Dimensions 
+} from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import Svg, { Circle, Path, Line } from "react-native-svg";
+
+const { width } = Dimensions.get('window');
 
 // --- Mock Data ---
 const RESOURCES_DATA = [
@@ -33,7 +43,6 @@ const RESOURCES_DATA = [
   },
 ];
 
-// Simplified mock data for the other tabs to demonstrate the toggle functionality
 const ASSIGNMENTS_HISTORY = [
   { id: 'a1', title: 'Chapter 4 Practice', date: 'Oct 24, 2023', status: 'Graded' },
   { id: 'a2', title: 'Essay on Climate Change', date: 'Oct 21, 2023', status: 'Submitted' },
@@ -44,111 +53,207 @@ const NOTICES_HISTORY = [
   { id: 'n2', title: 'Class Representative Meeting', date: 'Oct 18, 2023' },
 ];
 
+// --- Background Component ---
+const BackgroundDecorations = () => (
+  <View style={StyleSheet.absoluteFill} pointerEvents="none">
+    
+    {/* Top Right Large Soft Glow (Purple) */}
+    <View style={{ position: "absolute", top: 30, right: -40 }}>
+      <Svg height="200" width="200" viewBox="0 0 200 200">
+        <Circle cx="100" cy="100" r="80" fill="#F3E8FF" opacity={0.6} />
+        <Circle cx="100" cy="100" r="50" fill="#E9D5FF" opacity={0.4} />
+      </Svg>
+    </View>
+
+    {/* Top Left - Dashed Connection Line */}
+    <View style={{ position: "absolute", top: 60, left: 20 }}>
+       <Svg height="100" width="120" viewBox="0 0 120 100">
+          <Line x1="10" y1="0" x2="10" y2="60" stroke="#BAE6FD" strokeWidth="2" strokeDasharray="5, 5" />
+          <Path d="M 10 60 Q 10 90 40 90 L 80 90" stroke="#BAE6FD" strokeWidth="2" fill="none" />
+          <Circle cx="80" cy="90" r="4" fill="#60A5FA" opacity={0.6} />
+       </Svg>
+    </View>
+
+    {/* Middle - The "Data Wave" */}
+    <View style={{ position: "absolute", top: 220, width: width, alignItems: 'center', opacity: 0.4 }}>
+       <Svg height="150" width={width} viewBox={`0 0 ${width} 150`}>
+          <Path 
+            d={`M -20 75 C ${width * 0.3} 120, ${width * 0.7} 30, ${width + 20} 75`} 
+            stroke="#99F6E4" 
+            strokeWidth="3" 
+            fill="none" 
+          />
+          <Path 
+            d={`M -20 90 C ${width * 0.3} 135, ${width * 0.7} 45, ${width + 20} 90`} 
+            stroke="#CCFBF1" 
+            strokeWidth="2" 
+            fill="none" 
+            strokeDasharray="10, 10"
+          />
+          <Circle cx={width * 0.2} cy="85" r="3" fill="#34D399" />
+          <Circle cx={width * 0.8} cy="65" r="5" stroke="#34D399" strokeWidth="2" fill="#FFF" />
+       </Svg>
+    </View>
+
+    {/* Middle Right - Dot Grid Matrix */}
+    <View style={{ position: "absolute", top: 380, right: 10, opacity: 0.3 }}>
+       <Svg height="80" width="60">
+             {[0, 15, 30].map((x) => 
+               [0, 15, 30, 45].map((y) => (
+                 <Circle key={`${x}-${y}`} cx={x + 5} cy={y + 5} r="1.5" fill="#FDBA74" />
+               ))
+             )}
+       </Svg>
+    </View>
+
+    {/* Bottom Left - Geometric Stack */}
+    <View style={{ position: "absolute", bottom: 100, left: -20 }}>
+       <Svg height="120" width="120" viewBox="0 0 100 100">
+             <Line x1="0" y1="50" x2="100" y2="50" stroke="#FDE68A" strokeWidth="40" opacity={0.3} transform="rotate(-45 50 50)" />
+             <Line x1="20" y1="50" x2="80" y2="50" stroke="#F59E0B" strokeWidth="2" transform="rotate(-45 50 50)" />
+       </Svg>
+    </View>
+
+    {/* Bottom Right - Abstract Playground */}
+    <View style={{ position: "absolute", bottom: 40, right: -20, opacity: 0.9 }}>
+      <Svg height="220" width="220" viewBox="0 0 200 200">
+        <Circle cx="200" cy="200" r="150" fill="#fdf0fd" />
+        <Path 
+          d="M 100 200 Q 120 120 200 100" 
+          stroke="#fbccf9" 
+          strokeWidth="30" 
+          strokeLinecap="round" 
+          fill="none" 
+        />
+        <Path 
+          d="M 40 130 Q 70 80 100 130 T 160 130" 
+          stroke="#c7bdf1" 
+          strokeWidth="3" 
+          strokeLinecap="round" 
+          fill="none" 
+        />
+        <Circle cx="80" cy="180" r="4" fill="#93C5FD" />
+        <Circle cx="180" cy="150" r="3" fill="#93C5FD" />
+      </Svg>
+    </View>
+  </View>
+);
+
 export default function ClassHistoryScreen() {
-  const [activeTab, setActiveTab] = useState<'Notices' | 'Assignments' | 'Resources'>('Resources');
+  const [activeTab, setActiveTab] = useState('Resources');
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.contentContainer} showsVerticalScrollIndicator={false}>
+    <View style={styles.mainContainer}>
       
-      {/* Header Section */}
-      <View style={styles.headerSection}>
-        <Text style={styles.pageTitle}>10A – Mathematics</Text>
-        <Text style={styles.subTitle}>Classroom Activity History</Text>
-      </View>
+      {/* Background Graphics */}
+      <BackgroundDecorations />
 
-      {/* Toggle Switch */}
-      <View style={styles.toggleContainer}>
-        {['Notices', 'Assignments', 'Resources'].map((tab) => (
-          <TouchableOpacity 
-            key={tab}
-            style={[styles.toggleBtn, activeTab === tab && styles.toggleBtnActive]}
-            onPress={() => setActiveTab(tab as any)}
-            activeOpacity={0.8}
-          >
-            <Text style={[styles.toggleText, activeTab === tab && styles.toggleTextActive]}>
-              {tab}
-            </Text>
-          </TouchableOpacity>
-        ))}
-      </View>
+      <ScrollView style={styles.scrollView} contentContainerStyle={styles.contentContainer} showsVerticalScrollIndicator={false}>
+        
+        {/* Header Section */}
+        <View style={styles.headerSection}>
+          <Text style={styles.pageTitle}>10A – Mathematics</Text>
+          <Text style={styles.subTitle}>Classroom Activity History</Text>
+        </View>
 
-      {/* --- CONTENT AREA --- */}
+        {/* Toggle Switch */}
+        <View style={styles.toggleContainer}>
+          {['Notices', 'Assignments', 'Resources'].map((tab) => (
+            <TouchableOpacity 
+              key={tab}
+              style={[styles.toggleBtn, activeTab === tab && styles.toggleBtnActive]}
+              onPress={() => setActiveTab(tab)}
+              activeOpacity={0.8}
+            >
+              <Text style={[styles.toggleText, activeTab === tab && styles.toggleTextActive]}>
+                {tab}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </View>
 
-      {/* Resources Tab */}
-      {activeTab === 'Resources' && (
-        <View style={styles.listContainer}>
-          {RESOURCES_DATA.map((item) => (
-            <View key={item.id} style={styles.card}>
-              
-              {/* Card Top: Icon and Text */}
-              <View style={styles.cardTopRow}>
-                <View style={[styles.iconBox, { backgroundColor: item.iconBg }]}>
-                  <Ionicons 
-                    name={item.type === 'pdf' ? 'document' : 'document-text'} 
-                    size={24} 
-                    color={item.iconColor} 
-                  />
+        {/* --- CONTENT AREA --- */}
+
+        {/* Resources Tab */}
+        {activeTab === 'Resources' && (
+          <View style={styles.listContainer}>
+            {RESOURCES_DATA.map((item) => (
+              <View key={item.id} style={styles.card}>
+                
+                {/* Card Top: Icon and Text */}
+                <View style={styles.cardTopRow}>
+                  <View style={[styles.iconBox, { backgroundColor: item.iconBg }]}>
+                    <Ionicons 
+                      name={item.type === 'pdf' ? 'document' : 'document-text'} 
+                      size={24} 
+                      color={item.iconColor} 
+                    />
+                  </View>
+                  <View style={styles.cardTextContainer}>
+                    <Text style={styles.cardTitle} numberOfLines={1}>{item.title}</Text>
+                    <Text style={styles.cardDesc} numberOfLines={2}>{item.description}</Text>
+                  </View>
                 </View>
-                <View style={styles.cardTextContainer}>
-                  <Text style={styles.cardTitle} numberOfLines={1}>{item.title}</Text>
-                  <Text style={styles.cardDesc} numberOfLines={2}>{item.description}</Text>
+
+                {/* Card Bottom: Date and Action */}
+                <View style={styles.cardBottomRow}>
+                  <View>
+                    <Text style={styles.dateLabel}>POSTED DATE</Text>
+                    <Text style={styles.dateValue}>{item.date}</Text>
+                  </View>
+
+                  <TouchableOpacity style={styles.downloadBtn} activeOpacity={0.8}>
+                    <Ionicons name="download-outline" size={16} color="#FFF" style={styles.downloadIcon} />
+                    <Text style={styles.downloadBtnText}>Download</Text>
+                  </TouchableOpacity>
                 </View>
+
               </View>
+            ))}
+          </View>
+        )}
 
-              {/* Card Bottom: Date and Action */}
-              <View style={styles.cardBottomRow}>
-                <View>
-                  <Text style={styles.dateLabel}>POSTED DATE</Text>
-                  <Text style={styles.dateValue}>{item.date}</Text>
-                </View>
-
-                <TouchableOpacity style={styles.downloadBtn} activeOpacity={0.8}>
-                  <Ionicons name="download-outline" size={16} color="#FFF" style={styles.downloadIcon} />
-                  <Text style={styles.downloadBtnText}>Download</Text>
-                </TouchableOpacity>
+        {/* Assignments Tab (Mock Layout) */}
+        {activeTab === 'Assignments' && (
+          <View style={styles.listContainer}>
+            {ASSIGNMENTS_HISTORY.map((item) => (
+              <View key={item.id} style={[styles.card, { paddingVertical: 20 }]}>
+                 <Text style={styles.cardTitle}>{item.title}</Text>
+                 <View style={[styles.cardBottomRow, { marginTop: 12 }]}>
+                   <Text style={styles.dateValue}>{item.date}</Text>
+                   <Text style={[styles.dateLabel, { color: '#3B3CFF' }]}>{item.status}</Text>
+                 </View>
               </View>
+            ))}
+          </View>
+        )}
 
-            </View>
-          ))}
-        </View>
-      )}
+        {/* Notices Tab (Mock Layout) */}
+        {activeTab === 'Notices' && (
+          <View style={styles.listContainer}>
+            {NOTICES_HISTORY.map((item) => (
+              <View key={item.id} style={[styles.card, { paddingVertical: 20 }]}>
+                 <Text style={styles.cardTitle}>{item.title}</Text>
+                 <Text style={[styles.dateValue, { marginTop: 8 }]}>{item.date}</Text>
+              </View>
+            ))}
+          </View>
+        )}
 
-      {/* Assignments Tab (Mock Layout) */}
-      {activeTab === 'Assignments' && (
-        <View style={styles.listContainer}>
-          {ASSIGNMENTS_HISTORY.map((item) => (
-            <View key={item.id} style={[styles.card, { paddingVertical: 20 }]}>
-               <Text style={styles.cardTitle}>{item.title}</Text>
-               <View style={[styles.cardBottomRow, { marginTop: 12 }]}>
-                 <Text style={styles.dateValue}>{item.date}</Text>
-                 <Text style={[styles.dateLabel, { color: '#3B3CFF' }]}>{item.status}</Text>
-               </View>
-            </View>
-          ))}
-        </View>
-      )}
-
-      {/* Notices Tab (Mock Layout) */}
-      {activeTab === 'Notices' && (
-        <View style={styles.listContainer}>
-          {NOTICES_HISTORY.map((item) => (
-            <View key={item.id} style={[styles.card, { paddingVertical: 20 }]}>
-               <Text style={styles.cardTitle}>{item.title}</Text>
-               <Text style={[styles.dateValue, { marginTop: 8 }]}>{item.date}</Text>
-            </View>
-          ))}
-        </View>
-      )}
-
-    </ScrollView>
+      </ScrollView>
+    </View>
   );
 }
 
 // --- Styles ---
 const styles = StyleSheet.create({
-  container: {
+  mainContainer: {
     flex: 1,
-    backgroundColor: '#F9FAFB', // Light grey app background
+    backgroundColor: '#FFF9F0', // Updated theme background
+  },
+  scrollView: {
+    flex: 1,
+    backgroundColor: 'transparent',
   },
   contentContainer: {
     paddingHorizontal: 20,

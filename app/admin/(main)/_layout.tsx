@@ -1,35 +1,51 @@
 import React from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Platform, Image, StatusBar } from 'react-native';
-import { Tabs, useRouter } from 'expo-router';
+import { View, Text, TouchableOpacity, StyleSheet, Platform, Image, StatusBar, Dimensions } from 'react-native';
+import { Tabs, useRouter } from 'expo-router'; 
 import { Ionicons } from '@expo/vector-icons';
+import Svg, { Circle, Path } from "react-native-svg";
 
+const { width: W } = Dimensions.get('window');
+const TopBarGraphics = () => {
+  return (
+    <View style={[StyleSheet.absoluteFill, { zIndex: 1 }]}>
+      <Svg height="100%" width="100%">
+        <Path d={`M 0 0 L ${W} 0 L ${W} 80 Q ${W*0.5} 120 0 80 Z`} fill="#E0E7FF" opacity={0.6} />
+        <Circle cx={W * 0.2} cy={30} r={15} fill="#818CF8" opacity={0.5} />
+        <Circle cx={W * 0.65} cy={100} r="8" fill="#34a6d3" opacity={0.8} />
+      </Svg>
+    </View>
+  );
+};
 // --- Top Bar Component ---
 const AppLogo = ({ scale = 1 }) => (
   <View style={[styles.logoBox, { transform: [{ scale }] }]}>
-    <Ionicons name="school" size={50} color="white" />
+    <Ionicons name="school" size={50} color="#4461F2" />
   </View>
 );
-
 const TopBar = () => {
   const router = useRouter();
+
   return (
     <View style={styles.header}>
-      <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-        <AppLogo scale={0.65} />
-        <Text style={styles.logoText}>ClassDesk</Text>
-      </View>
-      <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-        <TouchableOpacity style={styles.notifBtn}>
-          <View style={styles.badge} />
-          <Ionicons name="notifications" size={24} color="#FFF" /> 
-        </TouchableOpacity>
-        {/* Updated routing for Admin profile */}
-        <TouchableOpacity onPress={() => router.push("/admin/profile")}>
-          <Image
-            source={{ uri: "https://api.dicebear.com/7.x/avataaars/png?seed=Admin" }}
-            style={styles.avatar}
-          />
-        </TouchableOpacity>
+      <TopBarGraphics />
+      {/* Header Content Wrapper */}
+      <View style={styles.headerContent}>
+        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+          <AppLogo scale={0.65} />
+          <Text style={styles.logoText}>ClassDesk</Text>
+        </View>
+        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+          <TouchableOpacity style={styles.notifBtn}>
+            <View style={styles.badge} />
+            <Ionicons name="notifications" size={24} color="#1F2937" /> 
+          </TouchableOpacity>
+          <TouchableOpacity onPress={() => router.push("/admin/profile")}>
+            <Image
+              source={{ uri: "https://api.dicebear.com/7.x/avataaars/png?seed=Admin" }}
+              style={styles.avatar}
+            />
+          </TouchableOpacity>
+        </View>
       </View>
     </View>
   );
@@ -84,7 +100,7 @@ function CustomBottomNav({ state, descriptors, navigation }: any) {
 export default function AdminLayout() {
   return (
     <View style={styles.safeArea}>
-      <StatusBar barStyle="light-content" backgroundColor="transparent" translucent={true} />
+      <StatusBar barStyle="dark-content" backgroundColor="transparent" translucent={true} />
       
       <TopBar />
       <View style={{ flex: 1 }}>
@@ -92,7 +108,6 @@ export default function AdminLayout() {
           screenOptions={{ headerShown: false }}
           tabBar={(props) => <CustomBottomNav {...props} />}
         >
-          {/* Admin Tab Screens */}
           <Tabs.Screen name="dashboard" options={{ title: 'Home' }} />
           <Tabs.Screen name="users" options={{ title: 'Users' }} />
           <Tabs.Screen name="classes" options={{ title: 'Classes' }} />
@@ -106,41 +121,40 @@ export default function AdminLayout() {
 
 // --- Combined Styles ---
 const styles = StyleSheet.create({
-  safeArea: { flex: 1, backgroundColor: '#F9FAFB' },
+  safeArea: { flex: 1, backgroundColor: '#FFF9F0' }, 
   
   // Top Bar Styles
   header: { 
+    backgroundColor: '#FFF9F0', // Base color
+    borderBottomLeftRadius: 30, 
+    borderBottomRightRadius: 30,
+    zIndex: 10,
+    overflow: 'hidden', 
+  },
+  headerContent: {
     flexDirection: 'row', 
     justifyContent: 'space-between', 
     alignItems: 'center', 
     paddingHorizontal: 20,
     paddingTop: Platform.OS === 'android' ? 50 : 60, 
     paddingBottom: 20, 
-    backgroundColor: '#4461F2', 
-    borderBottomLeftRadius: 30, 
-    borderBottomRightRadius: 30, 
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.1,
-    shadowRadius: 12,
-    elevation: 10,
-    zIndex: 10,
+    zIndex: 2, 
   },
   logoBox: { 
     width: 60, height: 60, 
-    backgroundColor: "rgba(255, 255, 255, 0.2)", 
+    backgroundColor: "rgba(68, 97, 242, 0.1)", 
     borderRadius: 15, 
     justifyContent: "center", alignItems: "center" 
   },
   logoText: { 
     fontSize: 22, 
     fontWeight: '700', 
-    color: '#FFF', 
+    color: '#1F2937', 
     marginLeft: 10 
   },
   notifBtn: { marginRight: 15, position: 'relative' },
   badge: { position: 'absolute', top: 0, right: 2, width: 8, height: 8, borderRadius: 4, backgroundColor: '#EF4444', zIndex: 10 },
-  avatar: { width: 40, height: 40, borderRadius: 20, borderWidth: 2, borderColor: '#FFF' },
+  avatar: { width: 40, height: 40, borderRadius: 20, borderWidth: 2, borderColor: '#4461F2' },
 
   // Bottom Nav Styles
   bottomNav: { 
@@ -150,13 +164,8 @@ const styles = StyleSheet.create({
     alignItems: 'center', 
     paddingHorizontal: 10, 
     paddingTop: 12, 
-    paddingBottom: Platform.OS === 'ios' ? 30 : 20, 
     borderTopLeftRadius: 30,
     borderTopRightRadius: 30,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: -4 },
-    shadowOpacity: 0.1,
-    shadowRadius: 12,
     elevation: 15,
   },
   navItem: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingVertical: 8, borderRadius: 16, paddingHorizontal: 4 },

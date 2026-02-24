@@ -1,6 +1,56 @@
 import React from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, Image } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+// Added SVG imports
+import Svg, { Path, Circle } from 'react-native-svg';
+
+// --- Background Component ---
+const BackgroundDecorations = () => (
+  <View style={StyleSheet.absoluteFill} pointerEvents="none">
+    
+    {/* Soft Flowing Background Lines */}
+    <View style={StyleSheet.absoluteFill}>
+      <Svg height="100%" width="100%">
+        {/* Top sweeping blue curve */}
+        <Path d="M-50 150 Q 150 50 450 250" stroke="#93C5FD" strokeWidth="2" fill="none" opacity={0.4} />
+        {/* Middle dashed mint accent line */}
+        <Path d="M-20 350 Q 150 450 400 300" stroke="#6EE7B7" strokeWidth="2" strokeDasharray="6, 6" fill="none" opacity={0.5} />
+        {/* Bottom sweeping pink curve */}
+        <Path d="M-50 600 Q 200 750 450 550" stroke="#F9A8D4" strokeWidth="2" fill="none" opacity={0.4} />
+      </Svg>
+    </View>
+
+    {/* Top Right: Cool Glassy Orbs (Blue & Lavender) */}
+    <View style={{ position: "absolute", top: -60, right: -40, opacity: 0.6 }}>
+      <Svg height="300" width="400" viewBox="0 0 100 100">
+        <Circle cx="90" cy="70" r="50" fill="#93C5FD" opacity={0.5} />
+        <Circle cx="30" cy="80" r="40" fill="#C4B5FD" opacity={0.5} />
+        <Circle cx="60" cy="70" r="25" fill="#F9A8D4" opacity={0.6} />
+      </Svg>
+    </View>
+
+    {/* Middle Left: Floating Mint Bubble */}
+    <View style={{ position: "absolute", top: 300, left: -40, opacity: 0.5 }}>
+      <Svg height="150" width="150" viewBox="0 0 100 100">
+        <Circle cx="40" cy="50" r="40" fill="#6EE7B7" opacity={0.4} />
+        <Circle cx="60" cy="30" r="15" fill="#93C5FD" opacity={0.6} />
+      </Svg>
+    </View>
+
+    {/* Bottom Right: Warm Sunrise Orbs (Peach & Soft Pink) */}
+    <View style={{ position: "absolute", bottom: -50, right: -20, opacity: 0.6 }}>
+      <Svg height="200" width="300" viewBox="0 0 100 100">
+        <Circle cx="50" cy="80" r="60" fill="#FDBA74" opacity={0.5} />
+        <Circle cx="80" cy="40" r="30" fill="#FCA5A5" opacity={0.4} />
+      </Svg>
+    </View>
+
+    {/* Floating Mini Bubbles */}
+    <View style={[styles.dot, { top: 180, left: 40, backgroundColor: "#93C5FD", width: 14, height: 14, opacity: 0.7 }]} />
+    <View style={[styles.dot, { top: 350, right: 60, backgroundColor: "#C4B5FD", width: 20, height: 20, opacity: 0.6 }]} />
+    <View style={[styles.dot, { bottom: 120, left: 80, backgroundColor: "#F9A8D4", width: 10, height: 10, opacity: 0.8 }]} />
+  </View>
+);
 
 // --- Mock Data ---
 const TEACHERS_DATA = [
@@ -11,7 +61,7 @@ const TEACHERS_DATA = [
     subject: 'MATHEMATICS',
     subjectColor: '#3B3CFF',
     icon: 'book',
-    status: 'online', // green dot
+    status: 'online',
     avatar: 'https://api.dicebear.com/7.x/avataaars/png?seed=Robert',
   },
   {
@@ -31,7 +81,7 @@ const TEACHERS_DATA = [
     subject: 'MODERN HISTORY',
     subjectColor: '#059669',
     icon: 'earth',
-    status: 'offline', // grey dot
+    status: 'offline',
     avatar: 'https://api.dicebear.com/7.x/avataaars/png?seed=Guy',
   },
   {
@@ -49,81 +99,82 @@ const TEACHERS_DATA = [
 // --- Main Component ---
 export default function AdminUsersScreen() {
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.contentContainer} showsVerticalScrollIndicator={false}>
+    <View style={styles.container}>
+      {/* Background stays static behind the ScrollView */}
+      <BackgroundDecorations />
       
-      {/* Header Section */}
-      <View style={styles.headerSection}>
-        <Text style={styles.pageTitle}>Teachers</Text>
-        <Text style={styles.subtitleText}>Manage all educator profiles</Text>
-      </View>
-
-      {/* Primary Action Button */}
-      <TouchableOpacity style={styles.addButton} activeOpacity={0.8}>
-        <Ionicons name="person-add" size={20} color="#FFF" style={styles.addIcon} />
-        <Text style={styles.addButtonText}>Add Teacher</Text>
-      </TouchableOpacity>
-
-      {/* Search and Filter Row */}
-      <View style={styles.searchRow}>
-        <View style={styles.searchContainer}>
-          <Ionicons name="search" size={20} color="#9CA3AF" style={styles.searchIcon} />
-          <TextInput 
-            style={styles.searchInput}
-            placeholder="Search teachers..."
-            placeholderTextColor="#9CA3AF"
-          />
+      <ScrollView 
+        contentContainerStyle={styles.contentContainer} 
+        showsVerticalScrollIndicator={false}
+      >
+        {/* Header Section */}
+        <View style={styles.headerSection}>
+          <Text style={styles.pageTitle}>Teachers</Text>
+          <Text style={styles.subtitleText}>Manage all educator profiles</Text>
         </View>
-        <TouchableOpacity style={styles.filterBtn}>
-          <Ionicons name="filter" size={20} color="#4B5563" />
+
+        {/* Primary Action Button */}
+        <TouchableOpacity style={styles.addButton} activeOpacity={0.8}>
+          <Ionicons name="person-add" size={20} color="#FFF" style={styles.addIcon} />
+          <Text style={styles.addButtonText}>Add Teacher</Text>
         </TouchableOpacity>
-      </View>
 
-      {/* Teachers List */}
-      <View style={styles.listContainer}>
-        {TEACHERS_DATA.map((teacher) => (
-          <View key={teacher.id} style={styles.card}>
-            
-            {/* Avatar Section */}
-            <View style={styles.avatarContainer}>
-              <View style={styles.avatarWrapper}>
-                <Image source={{ uri: teacher.avatar }} style={styles.avatarImage} />
-              </View>
-              {/* Status Indicator */}
-              <View style={[
-                styles.statusDot, 
-                { backgroundColor: teacher.status === 'online' ? '#10B981' : '#D1D5DB' }
-              ]} />
-            </View>
-
-            {/* Teacher Details */}
-            <View style={styles.detailsContainer}>
-              <Text style={styles.nameText}>{teacher.name}</Text>
-              <Text style={styles.emailText}>{teacher.email}</Text>
-              
-              <View style={styles.subjectRow}>
-                {/* @ts-ignore - Dynamic icon name */}
-                <Ionicons name={teacher.icon} size={14} color={teacher.subjectColor} />
-                <Text style={[styles.subjectText, { color: teacher.subjectColor }]}>
-                  {teacher.subject}
-                </Text>
-              </View>
-            </View>
-
-            {/* Action Buttons */}
-            <View style={styles.actionsContainer}>
-              <TouchableOpacity style={styles.iconButton}>
-                <Ionicons name="trash-outline" size={20} color="#EF4444" />
-              </TouchableOpacity>
-              <TouchableOpacity style={styles.iconButton}>
-                <Ionicons name="ellipsis-vertical" size={20} color="#9CA3AF" />
-              </TouchableOpacity>
-            </View>
-
+        {/* Search and Filter Row */}
+        <View style={styles.searchRow}>
+          <View style={styles.searchContainer}>
+            <Ionicons name="search" size={20} color="#9CA3AF" style={styles.searchIcon} />
+            <TextInput 
+              style={styles.searchInput}
+              placeholder="Search teachers..."
+              placeholderTextColor="#9CA3AF"
+            />
           </View>
-        ))}
-      </View>
-      
-    </ScrollView>
+          <TouchableOpacity style={styles.filterBtn}>
+            <Ionicons name="filter" size={20} color="#4B5563" />
+          </TouchableOpacity>
+        </View>
+
+        {/* Teachers List */}
+        <View style={styles.listContainer}>
+          {TEACHERS_DATA.map((teacher) => (
+            <View key={teacher.id} style={styles.card}>
+              
+              <View style={styles.avatarContainer}>
+                <View style={styles.avatarWrapper}>
+                  <Image source={{ uri: teacher.avatar }} style={styles.avatarImage} />
+                </View>
+                <View style={[
+                  styles.statusDot, 
+                  { backgroundColor: teacher.status === 'online' ? '#10B981' : '#D1D5DB' }
+                ]} />
+              </View>
+
+              <View style={styles.detailsContainer}>
+                <Text style={styles.nameText}>{teacher.name}</Text>
+                <Text style={styles.emailText}>{teacher.email}</Text>
+                
+                <View style={styles.subjectRow}>
+                  <Ionicons name={teacher.icon} size={14} color={teacher.subjectColor} />
+                  <Text style={[styles.subjectText, { color: teacher.subjectColor }]}>
+                    {teacher.subject}
+                  </Text>
+                </View>
+              </View>
+
+              <View style={styles.actionsContainer}>
+                <TouchableOpacity style={styles.iconButton}>
+                  <Ionicons name="trash-outline" size={20} color="#EF4444" />
+                </TouchableOpacity>
+                <TouchableOpacity style={styles.iconButton}>
+                  <Ionicons name="ellipsis-vertical" size={20} color="#9CA3AF" />
+                </TouchableOpacity>
+              </View>
+
+            </View>
+          ))}
+        </View>
+      </ScrollView>
+    </View>
   );
 }
 
@@ -131,15 +182,18 @@ export default function AdminUsersScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F9FAFB', // Matches layout background
+    backgroundColor: '#FFF9F0', 
   },
   contentContainer: {
     paddingHorizontal: 20,
     paddingTop: 20,
     paddingBottom: 40,
   },
-  
-  // Header
+  // Dot style for background bubbles
+  dot: {
+    position: 'absolute',
+    borderRadius: 100,
+  },
   headerSection: {
     marginBottom: 20,
   },
@@ -154,8 +208,6 @@ const styles = StyleSheet.create({
     color: '#6B7280',
     fontWeight: '400',
   },
-
-  // Add Button
   addButton: {
     backgroundColor: '#3B3CFF',
     flexDirection: 'row',
@@ -178,8 +230,6 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
   },
-
-  // Search & Filter
   searchRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -196,14 +246,6 @@ const styles = StyleSheet.create({
     height: 50,
     borderWidth: 1,
     borderColor: '#F3F4F6',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.03,
-    shadowRadius: 4,
-    elevation: 1,
-  },
-  searchIcon: {
-    marginRight: 10,
   },
   searchInput: {
     flex: 1,
@@ -219,21 +261,14 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     borderWidth: 1,
     borderColor: '#F3F4F6',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.03,
-    shadowRadius: 4,
-    elevation: 1,
   },
-
-  // List Cards
   listContainer: {
     gap: 16,
   },
   card: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#FFF',
+    backgroundColor: 'rgba(255, 255, 255, 0.9)', // Slightly translucent to see background
     borderRadius: 20,
     padding: 16,
     shadowColor: '#000',
@@ -242,8 +277,6 @@ const styles = StyleSheet.create({
     shadowRadius: 10,
     elevation: 2,
   },
-  
-  // Avatar
   avatarContainer: {
     position: 'relative',
     marginRight: 16,
@@ -252,7 +285,7 @@ const styles = StyleSheet.create({
     width: 56,
     height: 56,
     borderRadius: 28,
-    backgroundColor: '#F3F4F6', // Fallback color
+    backgroundColor: '#F3F4F6',
     overflow: 'hidden',
   },
   avatarImage: {
@@ -269,8 +302,6 @@ const styles = StyleSheet.create({
     borderWidth: 2,
     borderColor: '#FFF',
   },
-
-  // Details
   detailsContainer: {
     flex: 1,
     justifyContent: 'center',
@@ -279,7 +310,6 @@ const styles = StyleSheet.create({
     fontSize: 17,
     fontWeight: '700',
     color: '#111827',
-    marginBottom: 2,
   },
   emailText: {
     fontSize: 13,
@@ -295,8 +325,6 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     marginLeft: 6,
   },
-
-  // Actions
   actionsContainer: {
     flexDirection: 'row',
     alignItems: 'center',

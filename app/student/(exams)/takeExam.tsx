@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, ScrollView, SafeAreaView, Platform } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, ScrollView, SafeAreaView, Platform, StatusBar } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import Svg, { Circle, Path } from 'react-native-svg';
 
@@ -37,12 +37,12 @@ const BackgroundDecorations = () => (
     </View>
 
     {/* Top Left Yellow Circle */}
-    <View style={[styles.circle, { top: 40, left: -20, backgroundColor: "#f5d29d", width: 100, height: 100 }]} />
+    <View style={[styles.bgCircle, { top: 40, left: -20, backgroundColor: "#f5d29d", width: 100, height: 100 }]} />
     
     {/* Scattered Dots */}
-    <View style={[styles.dot, { top: 120, right: 80, backgroundColor: "#657cff" }]} />
-    <View style={[styles.dot, { top: 250, left: 30, backgroundColor: "#FFB74D" }]} />
-    <View style={[styles.dot, { bottom: 150, right: 20, backgroundColor: "#FF8A65" }]} />
+    <View style={[styles.bgDot, { top: 120, right: 80, backgroundColor: "#657cff" }]} />
+    <View style={[styles.bgDot, { top: 250, left: 30, backgroundColor: "#FFB74D" }]} />
+    <View style={[styles.bgDot, { bottom: 150, right: 20, backgroundColor: "#FF8A65" }]} />
     
     {/* Bottom Left Shapes */}
     <View style={{ position: "absolute", bottom: 0, left: 0 }}>
@@ -93,7 +93,6 @@ const EXAM_DATA = {
 };
 
 export default function ActiveExamScreen() {
-  // State to track selected answers. Key is question ID, Value is selected Option ID.
   const [answers, setAnswers] = useState<Record<number, string>>({});
 
   const handleSelectOption = (questionId: number, optionId: string) => {
@@ -102,6 +101,7 @@ export default function ActiveExamScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
+      <StatusBar barStyle="dark-content" />
       <BackgroundDecorations />
 
       {/* Top Header Row */}
@@ -129,8 +129,6 @@ export default function ActiveExamScreen() {
         {/* Exam Questions List */}
         {EXAM_DATA.questions.map((q) => (
           <View key={q.id} style={styles.questionCard}>
-            
-            {/* Question Header (Number & Marks) */}
             <View style={styles.questionHeader}>
               <View style={styles.questionNumberBadge}>
                 <Text style={styles.questionNumberText}>QUESTION {q.number}</Text>
@@ -138,10 +136,8 @@ export default function ActiveExamScreen() {
               <Text style={styles.marksText}>{q.marks.toFixed(1)} Mark</Text>
             </View>
 
-            {/* Question Text */}
             <Text style={styles.questionText}>{q.text}</Text>
 
-            {/* Options List */}
             <View style={styles.optionsContainer}>
               {q.options.map((opt) => {
                 const isSelected = answers[q.id] === opt.id;
@@ -152,17 +148,14 @@ export default function ActiveExamScreen() {
                     onPress={() => handleSelectOption(q.id, opt.id)}
                     activeOpacity={0.7}
                   >
-                    {/* Custom Radio Button */}
                     <View style={[styles.radioCircle, isSelected && styles.radioCircleSelected]}>
                       {isSelected && <View style={styles.radioDot} />}
                     </View>
                     
-                    {/* Option Identifier (A, B, C...) */}
                     <Text style={[styles.optionIdText, isSelected && styles.optionIdTextSelected]}>
                       {opt.id}.
                     </Text>
                     
-                    {/* Option Text */}
                     <Text style={[styles.optionText, isSelected && styles.optionTextSelected]}>
                       {opt.text}
                     </Text>
@@ -172,17 +165,14 @@ export default function ActiveExamScreen() {
             </View>
           </View>
         ))}
-
       </ScrollView>
 
-      {/* Sticky Bottom Section (Submit Button & FAB) */}
+      {/* Sticky Bottom Section */}
       <View style={styles.bottomSection}>
-         {/* Floating Action Button (Theme Toggle) */}
         <TouchableOpacity style={styles.fab} activeOpacity={0.8}>
           <Ionicons name="moon" size={20} color="#111827" />
         </TouchableOpacity>
 
-        {/* Submit Exam Button */}
         <TouchableOpacity style={styles.submitBtn} activeOpacity={0.9}>
           <Text style={styles.submitBtnText}>Submit Exam</Text>
           <Ionicons name="send" size={18} color="#FFF" />
@@ -193,26 +183,20 @@ export default function ActiveExamScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { 
-    flex: 1, 
-    backgroundColor: '#F9FAFB' // Using a very light gray instead of white to match standard app bg
-  },
-  
-  // Background Graphic Helpers
-  circle: { position: "absolute", borderRadius: 999 },
-  dot: { position: "absolute", width: 12, height: 12, borderRadius: 6 },
+  container: { flex: 1, backgroundColor: '#F9FAFB' },
+  bgCircle: { position: "absolute", borderRadius: 999 },
+  bgDot: { position: "absolute", width: 12, height: 12, borderRadius: 6 },
 
-  // Header Styles
   headerContainer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingHorizontal: 20,
-    paddingTop: Platform.OS === 'android' ? 40 : 20,
+    paddingTop: Platform.OS === 'android' ? 40 : 10,
     paddingBottom: 16,
     borderBottomWidth: 1,
     borderBottomColor: '#E5E7EB',
-    backgroundColor: 'rgba(255,255,255,0.8)', // Slight transparency to let bg show through
+    backgroundColor: 'rgba(255,255,255,0.85)',
     zIndex: 10,
   },
   headerSubtitle: { fontSize: 10, fontWeight: '800', color: '#4F46E5', letterSpacing: 1, marginBottom: 2 },
@@ -221,21 +205,19 @@ const styles = StyleSheet.create({
   timerLabel: { fontSize: 10, fontWeight: '700', color: '#DC2626', letterSpacing: 0.5 },
   timerText: { fontSize: 18, fontWeight: 'bold', color: '#DC2626' },
 
-  // Scroll Content area
   scrollContent: {
     paddingHorizontal: 20,
     paddingTop: 20,
-    paddingBottom: 140, // Space for the sticky submit button
+    paddingBottom: 140,
   },
 
-  // Warning Banner
   warningBanner: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#FEF3C7', // Light Amber
+    backgroundColor: 'rgba(254, 243, 199, 0.9)',
     paddingHorizontal: 16,
     paddingVertical: 12,
-    borderRadius: 8,
+    borderRadius: 12,
     borderWidth: 1,
     borderColor: '#FDE68A',
     marginBottom: 24,
@@ -243,9 +225,8 @@ const styles = StyleSheet.create({
   },
   warningText: { flex: 1, fontSize: 12, fontWeight: '700', color: '#92400E', lineHeight: 18 },
 
-  // Question Card
   questionCard: {
-    backgroundColor: '#FFF',
+    backgroundColor: 'rgba(255, 255, 255, 0.92)',
     borderRadius: 24,
     padding: 24,
     marginBottom: 20,
@@ -261,24 +242,22 @@ const styles = StyleSheet.create({
   marksText: { fontSize: 12, fontWeight: '600', color: '#9CA3AF' },
   questionText: { fontSize: 16, fontWeight: 'bold', color: '#111827', lineHeight: 24, marginBottom: 24 },
 
-  // Options
   optionsContainer: { gap: 12 },
   optionRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#F9FAFB',
+    backgroundColor: 'rgba(249, 250, 251, 0.7)',
     paddingHorizontal: 16,
     paddingVertical: 14,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: 'transparent', // Transparent by default so layout doesn't jump on select
+    borderColor: 'transparent',
   },
   optionRowSelected: {
-    backgroundColor: '#EEF2FF', // Light indigo bg
-    borderColor: '#C7D2FE', // Indigo border
+    backgroundColor: '#EEF2FF',
+    borderColor: '#C7D2FE',
   },
   
-  // Custom Radio Button
   radioCircle: {
     width: 20, height: 20, borderRadius: 10, borderWidth: 1.5, borderColor: '#D1D5DB',
     alignItems: 'center', justifyContent: 'center', marginRight: 12, backgroundColor: '#FFF'
@@ -289,37 +268,30 @@ const styles = StyleSheet.create({
   optionIdText: { fontSize: 14, fontWeight: '800', color: '#6B7280', marginRight: 8 },
   optionIdTextSelected: { color: '#4F46E5' },
   optionText: { flex: 1, fontSize: 14, fontWeight: '600', color: '#4B5563' },
-  optionTextSelected: { color: '#111827' }, // Darker text when selected
+  optionTextSelected: { color: '#111827' },
 
-  // Bottom Section (Submit Button & FAB container)
   bottomSection: {
     position: 'absolute',
     bottom: 0, left: 0, right: 0,
     paddingHorizontal: 20,
     paddingTop: 10,
     paddingBottom: Platform.OS === 'ios' ? 30 : 20,
-    backgroundColor: 'rgba(249, 250, 251, 0.95)', // Slight transparency
+    backgroundColor: 'rgba(249, 250, 251, 0.9)',
   },
   submitBtn: {
-    backgroundColor: '#1D4ED8', // Dark Blue
+    backgroundColor: '#1D4ED8',
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
     paddingVertical: 18,
     borderRadius: 16,
-    shadowColor: "#1D4ED8",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 5,
     gap: 10,
   },
   submitBtnText: { fontSize: 16, fontWeight: '800', color: '#FFF' },
 
-  // Floating Action Button
   fab: {
     position: 'absolute',
-    top: -65, // Position it right above the submit button container
+    top: -65,
     right: 20,
     width: 48,
     height: 48,

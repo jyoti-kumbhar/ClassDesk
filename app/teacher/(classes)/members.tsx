@@ -1,6 +1,18 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, Image } from 'react-native';
+import { 
+  View, 
+  Text, 
+  StyleSheet, 
+  ScrollView, 
+  TouchableOpacity, 
+  TextInput, 
+  Image,
+  Dimensions 
+} from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import Svg, { Circle, Path, Line } from "react-native-svg";
+
+const { width } = Dimensions.get('window');
 
 // --- Mock Data ---
 const TEACHERS_DATA = [
@@ -13,141 +25,233 @@ const TEACHERS_DATA = [
 const STUDENTS_DATA = [
   { id: 's1', name: 'Alex Johnson', rollNo: 'Roll No: #1024', avatar: 'https://api.dicebear.com/7.x/avataaars/png?seed=Alex' },
   { id: 's2', name: 'Sarah Wilson', rollNo: 'Roll No: #1025', avatar: 'https://api.dicebear.com/7.x/avataaars/png?seed=Sarah2' },
-  { id: 's3', name: 'Michael King', rollNo: 'Roll No: #1026', initials: 'MK' }, // Example of initial-based avatar
+  { id: 's3', name: 'Michael King', rollNo: 'Roll No: #1026', initials: 'MK' }, 
   { id: 's4', name: 'David Chen', rollNo: 'Roll No: #1027', avatar: 'https://api.dicebear.com/7.x/avataaars/png?seed=David' },
   { id: 's5', name: 'James Miller', rollNo: 'Roll No: #1028', avatar: 'https://api.dicebear.com/7.x/avataaars/png?seed=James2' },
 ];
 
+// --- Background Component ---
+const BackgroundDecorations = () => (
+  <View style={StyleSheet.absoluteFill} pointerEvents="none">
+    
+    {/* Top Right Large Soft Glow (Purple) */}
+    <View style={{ position: "absolute", top: 30, right: -40 }}>
+      <Svg height="200" width="200" viewBox="0 0 200 200">
+        <Circle cx="100" cy="100" r="80" fill="#F3E8FF" opacity={0.6} />
+        <Circle cx="100" cy="100" r="50" fill="#E9D5FF" opacity={0.4} />
+      </Svg>
+    </View>
+
+    {/* Top Left - Dashed Connection Line */}
+    <View style={{ position: "absolute", top: 60, left: 20 }}>
+       <Svg height="100" width="120" viewBox="0 0 120 100">
+          <Line x1="10" y1="0" x2="10" y2="60" stroke="#BAE6FD" strokeWidth="2" strokeDasharray="5, 5" />
+          <Path d="M 10 60 Q 10 90 40 90 L 80 90" stroke="#BAE6FD" strokeWidth="2" fill="none" />
+          <Circle cx="80" cy="90" r="4" fill="#60A5FA" opacity={0.6} />
+       </Svg>
+    </View>
+
+    {/* Middle - The "Data Wave" */}
+    <View style={{ position: "absolute", top: 220, width: width, alignItems: 'center', opacity: 0.4 }}>
+       <Svg height="150" width={width} viewBox={`0 0 ${width} 150`}>
+          <Path 
+            d={`M -20 75 C ${width * 0.3} 120, ${width * 0.7} 30, ${width + 20} 75`} 
+            stroke="#99F6E4" 
+            strokeWidth="3" 
+            fill="none" 
+          />
+          <Path 
+            d={`M -20 90 C ${width * 0.3} 135, ${width * 0.7} 45, ${width + 20} 90`} 
+            stroke="#CCFBF1" 
+            strokeWidth="2" 
+            fill="none" 
+            strokeDasharray="10, 10"
+          />
+          <Circle cx={width * 0.2} cy="85" r="3" fill="#34D399" />
+          <Circle cx={width * 0.8} cy="65" r="5" stroke="#34D399" strokeWidth="2" fill="#FFF" />
+       </Svg>
+    </View>
+
+    {/* Middle Right - Dot Grid Matrix */}
+    <View style={{ position: "absolute", top: 380, right: 10, opacity: 0.3 }}>
+       <Svg height="80" width="60">
+             {[0, 15, 30].map((x) => 
+               [0, 15, 30, 45].map((y) => (
+                 <Circle key={`${x}-${y}`} cx={x + 5} cy={y + 5} r="1.5" fill="#FDBA74" />
+               ))
+             )}
+       </Svg>
+    </View>
+
+    {/* Bottom Left - Geometric Stack */}
+    <View style={{ position: "absolute", bottom: 100, left: -20 }}>
+       <Svg height="120" width="120" viewBox="0 0 100 100">
+             <Line x1="0" y1="50" x2="100" y2="50" stroke="#FDE68A" strokeWidth="40" opacity={0.3} transform="rotate(-45 50 50)" />
+             <Line x1="20" y1="50" x2="80" y2="50" stroke="#F59E0B" strokeWidth="2" transform="rotate(-45 50 50)" />
+       </Svg>
+    </View>
+
+    {/* Bottom Right - Abstract Playground */}
+    <View style={{ position: "absolute", bottom: 40, right: -20, opacity: 0.9 }}>
+      <Svg height="220" width="220" viewBox="0 0 200 200">
+        <Circle cx="200" cy="200" r="150" fill="#fdf0fd" />
+        <Path 
+          d="M 100 200 Q 120 120 200 100" 
+          stroke="#fbccf9" 
+          strokeWidth="30" 
+          strokeLinecap="round" 
+          fill="none" 
+        />
+        <Path 
+          d="M 40 130 Q 70 80 100 130 T 160 130" 
+          stroke="#c7bdf1" 
+          strokeWidth="3" 
+          strokeLinecap="round" 
+          fill="none" 
+        />
+        <Circle cx="80" cy="180" r="4" fill="#93C5FD" />
+        <Circle cx="180" cy="150" r="3" fill="#93C5FD" />
+      </Svg>
+    </View>
+  </View>
+);
+
 export default function ClassMembersScreen() {
-  const [activeTab, setActiveTab] = useState<'Teachers' | 'Students'>('Teachers');
+  const [activeTab, setActiveTab] = useState('Teachers');
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.contentContainer} showsVerticalScrollIndicator={false}>
+    <View style={styles.mainContainer}>
       
-      {/* Header Section */}
-      <View style={styles.headerSection}>
-        <Text style={styles.pageTitle}>Class Members</Text>
-        <Text style={styles.subTitle}>
-          {activeTab === 'Teachers' 
-            ? `GRADE 10-A • ${TEACHERS_DATA.length} ACTIVE MEMBERS` 
-            : `GRADE 10-A • ${STUDENTS_DATA.length} STUDENTS`}
-        </Text>
-      </View>
+      {/* Background Graphics */}
+      <BackgroundDecorations />
 
-      {/* Toggle Switch */}
-      <View style={styles.toggleContainer}>
-        <TouchableOpacity 
-          style={[styles.toggleBtn, activeTab === 'Teachers' && styles.toggleBtnActive]}
-          onPress={() => setActiveTab('Teachers')}
-          activeOpacity={0.8}
-        >
-          <Text style={[styles.toggleText, activeTab === 'Teachers' && styles.toggleTextActive]}>
-            Teachers
-          </Text>
-        </TouchableOpacity>
+      <ScrollView contentContainerStyle={styles.contentContainer} showsVerticalScrollIndicator={false}>
         
-        <TouchableOpacity 
-          style={[styles.toggleBtn, activeTab === 'Students' && styles.toggleBtnActive]}
-          onPress={() => setActiveTab('Students')}
-          activeOpacity={0.8}
-        >
-          <Text style={[styles.toggleText, activeTab === 'Students' && styles.toggleTextActive]}>
-            Students
+        {/* Header Section */}
+        <View style={styles.headerSection}>
+          <Text style={styles.pageTitle}>Class Members</Text>
+          <Text style={styles.subTitle}>
+            {activeTab === 'Teachers' 
+              ? `GRADE 10-A • ${TEACHERS_DATA.length} ACTIVE MEMBERS` 
+              : `GRADE 10-A • ${STUDENTS_DATA.length} STUDENTS`}
           </Text>
-        </TouchableOpacity>
-      </View>
+        </View>
 
-      {/* --- TEACHERS VIEW --- */}
-      {activeTab === 'Teachers' && (
-        <View style={styles.tabContent}>
-          {/* Add Member Button */}
-          <TouchableOpacity style={styles.addMemberBtn} activeOpacity={0.8}>
-            <Ionicons name="person-add" size={20} color="#FFF" style={styles.addIcon} />
-            <Text style={styles.addMemberBtnText}>Add Member</Text>
+        {/* Toggle Switch */}
+        <View style={styles.toggleContainer}>
+          <TouchableOpacity 
+            style={[styles.toggleBtn, activeTab === 'Teachers' && styles.toggleBtnActive]}
+            onPress={() => setActiveTab('Teachers')}
+            activeOpacity={0.8}
+          >
+            <Text style={[styles.toggleText, activeTab === 'Teachers' && styles.toggleTextActive]}>
+              Teachers
+            </Text>
           </TouchableOpacity>
-
-          <Text style={styles.sectionTitle}>FACULTY MEMBERS</Text>
-
-          <View style={styles.listContainer}>
-            {TEACHERS_DATA.map((teacher) => (
-              <View key={teacher.id} style={styles.memberCard}>
-                <View style={[styles.avatarBox, { backgroundColor: '#E0E7FF' }]}>
-                  <Image source={{ uri: teacher.avatar }} style={styles.avatarImg} />
-                </View>
-                
-                <View style={styles.memberDetails}>
-                  <Text style={styles.memberName}>{teacher.name}</Text>
-                  <Text style={styles.memberRole}>{teacher.role}</Text>
-                </View>
-
-                <TouchableOpacity style={styles.deleteBtn}>
-                  <Ionicons name="trash" size={18} color="#EF4444" />
-                </TouchableOpacity>
-              </View>
-            ))}
-          </View>
-        </View>
-      )}
-
-      {/* --- STUDENTS VIEW --- */}
-      {activeTab === 'Students' && (
-        <View style={styles.tabContent}>
           
-          {/* Search Row */}
-          <View style={styles.searchRow}>
-            <View style={styles.searchBar}>
-              <Ionicons name="search" size={20} color="#9CA3AF" style={styles.searchIcon} />
-              <TextInput 
-                style={styles.searchInput}
-                placeholder="Search student..."
-                placeholderTextColor="#9CA3AF"
-              />
-            </View>
-            
-            <TouchableOpacity style={styles.addStudentBtn}>
-              <Ionicons name="person-add" size={22} color="#FFF" />
-            </TouchableOpacity>
-          </View>
-
-          <View style={styles.listContainer}>
-            {STUDENTS_DATA.map((student) => (
-              <View key={student.id} style={styles.memberCard}>
-                
-                {/* Conditionally Render Avatar or Initials */}
-                {student.avatar ? (
-                  <View style={[styles.avatarBox, { backgroundColor: '#F3F4F6' }]}>
-                    <Image source={{ uri: student.avatar }} style={styles.avatarImg} />
-                  </View>
-                ) : (
-                  <View style={[styles.avatarBox, { backgroundColor: '#F3F4F6' }]}>
-                    <Text style={styles.avatarInitials}>{student.initials}</Text>
-                  </View>
-                )}
-                
-                <View style={styles.memberDetails}>
-                  <Text style={styles.memberName}>{student.name}</Text>
-                  <Text style={styles.memberRole}>{student.rollNo}</Text>
-                </View>
-
-                <TouchableOpacity style={styles.deleteBtn}>
-                  <Ionicons name="trash" size={18} color="#EF4444" />
-                </TouchableOpacity>
-              </View>
-            ))}
-          </View>
-
+          <TouchableOpacity 
+            style={[styles.toggleBtn, activeTab === 'Students' && styles.toggleBtnActive]}
+            onPress={() => setActiveTab('Students')}
+            activeOpacity={0.8}
+          >
+            <Text style={[styles.toggleText, activeTab === 'Students' && styles.toggleTextActive]}>
+              Students
+            </Text>
+          </TouchableOpacity>
         </View>
-      )}
 
-    </ScrollView>
+        {/* --- TEACHERS VIEW --- */}
+        {activeTab === 'Teachers' && (
+          <View style={styles.tabContent}>
+            {/* Add Member Button */}
+            <TouchableOpacity style={styles.addMemberBtn} activeOpacity={0.8}>
+              <Ionicons name="person-add" size={20} color="#FFF" style={styles.addIcon} />
+              <Text style={styles.addMemberBtnText}>Add Member</Text>
+            </TouchableOpacity>
+
+            <Text style={styles.sectionTitle}>FACULTY MEMBERS</Text>
+
+            <View style={styles.listContainer}>
+              {TEACHERS_DATA.map((teacher) => (
+                <View key={teacher.id} style={styles.memberCard}>
+                  <View style={[styles.avatarBox, { backgroundColor: '#E0E7FF' }]}>
+                    <Image source={{ uri: teacher.avatar }} style={styles.avatarImg} />
+                  </View>
+                  
+                  <View style={styles.memberDetails}>
+                    <Text style={styles.memberName}>{teacher.name}</Text>
+                    <Text style={styles.memberRole}>{teacher.role}</Text>
+                  </View>
+
+                  <TouchableOpacity style={styles.deleteBtn}>
+                    <Ionicons name="trash" size={18} color="#EF4444" />
+                  </TouchableOpacity>
+                </View>
+              ))}
+            </View>
+          </View>
+        )}
+
+        {/* --- STUDENTS VIEW --- */}
+        {activeTab === 'Students' && (
+          <View style={styles.tabContent}>
+            
+            {/* Search Row */}
+            <View style={styles.searchRow}>
+              <View style={styles.searchBar}>
+                <Ionicons name="search" size={20} color="#9CA3AF" style={styles.searchIcon} />
+                <TextInput 
+                  style={styles.searchInput}
+                  placeholder="Search student..."
+                  placeholderTextColor="#9CA3AF"
+                />
+              </View>
+              
+              <TouchableOpacity style={styles.addStudentBtn}>
+                <Ionicons name="person-add" size={22} color="#FFF" />
+              </TouchableOpacity>
+            </View>
+
+            <View style={styles.listContainer}>
+              {STUDENTS_DATA.map((student) => (
+                <View key={student.id} style={styles.memberCard}>
+                  
+                  {/* Conditionally Render Avatar or Initials */}
+                  {student.avatar ? (
+                    <View style={[styles.avatarBox, { backgroundColor: '#F3F4F6' }]}>
+                      <Image source={{ uri: student.avatar }} style={styles.avatarImg} />
+                    </View>
+                  ) : (
+                    <View style={[styles.avatarBox, { backgroundColor: '#F3F4F6' }]}>
+                      <Text style={styles.avatarInitials}>{student.initials}</Text>
+                    </View>
+                  )}
+                  
+                  <View style={styles.memberDetails}>
+                    <Text style={styles.memberName}>{student.name}</Text>
+                    <Text style={styles.memberRole}>{student.rollNo}</Text>
+                  </View>
+
+                  <TouchableOpacity style={styles.deleteBtn}>
+                    <Ionicons name="trash" size={18} color="#EF4444" />
+                  </TouchableOpacity>
+                </View>
+              ))}
+            </View>
+
+          </View>
+        )}
+
+      </ScrollView>
+    </View>
   );
 }
 
 // --- Styles ---
 const styles = StyleSheet.create({
-  container: {
+  mainContainer: {
     flex: 1,
-    backgroundColor: '#F9FAFB', // Light grey app background
+    backgroundColor: '#FFF9F0', // Updated Theme background
   },
   contentContainer: {
     paddingHorizontal: 20,
@@ -334,7 +438,7 @@ const styles = StyleSheet.create({
     width: 36,
     height: 36,
     borderRadius: 18,
-    backgroundColor: '#FEF2F2', // Light red background
+    backgroundColor: '#FEF2F2',
     justifyContent: 'center',
     alignItems: 'center',
     marginLeft: 10,

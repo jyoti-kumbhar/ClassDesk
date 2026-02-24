@@ -6,23 +6,36 @@ import Svg, { Circle, Path } from 'react-native-svg';
 // --- Background Graphics (Consistent with the module) ---
 const BackgroundDecorations = () => (
   <View style={StyleSheet.absoluteFill} pointerEvents="none">
+    {/* Top Right Triangle/Shape */}
     <View style={{ position: "absolute", top: -50, right: -50 }}>
       <Svg height="200" width="200" viewBox="0 0 100 100">
         <Path d="M0 0 L100 0 L100 100 Z" fill="#f1db90" opacity={0.5} />
         <Path d="M60 5 L90 10 L75 35 Z" fill="#f2444d" opacity={0.5} /> 
       </Svg>
     </View>
+
+    {/* Squiggles */}
     <View style={{ position: "absolute", top: 220, right: 0, opacity: 0.2 }}>
-        <Svg height="100" width="60" viewBox="0 0 60 100"><Path d="M10 10 Q 50 30 10 50 T 10 90" stroke="#FF8A65" strokeWidth="3" fill="none" /></Svg>
+        <Svg height="100" width="60" viewBox="0 0 60 100">
+          <Path d="M10 10 Q 50 30 10 50 T 10 90" stroke="#FF8A65" strokeWidth="3" fill="none" />
+        </Svg>
     </View>
     <View style={{ position: "absolute", top: 180, left: -10, opacity: 0.15 }}>
-        <Svg height="60" width="100" viewBox="0 0 100 60"><Path d="M10 30 Q 30 10 50 30 T 90 30" stroke="#4461F2" strokeWidth="3" fill="none" /></Svg>
+        <Svg height="60" width="100" viewBox="0 0 100 60">
+          <Path d="M10 30 Q 30 10 50 30 T 90 30" stroke="#4461F2" strokeWidth="3" fill="none" />
+        </Svg>
     </View>
+
+    {/* Bottom Left Shapes */}
     <View style={{ position: "absolute", bottom: 0, left: 0, opacity: 0.3 }}>
        <Svg height="150" width="300" viewBox="0 0 100 100">
          <Circle cx="20" cy="150" r="150" fill="#f39dbec9" />
        </Svg>
     </View>
+
+    {/* Scattered Dots */}
+    <View style={[styles.bgDot, { top: 120, right: 80, backgroundColor: "#657cff" }]} />
+    <View style={[styles.bgDot, { top: 250, left: 30, backgroundColor: "#FFB74D" }]} />
   </View>
 );
 
@@ -42,7 +55,6 @@ const HISTORY_DATA = [
 export default function HistoryScreen() {
   const [activeFilter, setActiveFilter] = useState('All');
 
-  // Filter the data based on active tab
   const filteredData = HISTORY_DATA.filter(item => {
     if (activeFilter === 'All') return true;
     if (activeFilter === 'Notices' && item.type === 'notice') return true;
@@ -86,18 +98,15 @@ export default function HistoryScreen() {
           {filteredData.map((item) => (
             <TouchableOpacity key={item.id} style={styles.historyCard} activeOpacity={0.7}>
               
-              {/* Left Icon */}
               <View style={[styles.iconBox, { backgroundColor: item.iconBg }]}>
                 <Ionicons name={item.icon as any} size={22} color={item.iconColor} />
               </View>
               
-              {/* Text Content */}
               <View style={styles.textContainer}>
                 <Text style={styles.itemTitle}>{item.title}</Text>
                 <Text style={styles.itemTime}>{item.time}</Text>
               </View>
 
-              {/* Right Chevron */}
               <Ionicons name="chevron-forward" size={18} color="#9CA3AF" />
               
             </TouchableOpacity>
@@ -112,12 +121,19 @@ export default function HistoryScreen() {
 const styles = StyleSheet.create({
   container: { 
     flex: 1, 
-    backgroundColor: '#F9FAFB' // Standard light background matching the image
+    backgroundColor: '#F9FAFB' 
   },
   scrollContent: { 
     paddingHorizontal: 20, 
     paddingTop: 24, 
-    paddingBottom: 120 // Space for the bottom nav bar
+    paddingBottom: 120 
+  },
+  bgDot: { 
+    position: "absolute", 
+    width: 12, 
+    height: 12, 
+    borderRadius: 6,
+    opacity: 0.3
   },
 
   // Header Styles
@@ -145,13 +161,13 @@ const styles = StyleSheet.create({
   filterPill: { 
     paddingHorizontal: 20, 
     paddingVertical: 10, 
-    backgroundColor: '#FFF', 
+    backgroundColor: 'rgba(255, 255, 255, 0.9)', 
     borderRadius: 20, 
     borderWidth: 1, 
     borderColor: '#E5E7EB' 
   },
   filterPillActive: { 
-    backgroundColor: '#1D4ED8', // Deep blue for active state
+    backgroundColor: '#1D4ED8', 
     borderColor: '#1D4ED8' 
   },
   filterText: { 
@@ -170,7 +186,7 @@ const styles = StyleSheet.create({
   historyCard: { 
     flexDirection: 'row', 
     alignItems: 'center', 
-    backgroundColor: '#FFF', 
+    backgroundColor: 'rgba(255, 255, 255, 0.9)', 
     padding: 16, 
     borderRadius: 16, 
     shadowColor: "#000", 

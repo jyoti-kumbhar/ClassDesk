@@ -1,6 +1,52 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, ScrollView } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import Svg, { Path, Circle } from 'react-native-svg';
+
+// --- Background Component ---
+const BackgroundDecorations = () => (
+  <View style={StyleSheet.absoluteFill} pointerEvents="none">
+    
+    {/* Soft Flowing Background Lines */}
+    <View style={StyleSheet.absoluteFill}>
+      <Svg height="100%" width="100%">
+        <Path d="M-50 150 Q 150 50 450 250" stroke="#93C5FD" strokeWidth="2" fill="none" opacity={0.4} />
+        <Path d="M-20 350 Q 150 450 400 300" stroke="#6EE7B7" strokeWidth="2" strokeDasharray="6, 6" fill="none" opacity={0.5} />
+        <Path d="M-50 600 Q 200 750 450 550" stroke="#F9A8D4" strokeWidth="2" fill="none" opacity={0.4} />
+      </Svg>
+    </View>
+
+    {/* Top Right: Cool Glassy Orbs */}
+    <View style={{ position: "absolute", top: -60, right: -40, opacity: 0.6 }}>
+      <Svg height="300" width="400" viewBox="0 0 100 100">
+        <Circle cx="90" cy="70" r="50" fill="#93C5FD" opacity={0.5} />
+        <Circle cx="30" cy="80" r="40" fill="#C4B5FD" opacity={0.5} />
+        <Circle cx="60" cy="70" r="25" fill="#F9A8D4" opacity={0.6} />
+      </Svg>
+    </View>
+
+    {/* Middle Left: Floating Mint Bubble */}
+    <View style={{ position: "absolute", top: 300, left: -40, opacity: 0.5 }}>
+      <Svg height="150" width="150" viewBox="0 0 100 100">
+        <Circle cx="40" cy="50" r="40" fill="#6EE7B7" opacity={0.4} />
+        <Circle cx="60" cy="30" r="15" fill="#93C5FD" opacity={0.6} />
+      </Svg>
+    </View>
+
+    {/* Bottom Right: Warm Sunrise Orbs */}
+    <View style={{ position: "absolute", bottom: -50, right: -20, opacity: 0.6 }}>
+      <Svg height="200" width="300" viewBox="0 0 100 100">
+        <Circle cx="50" cy="80" r="60" fill="#FDBA74" opacity={0.5} />
+        <Circle cx="80" cy="40" r="30" fill="#FCA5A5" opacity={0.4} />
+      </Svg>
+    </View>
+
+    {/* Floating Mini Bubbles */}
+    <View style={[styles.dot, { top: 180, left: 40, backgroundColor: "#93C5FD", width: 14, height: 14, opacity: 0.7 }]} />
+    <View style={[styles.dot, { top: 350, right: 60, backgroundColor: "#C4B5FD", width: 20, height: 20, opacity: 0.6 }]} />
+    <View style={[styles.dot, { bottom: 120, left: 80, backgroundColor: "#F9A8D4", width: 10, height: 10, opacity: 0.8 }]} />
+  </View>
+);
 
 // --- Mock Data matching the Exams UI ---
 const EXAM_DATA = [
@@ -10,18 +56,17 @@ const EXAM_DATA = [
     date: 'May 24, 2024',
     duration: '90 mins',
     icon: 'flask', 
-    iconColor: '#1D4ED8', // Darker Blue
+    iconColor: '#1D4ED8', 
     iconBg: '#EEF2FF', 
-    isActive: true, // This flag will render the "Start Exam" button and active styling
+    isActive: true, 
   },
   { 
     id: 2, 
     title: 'Midterm: Mathematics', 
     date: 'May 26, 2024',
     duration: '120 mins',
-    // Using calculator as substitute for Sigma
     icon: 'calculator', 
-    iconColor: '#2563EB', // Blue
+    iconColor: '#2563EB', 
     iconBg: '#EEF2FF',
     isActive: false,
   },
@@ -31,7 +76,7 @@ const EXAM_DATA = [
     date: 'June 02, 2024',
     duration: '60 mins',
     icon: 'flask', 
-    iconColor: '#9333EA', // Purple
+    iconColor: '#9333EA', 
     iconBg: '#FAF5FF',
     isActive: false,
   },
@@ -40,9 +85,8 @@ const EXAM_DATA = [
     title: 'Quiz 3: World History', 
     date: 'May 15, 2024',
     duration: '30 mins',
-    // Using library as substitute for the scroll
     icon: 'library', 
-    iconColor: '#4B5563', // Gray/Dark
+    iconColor: '#4B5563', 
     iconBg: '#F3F4F6',
     isActive: false,
   }
@@ -51,6 +95,8 @@ const EXAM_DATA = [
 export default function ExamsScreen() {
   return (
     <View style={styles.container}>
+      <BackgroundDecorations />
+      
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
         
         {/* Header Information */}
@@ -93,11 +139,6 @@ export default function ExamsScreen() {
           </View>
         ))}
       </ScrollView>
-
-      {/* Floating Action Button */}
-      <TouchableOpacity style={styles.fab} activeOpacity={0.8}>
-        <Ionicons name="moon" size={20} color="#111827" />
-      </TouchableOpacity>
     </View>
   );
 }
@@ -105,25 +146,25 @@ export default function ExamsScreen() {
 const styles = StyleSheet.create({
   container: { 
     flex: 1, 
-    backgroundColor: '#F4F6F9' 
+    backgroundColor: '#FFF9F0' 
   },
   scrollContent: { 
     paddingHorizontal: 20, 
     paddingTop: 20, 
-    paddingBottom: 120 // Extra padding for the custom bottom nav
+    paddingBottom: 120 
   }, 
-  
-  // Header
+  dot: {
+    position: 'absolute',
+    borderRadius: 100,
+  },
   pageTitle: { 
     fontSize: 32, 
     fontWeight: '900', 
     color: '#111827', 
     marginBottom: 24 
   },
-
-  // Card Styles
   card: { 
-    backgroundColor: '#FFF', 
+    backgroundColor: 'rgba(255, 255, 255, 0.9)', 
     borderRadius: 24, 
     padding: 20, 
     marginBottom: 16, 
@@ -162,8 +203,6 @@ const styles = StyleSheet.create({
     color: '#111827', 
     marginBottom: 8 
   },
-  
-  // Meta Info (Date & Duration)
   metaRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -179,10 +218,8 @@ const styles = StyleSheet.create({
     fontWeight: '600', 
     color: '#6B7280', 
   },
-
-  // Start Exam Button
   startBtn: { 
-    backgroundColor: '#1D4ED8', // Strong Blue
+    backgroundColor: '#1D4ED8', 
     paddingVertical: 16, 
     borderRadius: 16, 
     alignItems: 'center', 
@@ -195,22 +232,4 @@ const styles = StyleSheet.create({
     color: '#FFF', 
     letterSpacing: 0.5 
   },
-
-  // Floating Action Button
-  fab: {
-    position: 'absolute',
-    bottom: 100, // Positions it right above the layout's bottom nav
-    right: 20,
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    backgroundColor: '#FFF',
-    alignItems: 'center',
-    justifyContent: 'center',
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 5,
-  }
 });
