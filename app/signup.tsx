@@ -1,4 +1,4 @@
-import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
+import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import React, { useState } from "react";
 import {
@@ -8,13 +8,13 @@ import {
   KeyboardAvoidingView,
   ListRenderItem,
   Modal,
-  Platform,
   ScrollView,
   StyleSheet,
   Text,
   TextInput,
   TouchableOpacity,
   View,
+  ActivityIndicator
 } from "react-native";
 import Svg, { Circle, Path } from "react-native-svg";
 
@@ -23,7 +23,7 @@ import {
   createUserWithEmailAndPassword,
   sendEmailVerification,
 } from "firebase/auth";
-import { auth, db } from "./firebase/firebaseConfig";
+import { auth, db } from "../firebase/firebaseConfig";
 import { doc, setDoc } from "firebase/firestore";
 
 const { width, height } = Dimensions.get("window");
@@ -34,21 +34,12 @@ const BackgroundArt = () => (
     <View style={{ position: "absolute", top: -30, right: -20 }}>
       <Svg height="150" width="150" viewBox="0 0 100 100">
         <Path d="M80 20 L100 50 L60 60 Z" fill="#4461F2" opacity={0.8} />
-        <Circle
-          cx="80"
-          cy="80"
-          r="35"
-          stroke="#FFCC80"
-          strokeWidth="2"
-          fill="transparent"
-        />
+        <Circle cx="80" cy="80" r="35" stroke="#FFCC80" strokeWidth="2" fill="transparent" />
       </Svg>
     </View>
 
     <View style={{ position: "absolute", top: height * 0.3, left: 20 }}>
-      <View
-        style={{ width: 10, height: 10, borderRadius: 5, backgroundColor: "#FFB74D" }}
-      />
+      <View style={{ width: 10, height: 10, borderRadius: 5, backgroundColor: "#FFB74D" }} />
     </View>
 
     <View style={{ position: "absolute", bottom: 80, left: -20 }}>
@@ -79,29 +70,31 @@ const BackgroundArt = () => (
 export default function Signup() {
   const router = useRouter();
 
-  const [username, setUsername] = useState<string>("");
-  const [email, setEmail] = useState<string>("");
-  const [password, setPassword] = useState<string>("");
-  const [isPasswordVisible, setIsPasswordVisible] = useState<boolean>(false);
+  const [username, setUsername] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [isPasswordVisible, setIsPasswordVisible] = useState(false);
+  
+  const [loading, setLoading] = useState(false);
 
-  const [role, setRole] = useState<string>("Student");
-  const [showRolePicker, setShowRolePicker] = useState<boolean>(false);
+  const [role, setRole] = useState("Student");
+  const [showRolePicker, setShowRolePicker] = useState(false);
 
-  const roles: string[] = ["Student", "Teacher", "Admin"];
+  const roles = ["Student", "Teacher"];
 
-  // ---------------- Firebase Signup ----------------
+  // ---------------- EMAIL SIGNUP ----------------
   const handleSignup = async () => {
-    if (!username.trim() || !email.trim() || !password.trim()) {
-      Alert.alert("Error", "Please fill all fields");
+    if (!username || !email || !password) {
+      Alert.alert("Missing Fields", "Please fill all fields to continue.");
       return;
     }
 
+    setLoading(true);
+
     try {
-      // 1️⃣ Create user in Firebase Auth
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
       const user = userCredential.user;
 
-      // 2️⃣ Save extra details in Firestore
       await setDoc(doc(db, "users", user.uid), {
         name: username,
         email: user.email,
@@ -109,27 +102,35 @@ export default function Signup() {
         createdAt: new Date(),
       });
 
-      // 3️⃣ Send email verification
       await sendEmailVerification(user);
 
       Alert.alert(
-        "Success",
-        "Account created successfully! Please verify your email before login."
+        "Account Created Successfully!",
+        "A verification email has been sent. Please verify your email before logging in.",
+        [
+          { 
+            text: "Go to Login", 
+            onPress: () => router.push("/login") 
+          }
+        ]
       );
 
-      console.log("User signed up and saved to Firestore:", user.uid);
-      router.push("/login");
     } catch (error: any) {
-      console.log("Signup error:", error);
-      let message = "Signup failed";
-      if (error.code === "auth/email-already-in-use") {
-        message = "This email is already in use";
-      } else if (error.code === "auth/invalid-email") {
-        message = "Invalid email address";
-      } else if (error.code === "auth/weak-password") {
-        message = "Password should be at least 6 characters";
+      let errorMessage = "An error occurred during sign up.";
+
+      if (error.code === 'auth/email-already-in-use') {
+        errorMessage = "This email is already in use. Please use a different email or log in.";
+      } else if (error.code === 'auth/invalid-email') {
+        errorMessage = "Please enter a valid email address.";
+      } else if (error.code === 'auth/weak-password') {
+        errorMessage = "Password should be at least 6 characters.";
+      } else {
+        errorMessage = error.message;
       }
-      Alert.alert("Error", message);
+
+      Alert.alert("Registration Failed", errorMessage);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -153,29 +154,23 @@ export default function Signup() {
       <BackgroundArt />
 
       <KeyboardAvoidingView
-        behavior={Platform.OS === "ios" ? "padding" : "height"}
         style={{ flex: 1 }}
       >
-        <ScrollView
-          contentContainerStyle={styles.scrollContent}
-          showsVerticalScrollIndicator={false}
-        >
-          {/* App Logo */}
+        <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+          
           <View style={styles.headerIconContainer}>
             <View style={styles.logoBox}>
               <Ionicons name="school" size={40} color="white" />
             </View>
           </View>
 
-          {/* Titles */}
           <Text style={styles.title}>Create your account</Text>
           <Text style={styles.subtitle}>
             Empowering education for students and teachers.
           </Text>
 
-          {/* Form */}
           <View style={styles.formContainer}>
-            {/* Role */}
+            
             <Text style={styles.label}>I am a</Text>
             <TouchableOpacity
               style={styles.inputWrapper}
@@ -186,27 +181,25 @@ export default function Signup() {
               <Ionicons name="chevron-down" size={20} color="#9E9E9E" />
             </TouchableOpacity>
 
-            {/* Username */}
             <Text style={styles.label}>Username</Text>
             <View style={styles.inputWrapper}>
               <Ionicons name="person" size={20} color="#9E9E9E" style={styles.inputIcon} />
               <TextInput
                 style={styles.textInput}
                 placeholder="Choose a username"
-                placeholderTextColor="#BDBDBD"
+                placeholderTextColor="#A0AEC0" 
                 value={username}
                 onChangeText={setUsername}
               />
             </View>
 
-            {/* Email */}
             <Text style={styles.label}>Email</Text>
             <View style={styles.inputWrapper}>
               <Ionicons name="mail" size={20} color="#9E9E9E" style={styles.inputIcon} />
               <TextInput
                 style={styles.textInput}
                 placeholder="Enter your email"
-                placeholderTextColor="#BDBDBD"
+                placeholderTextColor="#A0AEC0"
                 value={email}
                 onChangeText={setEmail}
                 keyboardType="email-address"
@@ -214,46 +207,34 @@ export default function Signup() {
               />
             </View>
 
-            {/* Password */}
             <Text style={styles.label}>Password</Text>
             <View style={styles.inputWrapper}>
               <Ionicons name="lock-closed" size={20} color="#9E9E9E" style={styles.inputIcon} />
               <TextInput
                 style={styles.textInput}
                 placeholder="Create a password"
-                placeholderTextColor="#BDBDBD"
+                placeholderTextColor="#A0AEC0"
                 value={password}
                 onChangeText={setPassword}
                 secureTextEntry={!isPasswordVisible}
               />
               <TouchableOpacity onPress={() => setIsPasswordVisible(!isPasswordVisible)}>
-                <Ionicons
-                  name={isPasswordVisible ? "eye" : "eye-off"}
-                  size={20}
-                  color="#9E9E9E"
-                />
+                <Ionicons name={isPasswordVisible ? "eye" : "eye-off"} size={20} color="#9E9E9E" />
               </TouchableOpacity>
             </View>
 
-            {/* Sign Up */}
-            <TouchableOpacity style={styles.signupButton} onPress={handleSignup}>
-              <Text style={styles.signupButtonText}>Sign Up</Text>
+            <TouchableOpacity 
+              style={[styles.signupButton, loading && { opacity: 0.7 }]} 
+              onPress={handleSignup}
+              disabled={loading}
+            >
+              {loading ? (
+                <ActivityIndicator color="white" />
+              ) : (
+                <Text style={styles.signupButtonText}>Sign Up</Text>
+              )}
             </TouchableOpacity>
 
-            {/* Divider */}
-            <View style={styles.dividerContainer}>
-              <View style={styles.dividerLine} />
-              <Text style={styles.dividerText}>OR</Text>
-              <View style={styles.dividerLine} />
-            </View>
-
-            {/* Google */}
-            <TouchableOpacity style={styles.googleButton}>
-              <MaterialCommunityIcons name="google" size={20} color="#EA4335" />
-              <Text style={styles.googleButtonText}>Sign up with Google</Text>
-            </TouchableOpacity>
-
-            {/* Footer */}
             <View style={styles.footer}>
               <Text style={styles.footerText}>Already have an account? </Text>
               <TouchableOpacity onPress={() => router.push("/login")}>
@@ -264,7 +245,6 @@ export default function Signup() {
         </ScrollView>
       </KeyboardAvoidingView>
 
-      {/* Role Picker Modal */}
       <Modal
         visible={showRolePicker}
         transparent
@@ -340,23 +320,13 @@ const styles = StyleSheet.create({
     elevation: 4,
   },
   signupButtonText: { color: "white", fontSize: 18, fontWeight: "bold" },
-  dividerContainer: { flexDirection: "row", alignItems: "center", marginBottom: 20 },
-  dividerLine: { flex: 1, height: 1, backgroundColor: "#E2E8F0" },
-  dividerText: { marginHorizontal: 10, color: "#A0AEC0", fontSize: 12, fontWeight: "600" },
-  googleButton: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    borderWidth: 1,
-    borderColor: "#CBD5E0",
-    borderRadius: 12,
-    height: 55,
-    marginBottom: 30,
-  },
-  googleButtonText: { marginLeft: 10, fontSize: 16, fontWeight: "600", color: "#2D3748" },
-  footer: { flexDirection: "row", justifyContent: "center", alignItems: "center" },
+  
+  // Footer styles
+  footer: { flexDirection: "row", justifyContent: "center", alignItems: "center", marginTop: 10 },
   footerText: { color: "#718096", fontSize: 14 },
   linkText: { color: "#2563EB", fontWeight: "bold", fontSize: 14 },
+  
+  // Modal styles
   modalOverlay: { flex: 1, backgroundColor: "rgba(0,0,0,0.3)", justifyContent: "center", alignItems: "center" },
   modalContent: { width: width * 0.8, backgroundColor: "white", borderRadius: 20, padding: 20 },
   modalTitle: { fontSize: 18, fontWeight: "bold", marginBottom: 15, textAlign: "center" },

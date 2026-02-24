@@ -1,4 +1,4 @@
-import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
+import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import React, { useState } from "react";
 import {
@@ -11,9 +11,19 @@ import {
   TextInput,
   TouchableOpacity,
   View,
-  SafeAreaView
+  SafeAreaView,
+  Alert,
+  ActivityIndicator
 } from "react-native";
 import Svg, { Circle, Path } from "react-native-svg";
+
+// Firebase Imports
+import { 
+  signInWithEmailAndPassword, 
+  signOut, 
+  sendEmailVerification 
+} from "firebase/auth";
+import { auth } from "../firebase/firebaseConfig";
 
 const { width, height } = Dimensions.get("window");
 
@@ -60,28 +70,71 @@ export default function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [isPasswordVisible, setIsPasswordVisible] = useState(false);
+  const [loading, setLoading] = useState(false);
 
-  const handleLogin = () => {
+  const handleLogin = async () => {
     // 1. Validation
     if (!email || !password) {
-      alert("Please fill in your credentials.");
+      Alert.alert("Missing Inputs", "Please fill in your credentials.");
       return;
     }
 
-    // 2. Mock Logic / Redirection based on Role
-    console.log(`Logging in as ${role} with ${email}`);
-    
-    switch (role) {
-      case "admin":
-        router.replace("/admin/dashboard"); 
-        break;
-      case "teacher":
-        router.replace("/teacher/dashboard");
-        break;
-      case "student":
-      default:
-        router.replace("/student/dashboard");
-        break;
+    setLoading(true);
+
+    try {
+      // 2. Attempt Login
+      const userCredential = await signInWithEmailAndPassword(auth, email, password);
+      const user = userCredential.user;
+
+      // 3. Check Email Verification
+      if (!user.emailVerified) {
+        // Force logout so they can't access protected routes
+        await signOut(auth);
+
+        Alert.alert(
+          "Email Not Verified",
+          "You must verify your email address before logging in.",
+          [
+            {
+              text: "Resend Email",
+              onPress: async () => {
+                try {
+                  await sendEmailVerification(user);
+                  Alert.alert("Sent", "Verification email resent successfully.");
+                } catch (err: any) {
+                  Alert.alert("Error", "Too many requests. Please wait a moment.");
+                }
+              },
+            },
+            { text: "OK", style: "cancel" }
+          ]
+        );
+        return;
+      }
+
+      console.log(`Logging in as ${role} with ${email}`);
+      
+      switch (role) {
+        case "admin":
+          router.replace("/admin/dashboard"); 
+          break;
+        case "teacher":
+          router.replace("/teacher/dashboard");
+          break;
+        case "student":
+        default:
+          router.replace("/student/dashboard");
+          break;
+      }
+
+    } catch (error: any) {
+      let msg = "Invalid email or password";
+      if (error.code === 'auth/invalid-credential') msg = "Invalid email or password.";
+      if (error.code === 'auth/too-many-requests') msg = "Too many attempts. Try again later.";
+      
+      Alert.alert("Login Failed", msg);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -106,7 +159,7 @@ export default function Login() {
             <Text style={styles.welcomeText}>Welcome back to your classroom</Text>
           </View>
 
-          {/* --- Role Toggle (New Feature) --- */}
+          {/* --- Role Toggle (Note: Normally role comes from DB, not user selection) --- */}
           <View style={styles.roleContainer}>
             {(["admin", "teacher", "student"] as const).map((r) => (
               <TouchableOpacity
@@ -132,16 +185,17 @@ export default function Login() {
           {/* --- Form Section --- */}
           <View style={styles.formContainer}>
             {/* Username/Email Input */}
-            <Text style={styles.inputLabel}>Username or Email</Text>
+            <Text style={styles.inputLabel}>Email</Text>
             <View style={styles.inputWrapper}>
-              <Ionicons name="person" size={20} color="#BDBDBD" style={styles.inputIcon} />
+              <Ionicons name="mail" size={20} color="#BDBDBD" style={styles.inputIcon} />
               <TextInput
-                placeholder="e.g. alex_smith"
-                placeholderTextColor="#BDBDBD"
+                placeholder="e.g. alex@example.com"
+                placeholderTextColor="#A0AEC0"
                 style={styles.textInput}
                 value={email}
                 onChangeText={setEmail}
                 autoCapitalize="none"
+                keyboardType="email-address"
               />
             </View>
 
@@ -151,7 +205,7 @@ export default function Login() {
               <Ionicons name="lock-closed" size={20} color="#BDBDBD" style={styles.inputIcon} />
               <TextInput
                 placeholder="Enter your password"
-                placeholderTextColor="#BDBDBD"
+                placeholderTextColor="#A0AEC0"
                 style={styles.textInput}
                 value={password}
                 onChangeText={setPassword}
@@ -172,22 +226,16 @@ export default function Login() {
             </TouchableOpacity>
 
             {/* Login Button */}
-            <TouchableOpacity onPress={handleLogin} style={styles.loginButton}>
-              <Text style={styles.loginButtonText}>Login</Text>
-            </TouchableOpacity>
-
-            {/* OR Divider */}
-            <View style={styles.dividerContainer}>
-              <View style={styles.dividerLine} />
-              <Text style={styles.dividerText}>OR</Text>
-              <View style={styles.dividerLine} />
-            </View>
-
-            {/* Google Login Button */}
-            <TouchableOpacity style={styles.googleButton}>
-               {/* Using an icon for Google for simplicity, ideally use an Image asset */}
-              <MaterialCommunityIcons name="google" size={20} color="#EA4335" />
-              <Text style={styles.googleButtonText}>Continue with Google</Text>
+            <TouchableOpacity 
+              onPress={handleLogin} 
+              style={[styles.loginButton, loading && { opacity: 0.7 }]}
+              disabled={loading}
+            >
+              {loading ? (
+                <ActivityIndicator color="white" />
+              ) : (
+                <Text style={styles.loginButtonText}>Login</Text>
+              )}
             </TouchableOpacity>
 
             {/* Sign Up Footer */}
@@ -348,43 +396,6 @@ const styles = StyleSheet.create({
     color: "white",
     fontSize: 18,
     fontWeight: "bold",
-  },
-  
-  // --- Divider ---
-  dividerContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginBottom: 25,
-  },
-  dividerLine: {
-    flex: 1,
-    height: 1,
-    backgroundColor: "#E4E4E7",
-  },
-  dividerText: {
-    marginHorizontal: 15,
-    color: "#71717A",
-    fontSize: 12,
-    fontWeight: "600",
-  },
-
-  // --- Google Button ---
-  googleButton: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: "white",
-    borderWidth: 1,
-    borderColor: "#E4E4E7",
-    borderRadius: 15,
-    height: 55,
-    marginBottom: 30,
-  },
-  googleButtonText: {
-    marginLeft: 10,
-    fontSize: 16,
-    fontWeight: "600",
-    color: "#1A1A1A",
   },
 
   // --- Footer ---

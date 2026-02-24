@@ -10,11 +10,10 @@ const firebaseConfig = {
   storageBucket: "exam-attendance-app-5e459.firebasestorage.app",
   messagingSenderId: "1072135191552",
   appId: "1:1072135191552:web:92fa49f318ad1d51af2ce5",
-  measurementId: "G-FH7ZKPZKK4"
 };
+
 
 const app = initializeApp(firebaseConfig);
 
-// Exports
 export const auth = getAuth(app);
-export const db = getFirestore(app); 
+export const db = getFirestore(app);
