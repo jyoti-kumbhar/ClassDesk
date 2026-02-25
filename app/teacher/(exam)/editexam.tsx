@@ -8,34 +8,16 @@ import {
   TextInput, 
   KeyboardAvoidingView, 
   Platform,
-  Dimensions
+  Dimensions,
+  ActivityIndicator,
+  Alert
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import Svg, { Circle, Path, Line } from "react-native-svg";
+import { ExamDatabase } from '../services/examDatabase';
 
 const { width } = Dimensions.get('window');
-
-// --- Mock Initial Data based on Image 28 ---
-const INITIAL_EXAM_DATA = {
-  examName: 'Midterm Physics Assessment',
-  instructions: 'Please answer all questions. There is no negative marking.',
-  questions: [
-    {
-      id: 'q1',
-      number: 1,
-      type: 'Single Correct',
-      text: 'What is the SI unit of force?',
-      marks: '1',
-      options: [
-        { id: 'a', label: 'A', text: 'Newton' },
-        { id: 'b', label: 'B', text: 'Joule' },
-        { id: 'c', label: 'C', text: 'Watt' },
-        { id: 'd', label: 'D', text: 'Pascal' },
-      ]
-    }
-  ]
-};
 
 // --- Background Component ---
 const BackgroundDecorations = () => (
@@ -125,30 +107,133 @@ const BackgroundDecorations = () => (
 
 export default function EditExamScreen() {
   const router = useRouter();
-  // Retrieves the examId passed from the previous screen
   const { examId } = useLocalSearchParams(); 
 
-  const [examName, setExamName] = useState(INITIAL_EXAM_DATA.examName);
-  const [instructions, setInstructions] = useState(INITIAL_EXAM_DATA.instructions);
-  const [questions, setQuestions] = useState(INITIAL_EXAM_DATA.questions);
+  // --- State Variables ---
+  const [loading, setLoading] = useState(true);
+  const [originalExam, setOriginalExam] = useState<any>(null); // Stores ID and metadata
+  
+  const [examName, setExamName] = useState('');
+  const [subject, setSubject] = useState('');
+  const [instructions, setInstructions] = useState('');
+  const [questions, setQuestions] = useState<any[]>([]);
 
-  // 1. Using examId to mock a data fetch
+  // --- 1. Fetch Data on Load ---
   useEffect(() => {
-    if (examId) {
-      console.log(`Simulating fetch for Exam ID: ${examId}`);
-      // In the future: fetch exam data from backend using this ID
-    }
+    const fetchExamData = async () => {
+      if (examId) {
+        try {
+          const data = await ExamDatabase.getExamById(examId as string);
+          if (data) {
+            setOriginalExam(data);
+            setExamName(data.title);
+            setSubject(data.subject);
+            setInstructions(data.instructions || '');
+            setQuestions(data.questions || []);
+          } else {
+            Alert.alert("Error", "Exam not found.");
+            router.back();
+          }
+        } catch (e) {
+          console.error("Failed to load exam", e);
+          Alert.alert("Error", "Could not load exam data.");
+        } finally {
+          setLoading(false);
+        }
+      }
+    };
+    fetchExamData();
   }, [examId]);
 
-  // 2. Function to delete a question
-  const handleDeleteQuestion = (questionId: string) => {
-    setQuestions(questions.filter(q => q.id !== questionId));
+  // --- 2. Handlers for Editing ---
+
+  // Add a new empty question
+  const handleAddQuestion = () => {
+    const newNum = questions.length + 1;
+    const newQuestion = {
+      id: `q${Date.now()}`,
+      number: newNum,
+      type: 'Single Correct',
+      text: '',
+      marks: '1',
+      options: [
+        { id: 'a', label: 'A', text: '' },
+        { id: 'b', label: 'B', text: '' },
+        { id: 'c', label: 'C', text: '' },
+        { id: 'd', label: 'D', text: '' },
+      ]
+    };
+    setQuestions([...questions, newQuestion]);
   };
+
+  // Update question text or marks
+  const updateQuestion = (index: number, field: string, value: string) => {
+    const updated = [...questions];
+    updated[index] = { ...updated[index], [field]: value };
+    setQuestions(updated);
+  };
+
+  // Update option text
+  const updateOption = (qIndex: number, optIndex: number, text: string) => {
+    const updated = [...questions];
+    const updatedOptions = [...updated[qIndex].options];
+    updatedOptions[optIndex] = { ...updatedOptions[optIndex], text: text };
+    updated[qIndex].options = updatedOptions;
+    setQuestions(updated);
+  };
+
+  // Delete a question
+  const handleDeleteQuestion = (index: number) => {
+    if (questions.length <= 1) {
+      Alert.alert("Cannot Delete", "You must have at least one question.");
+      return;
+    }
+    const filtered = questions.filter((_, i) => i !== index);
+    // Renumber the questions sequentially
+    const renumbered = filtered.map((q, i) => ({ ...q, number: i + 1 }));
+    setQuestions(renumbered);
+  };
+
+  // --- 3. Save Changes to Database ---
+  const handleUpdate = async () => {
+    if (!examName.trim() || !subject.trim()) {
+      Alert.alert("Missing Info", "Exam Name and Subject are required.");
+      return;
+    }
+
+    try {
+      const updatedExam = {
+        ...originalExam, // Keep the original ID, created date, etc.
+        title: examName,
+        subject: subject,
+        instructions: instructions,
+        questions: questions,
+        // Update timestamp if desired:
+        // dateTime: new Date().toDateString() 
+      };
+
+      await ExamDatabase.updateExam(updatedExam);
+      
+      Alert.alert("Success", "Exam updated successfully!", [
+        { text: "OK", onPress: () => router.back() }
+      ]);
+    } catch (error) {
+      console.error(error);
+      Alert.alert("Error", "Failed to update exam.");
+    }
+  };
+
+  if (loading) {
+    return (
+      <View style={[styles.mainContainer, { justifyContent: 'center', alignItems: 'center' }]}>
+        <ActivityIndicator size="large" color="#4461F2" />
+      </View>
+    );
+  }
 
   return (
     <View style={styles.mainContainer}>
       
-      {/* Background Graphics */}
       <BackgroundDecorations />
 
       <KeyboardAvoidingView 
@@ -157,16 +242,13 @@ export default function EditExamScreen() {
       >
         {/* Header */}
         <View style={styles.header}>
-          <TouchableOpacity onPress={() => router.push('/admin/exam' as any)} style={styles.backButton}>
+          <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
             <Ionicons name="arrow-back" size={24} color="#111827" />
           </TouchableOpacity>
           <View style={styles.headerTextContainer}>
-            <Text style={styles.headerTitle}>Edit MCQ Exam</Text>
-            <Text style={styles.headerSubtitle}>Modify assessment questions</Text>
+            <Text style={styles.headerTitle}>Edit Exam</Text>
+            <Text style={styles.headerSubtitle}>Modify content & settings</Text>
           </View>
-          <TouchableOpacity style={styles.profileButton}>
-            <View style={styles.profilePlaceholder} />
-          </TouchableOpacity>
         </View>
 
         <ScrollView 
@@ -175,23 +257,32 @@ export default function EditExamScreen() {
           showsVerticalScrollIndicator={false}
         >
           
-          {/* Exam Details Form */}
+          {/* Exam Details Section */}
           <View style={styles.card}>
             <Text style={styles.inputLabel}>EXAM NAME</Text>
             <TextInput
               style={styles.textInput}
               value={examName}
               onChangeText={setExamName}
-              placeholder="e.g. Midterm Physics Assessment"
+              placeholder="Exam Name"
               placeholderTextColor="#9CA3AF"
             />
 
-            <Text style={[styles.inputLabel, { marginTop: 16 }]}>INSTRUCTIONS (OPTIONAL)</Text>
+            <Text style={[styles.inputLabel, { marginTop: 16 }]}>SUBJECT</Text>
+            <TextInput
+              style={styles.textInput}
+              value={subject}
+              onChangeText={setSubject}
+              placeholder="Subject"
+              placeholderTextColor="#9CA3AF"
+            />
+
+            <Text style={[styles.inputLabel, { marginTop: 16 }]}>INSTRUCTIONS</Text>
             <TextInput
               style={[styles.textInput, styles.textArea]}
               value={instructions}
               onChangeText={setInstructions}
-              placeholder="Add instructions for students..."
+              placeholder="Instructions..."
               placeholderTextColor="#9CA3AF"
               multiline
               textAlignVertical="top"
@@ -199,16 +290,17 @@ export default function EditExamScreen() {
           </View>
 
           {/* Questions List */}
-          {questions.map((q, index) => (
+          {questions.map((q, qIndex) => (
             <View key={q.id} style={styles.card}>
-              {/* Question Header (Badge & Dropdown) */}
+              
+              {/* Question Header */}
               <View style={styles.questionHeader}>
                 <View style={styles.questionBadge}>
                   <Text style={styles.questionBadgeText}>Question {q.number}</Text>
                 </View>
-                <TouchableOpacity style={styles.dropdownButton}>
-                  <Text style={styles.dropdownText}>{q.type}</Text>
-                  <Ionicons name="chevron-down" size={16} color="#4B5563" />
+                {/* Delete Button */}
+                <TouchableOpacity onPress={() => handleDeleteQuestion(qIndex)}>
+                  <Ionicons name="trash-outline" size={20} color="#EF4444" />
                 </TouchableOpacity>
               </View>
 
@@ -216,7 +308,8 @@ export default function EditExamScreen() {
               <TextInput
                 style={[styles.textInput, styles.questionTextArea]}
                 value={q.text}
-                placeholder="Type your question here..."
+                onChangeText={(text) => updateQuestion(qIndex, 'text', text)}
+                placeholder="Question text..."
                 placeholderTextColor="#9CA3AF"
                 multiline
                 textAlignVertical="top"
@@ -224,7 +317,7 @@ export default function EditExamScreen() {
 
               {/* Options */}
               <View style={styles.optionsContainer}>
-                {q.options.map((opt) => (
+                {q.options.map((opt: any, optIndex: number) => (
                   <View key={opt.id} style={styles.optionRow}>
                     <View style={styles.optionLabelBox}>
                       <Text style={styles.optionLabelText}>{opt.label}</Text>
@@ -232,99 +325,81 @@ export default function EditExamScreen() {
                     <TextInput
                       style={styles.optionInput}
                       value={opt.text}
+                      onChangeText={(text) => updateOption(qIndex, optIndex, text)}
                       placeholder={`Option ${opt.label}`}
                       placeholderTextColor="#9CA3AF"
                     />
-                    <TouchableOpacity style={styles.deleteOptionBtn}>
-                      <Ionicons name="close" size={20} color="#D1D5DB" />
-                    </TouchableOpacity>
                   </View>
                 ))}
               </View>
 
-              {/* Question Footer (Marks & Actions) */}
+              {/* Marks Input */}
               <View style={styles.questionFooter}>
                 <View style={styles.marksContainer}>
                   <Text style={styles.marksLabel}>MARKS</Text>
                   <TextInput
                     style={styles.marksInput}
                     value={q.marks}
+                    onChangeText={(text) => updateQuestion(qIndex, 'marks', text)}
                     keyboardType="numeric"
                   />
                 </View>
-                <View style={styles.questionActions}>
-                  <TouchableOpacity style={styles.iconButton}>
-                    <Ionicons name="copy-outline" size={20} color="#6B7280" />
-                  </TouchableOpacity>
-                  {/* Delete Action Wired Up */}
-                  <TouchableOpacity 
-                    style={styles.iconButton}
-                    onPress={() => handleDeleteQuestion(q.id)}
-                  >
-                    <Ionicons name="trash-outline" size={20} color="#6B7280" />
-                  </TouchableOpacity>
-                </View>
               </View>
+
             </View>
           ))}
-          
-          {/* Add Question Button Space */}
-          <View style={{ height: 100 }} />
+
+          {/* Add Question Button */}
+          <TouchableOpacity style={styles.addQuestionBtn} onPress={handleAddQuestion}>
+            <Ionicons name="add-circle-outline" size={22} color="#6B7280" />
+            <Text style={styles.addQuestionText}>Add Question</Text>
+          </TouchableOpacity>
 
         </ScrollView>
+
+        {/* Bottom Save Bar */}
+        <View style={styles.bottomBar}>
+          <TouchableOpacity style={styles.updateButton} onPress={handleUpdate}>
+            <Text style={styles.updateButtonText}>Update Exam</Text>
+          </TouchableOpacity>
+        </View>
+
       </KeyboardAvoidingView>
     </View>
   );
 }
 
+// --- Styles ---
 const styles = StyleSheet.create({
-  mainContainer: { flex: 1, backgroundColor: '#FFF9F0' }, // Theme background
+  mainContainer: { flex: 1, backgroundColor: '#FFF9F0' },
   keyboardContainer: { flex: 1 },
-  
-  header: { 
-    flexDirection: 'row', 
-    alignItems: 'center', 
-    paddingHorizontal: 20, 
-    paddingTop: 50, 
-    paddingBottom: 20,
-    backgroundColor: 'transparent' // Transparent for background visibility
-  },
+  header: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 20, paddingTop: 50, paddingBottom: 20 },
   backButton: { marginRight: 16 },
   headerTextContainer: { flex: 1 },
   headerTitle: { fontSize: 24, fontWeight: '800', color: '#111827' },
   headerSubtitle: { fontSize: 14, color: '#6B7280', marginTop: 2 },
-  profileButton: { width: 40, height: 40, borderRadius: 20, backgroundColor: '#FDE68A', justifyContent: 'center', alignItems: 'center' },
-  profilePlaceholder: { width: 24, height: 24, borderRadius: 12, backgroundColor: '#FCD34D' },
-  
   scrollArea: { flex: 1 },
   contentContainer: { padding: 20, paddingBottom: 40, gap: 20 },
-  
   card: { backgroundColor: '#FFF', borderRadius: 20, padding: 20, borderWidth: 1, borderColor: '#F3F4F6', shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.02, shadowRadius: 8, elevation: 1 },
-  
   inputLabel: { fontSize: 11, fontWeight: '700', color: '#9CA3AF', marginBottom: 8, letterSpacing: 0.5 },
   textInput: { backgroundColor: '#F9FAFB', borderWidth: 1, borderColor: '#F3F4F6', borderRadius: 12, paddingHorizontal: 16, height: 50, fontSize: 15, color: '#111827' },
   textArea: { height: 80, paddingTop: 16 },
-  
   questionTextArea: { height: 100, paddingTop: 16, marginBottom: 20 },
-  
   questionHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 },
   questionBadge: { backgroundColor: '#EEF2FF', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 20 },
   questionBadgeText: { color: '#3B3CFF', fontSize: 12, fontWeight: '700' },
-  dropdownButton: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#F9FAFB', paddingHorizontal: 12, paddingVertical: 8, borderRadius: 10, borderWidth: 1, borderColor: '#F3F4F6' },
-  dropdownText: { fontSize: 13, fontWeight: '600', color: '#111827', marginRight: 8 },
-  
   optionsContainer: { gap: 12, marginBottom: 20 },
   optionRow: { flexDirection: 'row', alignItems: 'center' },
   optionLabelBox: { width: 36, height: 36, borderRadius: 10, backgroundColor: '#F3F4F6', justifyContent: 'center', alignItems: 'center', marginRight: 12 },
   optionLabelText: { fontSize: 14, fontWeight: '700', color: '#6B7280' },
   optionInput: { flex: 1, height: 44, borderWidth: 1, borderColor: '#E5E7EB', borderRadius: 8, paddingHorizontal: 12, fontSize: 14, color: '#111827' },
-  deleteOptionBtn: { padding: 10, marginLeft: 4 },
-  
   questionFooter: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingTop: 16, borderTopWidth: 1, borderTopColor: '#F3F4F6' },
   marksContainer: { flexDirection: 'row', alignItems: 'center' },
   marksLabel: { fontSize: 11, fontWeight: '700', color: '#9CA3AF', marginRight: 12, letterSpacing: 0.5 },
   marksInput: { width: 60, height: 36, backgroundColor: '#F3F4F6', borderRadius: 8, textAlign: 'center', fontSize: 14, fontWeight: '600', color: '#111827' },
-  
-  questionActions: { flexDirection: 'row', gap: 16 },
-  iconButton: { padding: 4 },
+  addQuestionBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', borderWidth: 1.5, borderColor: '#D1D5DB', borderStyle: 'dashed', borderRadius: 24, paddingVertical: 18, marginTop: 8, backgroundColor: '#FFF' },
+  addQuestionText: { color: '#6B7280', fontSize: 16, fontWeight: '600', marginLeft: 8 },
+  bottomBar: { padding: 20, backgroundColor: '#FFF', borderTopWidth: 1, borderTopColor: '#F3F4F6', paddingBottom: Platform.OS === 'ios' ? 34 : 20 },
+  updateButton: { height: 56, borderRadius: 16, backgroundColor: '#4461F2', justifyContent: 'center', alignItems: 'center', shadowColor: '#4461F2', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 8, elevation: 4 },
+  updateButtonText: { color: '#FFF', fontSize: 16, fontWeight: '700' },
 });

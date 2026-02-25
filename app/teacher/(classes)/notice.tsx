@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   View, 
   Text, 
@@ -7,151 +7,240 @@ import {
   TouchableOpacity, 
   Modal, 
   TextInput, 
-  Switch,
-  Dimensions
+  Alert,
+  Linking,
+  ActivityIndicator,
+  KeyboardAvoidingView,
+  Platform
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import Svg, { Circle, Path, Line } from "react-native-svg";
+import Svg, { Circle } from "react-native-svg";
+import { useLocalSearchParams } from 'expo-router';
+import DateTimePicker from '@react-native-community/datetimepicker'; 
 
-const { width } = Dimensions.get('window');
-
-// --- Mock Data ---
-const NOTICES_DATA = [
-  {
-    id: '1',
-    title: 'Quarterly Examination Schedule',
-    time: '2h ago',
-    description: 'The schedule for the upcoming quarterly examinations has been...',
-    attachment: { type: 'pdf', name: 'exam_schedule.pdf' },
-  },
-  {
-    id: '2',
-    title: 'New Assignment: Calculus Basics',
-    time: 'Yesterday',
-    description: 'Complete the exercises on page 42–45 and submit by Friday. Refer to the diagram attached.',
-    attachment: { type: 'image', name: 'math_diagram.png' },
-  },
-  {
-    id: '3',
-    title: 'Class Representative Meeting',
-    time: 'Oct 20',
-    description: 'All class representatives are requested to gather in the auditorium during lunch break.',
-    attachment: null,
-  },
-];
+// Firebase Imports
+import { 
+  collection, 
+  addDoc, 
+  updateDoc, 
+  deleteDoc, 
+  doc, 
+  onSnapshot, 
+  query, 
+  orderBy,
+  where, 
+  serverTimestamp 
+} from 'firebase/firestore';
+import { db } from '../../../firebase/firebaseConfig'; 
 
 // --- Background Component ---
 const BackgroundDecorations = () => (
   <View style={StyleSheet.absoluteFill} pointerEvents="none">
-    
-    {/* Top Right Large Soft Glow (Purple) */}
     <View style={{ position: "absolute", top: 30, right: -40 }}>
       <Svg height="200" width="200" viewBox="0 0 200 200">
         <Circle cx="100" cy="100" r="80" fill="#F3E8FF" opacity={0.6} />
         <Circle cx="100" cy="100" r="50" fill="#E9D5FF" opacity={0.4} />
       </Svg>
     </View>
-
-    {/* Top Left - Dashed Connection Line */}
-    <View style={{ position: "absolute", top: 60, left: 20 }}>
-       <Svg height="100" width="120" viewBox="0 0 120 100">
-          <Line x1="10" y1="0" x2="10" y2="60" stroke="#BAE6FD" strokeWidth="2" strokeDasharray="5, 5" />
-          <Path d="M 10 60 Q 10 90 40 90 L 80 90" stroke="#BAE6FD" strokeWidth="2" fill="none" />
-          <Circle cx="80" cy="90" r="4" fill="#60A5FA" opacity={0.6} />
-       </Svg>
-    </View>
-
-    {/* Middle - The "Data Wave" */}
-    <View style={{ position: "absolute", top: 220, width: width, alignItems: 'center', opacity: 0.4 }}>
-       <Svg height="150" width={width} viewBox={`0 0 ${width} 150`}>
-          <Path 
-            d={`M -20 75 C ${width * 0.3} 120, ${width * 0.7} 30, ${width + 20} 75`} 
-            stroke="#99F6E4" 
-            strokeWidth="3" 
-            fill="none" 
-          />
-          <Path 
-            d={`M -20 90 C ${width * 0.3} 135, ${width * 0.7} 45, ${width + 20} 90`} 
-            stroke="#CCFBF1" 
-            strokeWidth="2" 
-            fill="none" 
-            strokeDasharray="10, 10"
-          />
-          <Circle cx={width * 0.2} cy="85" r="3" fill="#34D399" />
-          <Circle cx={width * 0.8} cy="65" r="5" stroke="#34D399" strokeWidth="2" fill="#FFF" />
-       </Svg>
-    </View>
-
-    {/* Middle Right - Dot Grid Matrix */}
-    <View style={{ position: "absolute", top: 380, right: 10, opacity: 0.3 }}>
-       <Svg height="80" width="60">
-             {[0, 15, 30].map((x) => 
-               [0, 15, 30, 45].map((y) => (
-                 <Circle key={`${x}-${y}`} cx={x + 5} cy={y + 5} r="1.5" fill="#FDBA74" />
-               ))
-             )}
-       </Svg>
-    </View>
-
-    {/* Bottom Left - Geometric Stack */}
-    <View style={{ position: "absolute", bottom: 100, left: -20 }}>
-       <Svg height="120" width="120" viewBox="0 0 100 100">
-             <Line x1="0" y1="50" x2="100" y2="50" stroke="#FDE68A" strokeWidth="40" opacity={0.3} transform="rotate(-45 50 50)" />
-             <Line x1="20" y1="50" x2="80" y2="50" stroke="#F59E0B" strokeWidth="2" transform="rotate(-45 50 50)" />
-       </Svg>
-    </View>
-
-    {/* Bottom Right - Abstract Playground */}
-    <View style={{ position: "absolute", bottom: 40, right: -20, opacity: 0.9 }}>
-      <Svg height="220" width="220" viewBox="0 0 200 200">
-        <Circle cx="200" cy="200" r="150" fill="#fdf0fd" />
-        <Path 
-          d="M 100 200 Q 120 120 200 100" 
-          stroke="#fbccf9" 
-          strokeWidth="30" 
-          strokeLinecap="round" 
-          fill="none" 
-        />
-        <Path 
-          d="M 40 130 Q 70 80 100 130 T 160 130" 
-          stroke="#c7bdf1" 
-          strokeWidth="3" 
-          strokeLinecap="round" 
-          fill="none" 
-        />
-        <Circle cx="80" cy="180" r="4" fill="#93C5FD" />
-        <Circle cx="180" cy="150" r="3" fill="#93C5FD" />
-      </Svg>
-    </View>
   </View>
 );
 
 export default function ClassNoticesScreen() {
+  const params = useLocalSearchParams();
+  const currentClassId = (params.id as string) || 'default-id'; 
+  const currentClassName = (params.grade as string) || 'Classroom'; 
+  const currentSubject = (params.subject as string) || 'General';
+
+  // UI State
   const [showDropdown, setShowDropdown] = useState(false);
   const [activeForm, setActiveForm] = useState<'notice' | 'assignment' | 'resource' | null>(null);
-  const [isScheduled, setIsScheduled] = useState(false);
+  const [loading, setLoading] = useState(false);
+  
+  // Data State
+  const [notices, setNotices] = useState<any[]>([]);
+  const [joinCode] = useState("XJ2–9KL");
 
-  const openForm = (formType: 'notice' | 'assignment' | 'resource') => {
+  // Form Input State
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [title, setTitle] = useState("");
+  const [description, setDescription] = useState("");
+  const [link, setLink] = useState(""); 
+  const [resourceType, setResourceType] = useState<'link'>('link');
+  const [formSubject, setFormSubject] = useState("");
+  // --- NEW: Total Marks State ---
+  const [totalMarks, setTotalMarks] = useState("100");
+  
+  // New Feature State: Date Picker & Drafts
+  const [deadline, setDeadline] = useState(new Date());
+  const [showDatePicker, setShowDatePicker] = useState(false);
+  const [viewNotice, setViewNotice] = useState<any | null>(null);
+
+  useEffect(() => {
+    const q = query(
+      collection(db, "notices"), 
+      where("classId", "==", currentClassId),
+      orderBy("createdAt", "desc")
+    );
+
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const fetchedNotices = snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      }));
+      setNotices(fetchedNotices);
+    }, (error) => {
+      console.error("Firestore Error:", error);
+      Alert.alert("Error", "Failed to load notices.");
+    });
+    return () => unsubscribe();
+  }, [currentClassId]);
+
+  // --- Reset & Open Form ---
+  const openForm = (formType: 'notice' | 'assignment' | 'resource', item?: any) => {
     setShowDropdown(false);
     setActiveForm(formType);
-    setIsScheduled(false); // reset toggles
+    
+    if (item) {
+      setEditingId(item.id);
+      setTitle(item.title);
+      setFormSubject(item.subject || currentSubject);
+      setDescription(item.description);
+      setLink(item.link || "");
+      setResourceType('link'); 
+      // Load existing marks if editing
+      setTotalMarks(item.total ? String(item.total) : "100");
+      setDeadline(item.deadline ? new Date(item.deadline.seconds * 1000) : new Date());
+    } else {
+      setEditingId(null);
+      setTitle("");
+      setFormSubject(currentSubject);
+      setDescription("");
+      setLink("");
+      setResourceType('link');
+      // Reset marks for new item
+      setTotalMarks("100");
+      setDeadline(new Date());
+    }
   };
+
+  // --- Save Logic ---
+  const handleSave = async (status: 'published' | 'draft') => {
+    if (!title) {
+      Alert.alert("Missing Fields", "Please add a title.");
+      return;
+    }
+
+    setLoading(true);
+    try {
+      // 1. Prepare Data
+      const data = {
+        classId: currentClassId,
+        className: currentClassName, 
+        subject: formSubject || currentSubject, 
+        title,
+        description,
+        type: activeForm, 
+        status: status, 
+        link: link || null, 
+        resourceType: (activeForm === 'resource' || activeForm === 'assignment') ? 'link' : null,
+        // Save the total marks (only for assignments)
+        total: activeForm === 'assignment' ? totalMarks : null,
+        deadline: activeForm === 'assignment' ? deadline : null,
+        updatedAt: serverTimestamp(),
+      };
+
+      // 2. Firestore Write
+      if (editingId) {
+        const noticeRef = doc(db, "notices", editingId);
+        await updateDoc(noticeRef, data);
+        Alert.alert("Success", "Updated successfully!");
+      } else {
+        await addDoc(collection(db, "notices"), {
+          ...data,
+          createdAt: serverTimestamp(),
+        });
+        Alert.alert("Success", status === 'draft' ? "Saved as Draft" : "Posted successfully!");
+      }
+      setActiveForm(null); 
+    } catch (error) {
+      console.error(error);
+      Alert.alert("Error", "Could not save.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // --- Delete Logic ---
+  const handleDelete = (id: string) => {
+    Alert.alert(
+      "Delete Item",
+      "Are you sure you want to delete this?",
+      [
+        { text: "Cancel", style: "cancel" },
+        { 
+          text: "Delete", 
+          style: "destructive", 
+          onPress: async () => {
+            try {
+              await deleteDoc(doc(db, "notices", id));
+            } catch (error) {
+              console.error("Delete error:", error);
+              Alert.alert("Error", "Failed to delete item.");
+            }
+          }
+        }
+      ]
+    );
+  };
+
+  const handleDownload = (url: string) => {
+    if (url) {
+      Linking.openURL(url).catch(() => Alert.alert("Error", "Could not open link."));
+    } else {
+      Alert.alert("No Link", "There is no link attached.");
+    }
+  };
+
+  // Date Picker Handler
+  const onDateChange = (event: any, selectedDate?: Date) => {
+    const currentDate = selectedDate || deadline;
+    setShowDatePicker(Platform.OS === 'ios');
+    setDeadline(currentDate);
+  };
+
+  const getTypeIcon = (type: string) => {
+    switch(type) {
+      case 'assignment': return 'clipboard-outline';
+      case 'resource': return 'folder-open-outline';
+      default: return 'notifications-outline';
+    }
+  };
+  const getResourceIcon = (type: string) => {
+      switch(type) {
+          case 'pdf': return 'document-text';
+          case 'docx': return 'document';
+          default: return 'link';
+      }
+  };
+  const getResourceLabel = (type: string) => {
+    switch(type) {
+        case 'pdf': return 'PDF Document';
+        case 'docx': return 'Word File';
+        default: return 'Link';
+    }
+  };
+
 
   return (
     <View style={styles.mainContainer}>
-      
-      {/* Background Graphics */}
       <BackgroundDecorations />
 
       <ScrollView contentContainerStyle={styles.contentContainer} showsVerticalScrollIndicator={false}>
-        
-        {/* Top Header Section */}
         <View style={styles.headerSection}>
-          <Text style={styles.className}>Grade 10 – A</Text>
-          <Text style={styles.classDetails}>MATHEMATICS • ROBERT FOX</Text>
+          <Text style={styles.className}>{currentClassName}</Text>
+          <Text style={styles.classDetails}>{currentSubject} • CLASSROOM</Text>
         </View>
 
-        {/* Create Button Container with relative positioning for Dropdown */}
         <View style={{ zIndex: 10 }}>
           <TouchableOpacity 
             style={styles.createButton} 
@@ -160,12 +249,11 @@ export default function ClassNoticesScreen() {
           >
             <View style={styles.createButtonInner}>
               <Ionicons name="add-circle" size={20} color="#FFF" style={styles.createIcon} />
-              <Text style={styles.createButtonText}>Create</Text>
+              <Text style={styles.createButtonText}>Create New</Text>
             </View>
             <Ionicons name={showDropdown ? "chevron-up" : "chevron-down"} size={18} color="#FFF" />
           </TouchableOpacity>
 
-          {/* Dropdown Menu */}
           {showDropdown && (
             <View style={styles.dropdownMenu}>
               <TouchableOpacity style={styles.dropdownItem} onPress={() => openForm('assignment')}>
@@ -184,258 +272,322 @@ export default function ClassNoticesScreen() {
           )}
         </View>
 
-        {/* Joining Details Card */}
+        {/* Joining Card */}
         <View style={styles.joiningCard}>
-          <View style={styles.joiningHeader}>
-            <Ionicons name="link" size={16} color="#3B3CFF" />
-            <Text style={styles.joiningTitle}>JOINING DETAILS</Text>
-          </View>
-          
-          <View style={styles.joiningCodesRow}>
-            <View style={styles.codeColumn}>
-              <Text style={styles.codeLabel}>JOINING CODE</Text>
-              <TouchableOpacity style={styles.codePill}>
-                <Text style={styles.codeValue}>XJ2–9KL</Text>
-                <Ionicons name="copy-outline" size={14} color="#6B7280" />
-              </TouchableOpacity>
-            </View>
-            
-            <View style={styles.codeColumn}>
-              <Text style={styles.codeLabel}>SHORTLINK</Text>
-              <TouchableOpacity style={styles.codePill}>
-                <Text style={styles.codeValue}>cls.dk/10a</Text>
-                <Ionicons name="copy-outline" size={14} color="#6B7280" />
-              </TouchableOpacity>
-            </View>
-          </View>
+              <View style={styles.joiningHeader}>
+                 <Ionicons name="link" size={16} color="#3B3CFF" />
+                 <Text style={styles.joiningTitle}>JOINING DETAILS</Text>
+              </View>
+              <View style={styles.joiningCodesRow}>
+                 <View style={styles.codeColumn}>
+                    <Text style={styles.codeLabel}>JOINING CODE</Text>
+                    <Text style={styles.codeValue}>{joinCode}</Text>
+                 </View>
+                 <View style={styles.codeColumn}>
+                    <Text style={styles.codeLabel}>SHORTLINK</Text>
+                    <Text style={styles.codeValue}>cls.dk/10a</Text>
+                 </View>
+              </View>
         </View>
 
-        {/* Recent Notices Section */}
-        <Text style={styles.sectionHeader}>RECENT NOTICES</Text>
+        <Text style={styles.sectionHeader}>UPDATES & RESOURCES</Text>
 
         <View style={styles.noticesList}>
-          {NOTICES_DATA.map((notice) => (
-            <View key={notice.id} style={styles.noticeCard}>
-              
+          {notices.map((notice) => (
+            <TouchableOpacity 
+              key={notice.id} 
+              style={[styles.noticeCard, notice.status === 'draft' && { opacity: 0.7, borderColor: '#F59E0B' }]}
+              activeOpacity={0.9}
+              onPress={() => setViewNotice(notice)}
+            >
               <View style={styles.noticeHeader}>
-                <Text style={styles.noticeTitle}>{notice.title}</Text>
-                <Text style={styles.noticeTime}>{notice.time}</Text>
+                <View style={{flexDirection:'row', alignItems:'center', flex:1}}>
+                    <View style={[styles.typeIcon, { 
+                        backgroundColor: notice.type === 'resource' ? '#E0E7FF' : notice.type === 'assignment' ? '#FEF3C7' : '#F3F4F6' 
+                    }]}>
+                        <Ionicons name={getTypeIcon(notice.type)} size={16} color="#374151" />
+                    </View>
+                    <View>
+                        <Text style={styles.noticeTitle} numberOfLines={1}>{notice.title}</Text>
+                        {notice.status === 'draft' && <Text style={{fontSize:10, color:'#D97706', fontWeight:'700'}}>DRAFT</Text>}
+                    </View>
+                </View>
+                {/* Actions */}
+                <View style={{flexDirection: 'row', gap: 15}}>
+                    <TouchableOpacity onPress={() => openForm(notice.type, notice)}>
+                        <Ionicons name="pencil" size={18} color="#6B7280" />
+                    </TouchableOpacity>
+                    <TouchableOpacity onPress={() => handleDelete(notice.id)}>
+                        <Ionicons name="trash-outline" size={18} color="#EF4444" />
+                    </TouchableOpacity>
+                </View>
               </View>
 
-              <Text style={styles.noticeDesc}>{notice.description}</Text>
-
-              {notice.attachment && (
-                <TouchableOpacity style={styles.attachmentPill}>
-                  <Ionicons 
-                    name={notice.attachment.type === 'pdf' ? 'document-text' : 'image'} 
-                    size={16} 
-                    color={notice.attachment.type === 'pdf' ? '#EF4444' : '#3B3CFF'} 
-                  />
-                  <Text style={styles.attachmentText}>{notice.attachment.name}</Text>
-                </TouchableOpacity>
+              <Text style={styles.noticeDesc} numberOfLines={2}>{notice.description}</Text>
+              
+              {/* Assignment Deadline Display in List */}
+              {notice.type === 'assignment' && notice.deadline && (
+                 <View style={{flexDirection:'row', alignItems:'center', marginBottom: 8}}>
+                    <Ionicons name="calendar-outline" size={12} color="#EF4444" />
+                    <Text style={{fontSize:12, color:'#EF4444', marginLeft:4}}>
+                        Due: {new Date(notice.deadline.seconds * 1000).toLocaleDateString()}
+                    </Text>
+                 </View>
               )}
 
-            </View>
+              <View style={{flexDirection:'row', justifyContent:'space-between', alignItems:'center'}}>
+                {notice.link ? (
+                    <View style={styles.attachmentPill}>
+                        <Ionicons 
+                            name={getResourceIcon(notice.resourceType)} 
+                            size={14} 
+                            color="#3B3CFF" 
+                        />
+                        <Text style={styles.attachmentText}>
+                             {getResourceLabel(notice.resourceType)}
+                        </Text>
+                    </View>
+                ) : <View />}
+                 <Text style={styles.noticeTime}>Tap to view</Text>
+              </View>
+            </TouchableOpacity>
           ))}
         </View>
-
       </ScrollView>
 
       {/* --- FORMS MODAL --- */}
       <Modal visible={activeForm !== null} animationType="slide" transparent>
-        <View style={styles.modalOverlay}>
+        <KeyboardAvoidingView 
+            behavior={Platform.OS === "ios" ? "padding" : "height"}
+            style={styles.modalOverlay}
+        >
           <View style={styles.modalContent}>
             
             <ScrollView showsVerticalScrollIndicator={false}>
-              {/* Common Modal Header */}
               <View style={styles.modalHeaderRow}>
                 <View>
                   <Text style={styles.formTitle}>
-                    {activeForm === 'notice' && 'Create Notice'}
-                    {activeForm === 'assignment' && 'Create Assignment'}
-                    {activeForm === 'resource' && 'Share Resource'}
+                    {editingId ? 'Edit' : 'Create'} {activeForm ? activeForm.charAt(0).toUpperCase() + activeForm.slice(1) : ''}
                   </Text>
-                  <Text style={styles.formSubtitle}>
-                    {activeForm === 'notice' && 'Post a new update for Grade 10-A'}
-                    {activeForm === 'assignment' && 'New task for Grade 10-A'}
-                    {activeForm === 'resource' && 'Upload materials for Grade 10-A'}
-                  </Text>
+                  <Text style={styles.formSubtitle}>{currentClassName}</Text>
                 </View>
                 <TouchableOpacity onPress={() => setActiveForm(null)} style={styles.closeBtn}>
                   <Ionicons name="close" size={24} color="#111827" />
                 </TouchableOpacity>
               </View>
 
-              {/* --- 1. CREATE NOTICE FORM --- */}
-              {activeForm === 'notice' && (
-                <View style={styles.formBody}>
-                  <View style={styles.inputGroup}>
-                    <Text style={styles.inputLabel}>NOTICE TITLE</Text>
-                    <TextInput style={styles.inputField} placeholder="Enter title (e.g., Weekly Quiz)" placeholderTextColor="#9CA3AF" />
-                  </View>
-
-                  <View style={styles.inputGroup}>
-                    <Text style={styles.inputLabel}>DESCRIPTION</Text>
-                    <TextInput 
-                      style={[styles.inputField, styles.textArea]} 
-                      placeholder="Write the notice details here..." 
-                      placeholderTextColor="#9CA3AF"
-                      multiline
-                    />
-                  </View>
-
-                  <View style={styles.inputGroup}>
-                    <Text style={styles.inputLabel}>ATTACH FILES</Text>
-                    <TouchableOpacity style={styles.dashedUploadBox}>
-                      <View style={styles.uploadIconWrapper}>
-                        <Ionicons name="cloud-upload" size={20} color="#FFF" />
-                      </View>
-                      <Text style={styles.uploadMainText}>Add documents or images</Text>
-                      <Text style={styles.uploadSubText}>PDF, DOC, JPG up to 10MB</Text>
-                    </TouchableOpacity>
-                  </View>
-
-                  <TouchableOpacity style={styles.primaryActionBtn}>
-                    <Ionicons name="send" size={16} color="#FFF" style={{ marginRight: 8 }} />
-                    <Text style={styles.primaryActionText}>Publish Notice</Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity style={styles.secondaryActionBtn} onPress={() => setActiveForm(null)}>
-                    <Text style={styles.secondaryActionText}>Save as Draft</Text>
-                  </TouchableOpacity>
+              <View style={styles.formBody}>
+                <View style={styles.inputGroup}>
+                  <Text style={styles.inputLabel}>TITLE</Text>
+                  <TextInput 
+                    style={styles.inputField} 
+                    placeholder="Enter title..." 
+                    placeholderTextColor="#9CA3AF" 
+                    value={title}
+                    onChangeText={setTitle}
+                  />
                 </View>
-              )}
 
-              {/* --- 2. CREATE ASSIGNMENT FORM --- */}
-              {activeForm === 'assignment' && (
-                <View style={styles.formBody}>
-                  <View style={styles.inputGroup}>
-                    <Text style={styles.inputLabel}>ASSIGNMENT TITLE</Text>
-                    <TextInput style={styles.inputField} placeholder="e.g. Quadratic Equations Quiz" placeholderTextColor="#9CA3AF" />
-                  </View>
-
-                  <View style={styles.inputGroup}>
-                    <Text style={styles.inputLabel}>DESCRIPTION</Text>
-                    <TextInput 
-                      style={[styles.inputField, styles.textArea]} 
-                      placeholder="Add detailed instructions for the students..." 
-                      placeholderTextColor="#9CA3AF"
-                      multiline
-                    />
-                  </View>
-
-                  <View style={styles.inputGroup}>
-                    <Text style={styles.inputLabel}>UPLOAD RESOURCE</Text>
-                    <View style={styles.pillsRow}>
-                      <TouchableOpacity style={styles.uploadPill}><Ionicons name="document-text" size={18} color="#EF4444" /><Text style={styles.pillText}>PDF</Text></TouchableOpacity>
-                      <TouchableOpacity style={styles.uploadPill}><Ionicons name="document" size={18} color="#10B981" /><Text style={styles.pillText}>Doc</Text></TouchableOpacity>
-                      <TouchableOpacity style={styles.uploadPill}><Ionicons name="link" size={18} color="#D97706" /><Text style={styles.pillText}>Link</Text></TouchableOpacity>
+                {/* --- SUBJECT FIELD --- */}
+                {(activeForm === 'assignment' || activeForm === 'resource') && (
+                    <View style={styles.inputGroup}>
+                      <Text style={styles.inputLabel}>SUBJECT / TOPIC</Text>
+                      <TextInput 
+                        style={styles.inputField} 
+                        placeholder={`e.g. ${currentSubject} - Chapter 1`} 
+                        placeholderTextColor="#9CA3AF" 
+                        value={formSubject}
+                        onChangeText={setFormSubject}
+                      />
                     </View>
-                  </View>
+                )}
 
-                  <View style={styles.rowInputs}>
-                    <View style={[styles.inputGroup, { flex: 1 }]}>
-                      <Text style={styles.inputLabel}>DUE DATE</Text>
-                      <View style={styles.iconInputWrapper}>
-                        <TextInput style={styles.iconInputField} placeholder="mm/dd/yyyy" placeholderTextColor="#9CA3AF" />
-                        <Ionicons name="calendar-outline" size={18} color="#111827" />
-                      </View>
+                {/* --- NEW: TOTAL MARKS FIELD (Assignments Only) --- */}
+                {activeForm === 'assignment' && (
+                    <View style={styles.inputGroup}>
+                        <Text style={styles.inputLabel}>TOTAL POINTS</Text>
+                        <TextInput 
+                            style={styles.inputField} 
+                            placeholder="e.g. 100" 
+                            placeholderTextColor="#9CA3AF" 
+                            value={totalMarks}
+                            onChangeText={setTotalMarks}
+                            keyboardType="numeric"
+                        />
                     </View>
-                    <View style={{ width: 16 }} />
-                    <View style={[styles.inputGroup, { flex: 1 }]}>
-                      <Text style={styles.inputLabel}>DUE TIME</Text>
-                      <View style={styles.iconInputWrapper}>
-                        <TextInput style={styles.iconInputField} placeholder="-- : --" placeholderTextColor="#9CA3AF" />
-                        <Ionicons name="time-outline" size={18} color="#111827" />
-                      </View>
-                    </View>
-                  </View>
+                )}
 
-                  <View style={styles.inputGroup}>
-                    <Text style={styles.inputLabel}>ASSIGN MARKS</Text>
-                    <View style={styles.iconInputWrapper}>
-                      <TextInput style={styles.iconInputField} placeholder="Total Marks" placeholderTextColor="#9CA3AF" keyboardType="numeric" />
-                      <Text style={styles.ptsText}>PTS</Text>
+                {/* Date Picker - Only for Assignments */}
+                {activeForm === 'assignment' && (
+                    <View style={styles.inputGroup}>
+                        <Text style={styles.inputLabel}>SUBMISSION DEADLINE</Text>
+                        <View style={{flexDirection:'row', alignItems:'center'}}>
+                            <TouchableOpacity 
+                                onPress={() => setShowDatePicker(true)}
+                                style={styles.datePickerBtn}
+                            >
+                                <Ionicons name="calendar" size={18} color="#4B5563" />
+                                <Text style={styles.dateText}>
+                                    {deadline.toLocaleDateString(undefined, { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' })}
+                                </Text>
+                            </TouchableOpacity>
+                            
+                            {showDatePicker && (
+                                <DateTimePicker
+                                    testID="dateTimePicker"
+                                    value={deadline}
+                                    mode="date" 
+                                    is24Hour={true}
+                                    display="default"
+                                    onChange={onDateChange}
+                                />
+                            )}
+                        </View>
                     </View>
-                  </View>
+                )}
 
-                  <View style={styles.switchRow}>
-                    <View style={styles.switchLabelRow}>
-                      <Ionicons name="calendar" size={20} color="#9CA3AF" />
-                      <Text style={styles.switchLabel}>Schedule Assignment</Text>
-                    </View>
-                    <Switch value={isScheduled} onValueChange={setIsScheduled} trackColor={{ false: "#E5E7EB", true: "#3B3CFF" }} />
-                  </View>
-
-                  <TouchableOpacity style={styles.primaryActionBtn}>
-                    <Text style={styles.primaryActionText}>Publish Assignment</Text>
-                  </TouchableOpacity>
-                  <View style={styles.dualActionRow}>
-                    <TouchableOpacity style={styles.secondaryActionBtnHalf}>
-                      <Text style={styles.secondaryActionText}>Save as Draft</Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity style={styles.secondaryActionBtnHalf} onPress={() => setActiveForm(null)}>
-                      <Text style={styles.secondaryActionText}>Cancel</Text>
-                    </TouchableOpacity>
-                  </View>
+                <View style={styles.inputGroup}>
+                  <Text style={styles.inputLabel}>DESCRIPTION</Text>
+                  <TextInput 
+                    style={[styles.inputField, styles.textArea]} 
+                    placeholder="Enter details..." 
+                    placeholderTextColor="#9CA3AF"
+                    multiline
+                    value={description}
+                    onChangeText={setDescription}
+                  />
                 </View>
-              )}
 
-              {/* --- 3. SHARE RESOURCE FORM --- */}
-              {activeForm === 'resource' && (
-                <View style={styles.formBody}>
-                  <View style={styles.inputGroup}>
-                    <Text style={styles.inputLabel}>RESOURCE TITLE</Text>
-                    <TextInput style={styles.inputField} placeholder="e.g. Chapter 4 Practice Prob" placeholderTextColor="#9CA3AF" />
-                  </View>
+                {(activeForm === 'resource' || activeForm === 'assignment') && (
+                    <View style={styles.inputGroup}>
+                        <Text style={styles.inputLabel}>ATTACHMENT (LINK ONLY)</Text>
+                        
+                        <View style={styles.typeSelector}>
+                            <TouchableOpacity 
+                                disabled={true} 
+                                style={[styles.typeChip, styles.typeChipActive]}
+                            >
+                                <Ionicons name="link" size={16} color="#FFF" />
+                                <Text style={[styles.typeChipText, styles.typeChipTextActive]}>Link</Text>
+                            </TouchableOpacity>
+                        </View>
 
-                  <View style={styles.inputGroup}>
-                    <Text style={styles.inputLabel}>DESCRIPTION</Text>
-                    <TextInput 
-                      style={[styles.inputField, styles.textArea]} 
-                      placeholder="Add detailed instructions or context for the students..." 
-                      placeholderTextColor="#9CA3AF"
-                      multiline
-                    />
-                  </View>
-
-                  <View style={styles.inputGroup}>
-                    <Text style={styles.inputLabel}>UPLOAD SECTION</Text>
-                    <View style={styles.gridPills}>
-                      <TouchableOpacity style={styles.uploadGridPill}><Ionicons name="document-text" size={18} color="#EF4444" /><Text style={styles.pillText}>PDF</Text></TouchableOpacity>
-                      <TouchableOpacity style={styles.uploadGridPill}><Ionicons name="image" size={18} color="#3B3CFF" /><Text style={styles.pillText}>Image</Text></TouchableOpacity>
-                      <TouchableOpacity style={styles.uploadGridPill}><Ionicons name="document" size={18} color="#10B981" /><Text style={styles.pillText}>Doc</Text></TouchableOpacity>
-                      <TouchableOpacity style={styles.uploadGridPill}><Ionicons name="link" size={18} color="#D97706" /><Text style={styles.pillText}>Link</Text></TouchableOpacity>
+                        <Text style={[styles.inputLabel, {marginTop: 15}]}>
+                            WEBSITE / DRIVE / DROPBOX URL
+                        </Text>
+                        
+                        <TextInput 
+                            style={styles.inputField} 
+                            placeholder="https://drive.google.com/..."
+                            placeholderTextColor="#9CA3AF" 
+                            value={link}
+                            onChangeText={setLink}
+                            autoCapitalize="none"
+                        />
                     </View>
-                    <TextInput style={[styles.inputField, { marginTop: 12 }]} placeholder="Paste video or external URL here" placeholderTextColor="#9CA3AF" />
-                  </View>
+                )}
 
-                  <View style={styles.switchRow}>
-                    <View style={styles.switchLabelRow}>
-                      <Ionicons name="enter-outline" size={20} color="#9CA3AF" style={{ transform: [{ scaleX: -1 }] }} />
-                      <Text style={styles.switchLabel}>Schedule Resource</Text>
-                    </View>
-                    <Switch value={isScheduled} onValueChange={setIsScheduled} trackColor={{ false: "#E5E7EB", true: "#3B3CFF" }} />
-                  </View>
+                <View style={styles.actionRow}>
+                    <TouchableOpacity 
+                        style={[styles.primaryActionBtn, styles.draftBtn]} 
+                        onPress={() => handleSave('draft')} 
+                        disabled={loading}
+                    >
+                        <Text style={[styles.primaryActionText, {color: '#4B5563'}]}>Save Draft</Text>
+                    </TouchableOpacity>
 
-                  <TouchableOpacity style={styles.primaryActionBtn}>
-                    <Text style={styles.primaryActionText}>Share Now</Text>
-                  </TouchableOpacity>
-                  <View style={styles.dualActionRow}>
-                    <TouchableOpacity style={styles.secondaryActionBtnHalf}>
-                      <Text style={styles.secondaryActionText}>Schedule</Text>
+                    <TouchableOpacity 
+                        style={[styles.primaryActionBtn, {flex: 2}]} 
+                        onPress={() => handleSave('published')} 
+                        disabled={loading}
+                    >
+                        {loading ? (
+                            <ActivityIndicator color="#FFF" />
+                        ) : (
+                            <>
+                                <Ionicons name="send" size={16} color="#FFF" style={{ marginRight: 8 }} />
+                                <Text style={styles.primaryActionText}>{editingId ? "Update" : "Publish"}</Text>
+                            </>
+                        )}
                     </TouchableOpacity>
-                    <TouchableOpacity style={styles.secondaryActionBtnHalf} onPress={() => setActiveForm(null)}>
-                      <Text style={styles.secondaryActionText}>Cancel</Text>
-                    </TouchableOpacity>
-                  </View>
                 </View>
-              )}
+              </View>
 
-              {/* Bottom padding for scroll */}
               <View style={{ height: 40 }} />
             </ScrollView>
-
           </View>
+        </KeyboardAvoidingView>
+      </Modal>
+
+      {/* --- VIEW FULL SCREEN MODAL --- */}
+      <Modal visible={viewNotice !== null} animationType="fade" transparent>
+        <View style={styles.fullScreenOverlay}>
+              <View style={styles.fullScreenContainer}>
+                {viewNotice && (
+                    <>
+                        <View style={styles.fsHeader}>
+                            <TouchableOpacity onPress={() => setViewNotice(null)} style={styles.closeBtn}>
+                                <Ionicons name="arrow-back" size={24} color="#111827" />
+                            </TouchableOpacity>
+                            <Text style={styles.fsTitleHeader}>Details</Text>
+                            <View style={{width: 30}} /> 
+                        </View>
+
+                        <ScrollView contentContainerStyle={{padding: 20}}>
+                             <View style={styles.fsTypeBadge}>
+                                 <Text style={styles.fsTypeText}>{viewNotice.type.toUpperCase()}</Text>
+                             </View>
+                             
+                             <Text style={styles.fsTitle}>{viewNotice.title}</Text>
+                             <Text style={{color:'#6B7280', fontWeight:'600', marginBottom:4}}>
+                                {viewNotice.subject || currentSubject}
+                             </Text>
+                             
+                             {viewNotice.status === 'draft' && (
+                                 <View style={{backgroundColor: '#FEF3C7', padding: 8, borderRadius: 8, alignSelf: 'flex-start', marginBottom: 10}}>
+                                      <Text style={{color: '#D97706', fontWeight: 'bold'}}>DRAFT MODE</Text>
+                                 </View>
+                             )}
+
+                             {viewNotice.type === 'assignment' && viewNotice.total && (
+                                 <Text style={{color: '#111827', fontWeight:'600', marginBottom: 5}}>
+                                      Total Points: {viewNotice.total}
+                                 </Text>
+                             )}
+
+                             {viewNotice.deadline && (
+                                 <Text style={{color: '#EF4444', fontWeight:'600', marginBottom: 5}}>
+                                      Due: {new Date(viewNotice.deadline.seconds * 1000).toLocaleDateString()}
+                                 </Text>
+                             )}
+                             
+                             <Text style={styles.fsDate}>Posted Recently</Text>
+
+                             <View style={styles.divider} />
+
+                             <Text style={styles.fsDesc}>{viewNotice.description}</Text>
+
+                             {viewNotice.link && (
+                                 <TouchableOpacity 
+                                    style={[styles.downloadBtn, {
+                                        backgroundColor: viewNotice.resourceType === 'pdf' ? '#EF4444' : viewNotice.resourceType === 'docx' ? '#2563EB' : '#10B981'
+                                    }]}
+                                    onPress={() => handleDownload(viewNotice.link)}
+                                 >
+                                     <Ionicons 
+                                        name={viewNotice.resourceType === 'link' ? "globe-outline" : "cloud-download-outline"} 
+                                        size={20} 
+                                        color="#FFF" 
+                                     />
+                                     <Text style={styles.downloadText}>
+                                          {viewNotice.resourceType === 'pdf' ? 'Open PDF File' : viewNotice.resourceType === 'docx' ? 'Open Document' : 'Visit Link'}
+                                     </Text>
+                                 </TouchableOpacity>
+                             )}
+                        </ScrollView>
+                    </>
+                )}
+             </View>
         </View>
       </Modal>
 
@@ -443,96 +595,89 @@ export default function ClassNoticesScreen() {
   );
 }
 
-// --- Styles ---
 const styles = StyleSheet.create({
-  mainContainer: {
-    flex: 1,
-    backgroundColor: '#FFF9F0', // Theme Background
-  },
+  mainContainer: { flex: 1, backgroundColor: '#FFF9F0' },
   contentContainer: { paddingHorizontal: 20, paddingTop: 16, paddingBottom: 40 },
-  
-  // Header
   headerSection: { marginBottom: 20 },
   className: { fontSize: 26, fontWeight: '800', color: '#111827', marginBottom: 4 },
   classDetails: { fontSize: 12, fontWeight: '600', color: '#6B7280', letterSpacing: 0.5, textTransform: 'uppercase' },
-
-  // Create Button & Dropdown
-  createButton: {
-    backgroundColor: '#3B3CFF', flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-    paddingVertical: 14, paddingHorizontal: 20, borderRadius: 16, marginBottom: 24,
-    shadowColor: '#3B3CFF', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 8, elevation: 6,
-  },
+  createButton: { backgroundColor: '#3B3CFF', flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 14, paddingHorizontal: 20, borderRadius: 16, marginBottom: 24, shadowColor: '#3B3CFF', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 8, elevation: 6 },
   createButtonInner: { flexDirection: 'row', alignItems: 'center', flex: 1, justifyContent: 'center', marginLeft: 18 },
   createIcon: { marginRight: 8 },
   createButtonText: { color: '#FFF', fontSize: 16, fontWeight: '600' },
-  
-  dropdownMenu: {
-    position: 'absolute', top: 60, left: 0, right: 0, backgroundColor: '#FFF',
-    borderRadius: 16, padding: 8, shadowColor: '#000', shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.1, shadowRadius: 12, elevation: 10, borderWidth: 1, borderColor: '#F3F4F6',
-  },
+  dropdownMenu: { position: 'absolute', top: 60, left: 0, right: 0, backgroundColor: '#FFF', borderRadius: 16, padding: 8, shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.1, shadowRadius: 12, elevation: 10, borderWidth: 1, borderColor: '#F3F4F6' },
   dropdownItem: { flexDirection: 'row', alignItems: 'center', padding: 12, borderRadius: 10 },
   dropdownText: { marginLeft: 12, fontSize: 15, fontWeight: '600', color: '#111827' },
-
-  // Joining Details
   joiningCard: { backgroundColor: '#F4F7FF', borderRadius: 20, padding: 20, marginBottom: 30, borderWidth: 1, borderColor: '#E0E7FF' },
   joiningHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: 16 },
   joiningTitle: { fontSize: 12, fontWeight: '700', color: '#3B3CFF', marginLeft: 6, letterSpacing: 0.5 },
   joiningCodesRow: { flexDirection: 'row', gap: 16 },
   codeColumn: { flex: 1 },
   codeLabel: { fontSize: 10, fontWeight: '600', color: '#9CA3AF', marginBottom: 6 },
-  codePill: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', backgroundColor: '#FFF', paddingVertical: 10, paddingHorizontal: 14, borderRadius: 12, borderWidth: 1, borderColor: '#F3F4F6' },
   codeValue: { fontSize: 13, fontWeight: '700', color: '#111827' },
-
-  // Notices List
   sectionHeader: { fontSize: 13, fontWeight: '700', color: '#9CA3AF', letterSpacing: 0.5, marginBottom: 16 },
   noticesList: { gap: 16 },
   noticeCard: { backgroundColor: '#FFF', borderRadius: 20, padding: 20, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.03, shadowRadius: 6, elevation: 2, borderWidth: 1, borderColor: '#F3F4F6' },
   noticeHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 10 },
-  noticeTitle: { flex: 1, fontSize: 18, fontWeight: '700', color: '#111827', marginRight: 10, lineHeight: 24 },
-  noticeTime: { fontSize: 12, fontWeight: '600', color: '#9CA3AF', marginTop: 2 },
-  noticeDesc: { fontSize: 14, color: '#4B5563', lineHeight: 22, marginBottom: 16 },
-  attachmentPill: { flexDirection: 'row', alignItems: 'center', alignSelf: 'flex-start', backgroundColor: '#FFF', paddingVertical: 8, paddingHorizontal: 12, borderRadius: 10, borderWidth: 1, borderColor: '#E5E7EB' },
-  attachmentText: { marginLeft: 8, fontSize: 13, fontWeight: '600', color: '#111827' },
-
-  // --- MODAL STYLES ---
+  typeIcon: { width: 28, height: 28, borderRadius: 8, alignItems:'center', justifyContent:'center', marginRight: 10},
+  noticeTitle: { flex: 1, fontSize: 16, fontWeight: '700', color: '#111827', marginRight: 10 },
+  noticeTime: { fontSize: 12, fontWeight: '600', color: '#9CA3AF' },
+  noticeDesc: { fontSize: 14, color: '#6B7280', lineHeight: 20, marginBottom: 12 },
+  attachmentPill: { flexDirection: 'row', alignItems: 'center', alignSelf: 'flex-start', backgroundColor: '#F3F4F6', paddingVertical: 6, paddingHorizontal: 10, borderRadius: 8 },
+  attachmentText: { marginLeft: 6, fontSize: 12, fontWeight: '600', color: '#3B3CFF' },
   modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end' },
-  modalContent: { backgroundColor: '#FAFAFA', borderTopLeftRadius: 30, borderTopRightRadius: 30, height: '90%', paddingHorizontal: 24, paddingTop: 24 },
+  modalContent: { backgroundColor: '#FAFAFA', borderTopLeftRadius: 30, borderTopRightRadius: 30, height: '85%', paddingHorizontal: 24, paddingTop: 24 },
   modalHeaderRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 24 },
-  formTitle: { fontSize: 26, fontWeight: '800', color: '#111827', marginBottom: 4 },
+  formTitle: { fontSize: 24, fontWeight: '800', color: '#111827', marginBottom: 4 },
   formSubtitle: { fontSize: 14, color: '#6B7280' },
-  closeBtn: { padding: 4, backgroundColor: '#E5E7EB', borderRadius: 20 },
+  closeBtn: { padding: 8, backgroundColor: '#E5E7EB', borderRadius: 20 },
   formBody: { flex: 1 },
-
-  // Form Inputs
   inputGroup: { marginBottom: 24 },
   inputLabel: { fontSize: 12, fontWeight: '700', color: '#9CA3AF', letterSpacing: 0.8, marginBottom: 10 },
   inputField: { backgroundColor: '#F3F4F6', borderRadius: 16, paddingHorizontal: 16, height: 56, fontSize: 15, color: '#111827' },
   textArea: { height: 120, paddingTop: 16, textAlignVertical: 'top' },
-  rowInputs: { flexDirection: 'row', marginBottom: 24 },
-  iconInputWrapper: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#F3F4F6', borderRadius: 16, paddingHorizontal: 16, height: 56 },
-  iconInputField: { flex: 1, fontSize: 15, color: '#111827' },
-  ptsText: { fontSize: 14, fontWeight: '700', color: '#9CA3AF' },
-
-  // Attachments & Pills
-  dashedUploadBox: { borderWidth: 1.5, borderStyle: 'dashed', borderColor: '#D1D5DB', borderRadius: 20, padding: 24, alignItems: 'center', backgroundColor: '#FFF' },
-  uploadIconWrapper: { width: 44, height: 44, borderRadius: 22, backgroundColor: '#3B3CFF', justifyContent: 'center', alignItems: 'center', marginBottom: 12 },
-  uploadMainText: { fontSize: 15, fontWeight: '700', color: '#111827', marginBottom: 4 },
-  uploadSubText: { fontSize: 12, color: '#9CA3AF' },
-  pillsRow: { flexDirection: 'row', gap: 10 },
-  gridPills: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
-  uploadPill: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', backgroundColor: '#FFF', borderWidth: 1, borderStyle: 'dashed', borderColor: '#D1D5DB', borderRadius: 12, height: 48 },
-  uploadGridPill: { width: '48%', flexDirection: 'row', alignItems: 'center', justifyContent: 'center', backgroundColor: '#FFF', borderWidth: 1, borderStyle: 'dashed', borderColor: '#D1D5DB', borderRadius: 12, height: 48 },
-  pillText: { marginLeft: 8, fontSize: 14, fontWeight: '600', color: '#111827' },
-
-  // Switch & Actions
-  switchRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 30 },
-  switchLabelRow: { flexDirection: 'row', alignItems: 'center' },
-  switchLabel: { fontSize: 15, fontWeight: '600', color: '#111827', marginLeft: 10 },
+  actionRow: { flexDirection: 'row', gap: 12 },
+  draftBtn: { backgroundColor: '#E5E7EB', flex: 1 },
   primaryActionBtn: { backgroundColor: '#3B3CFF', flexDirection: 'row', justifyContent: 'center', alignItems: 'center', height: 56, borderRadius: 16, marginBottom: 12 },
   primaryActionText: { color: '#FFF', fontSize: 16, fontWeight: '600' },
-  secondaryActionBtn: { backgroundColor: '#FFF', borderWidth: 1, borderColor: '#E5E7EB', justifyContent: 'center', alignItems: 'center', height: 56, borderRadius: 16 },
-  secondaryActionText: { color: '#4B5563', fontSize: 16, fontWeight: '600' },
-  dualActionRow: { flexDirection: 'row', gap: 12 },
-  secondaryActionBtnHalf: { flex: 1, backgroundColor: '#FFF', borderWidth: 1, borderColor: '#E5E7EB', justifyContent: 'center', alignItems: 'center', height: 56, borderRadius: 16 },
+  fullScreenOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.8)', justifyContent: 'center', padding: 20 },
+  fullScreenContainer: { backgroundColor: 'white', borderRadius: 24, height: '80%', overflow: 'hidden' },
+  fsHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 20, borderBottomWidth: 1, borderColor: '#F3F4F6' },
+  fsTitleHeader: { fontWeight: '700', fontSize: 16 },
+  fsTypeBadge: { alignSelf: 'flex-start', backgroundColor: '#EEF2FF', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 8, marginBottom: 15 },
+  fsTypeText: { color: '#3B3CFF', fontWeight: '800', fontSize: 12, letterSpacing: 1 },
+  fsTitle: { fontSize: 24, fontWeight: 'bold', color: '#111827', marginBottom: 8 },
+  fsDate: { color: '#9CA3AF', fontSize: 14, marginBottom: 20 },
+  divider: { height: 1, backgroundColor: '#E5E7EB', marginBottom: 20 },
+  fsDesc: { fontSize: 16, lineHeight: 26, color: '#374151', marginBottom: 30 },
+  downloadBtn: { flexDirection: 'row', backgroundColor: '#10B981', padding: 16, borderRadius: 12, justifyContent: 'center', alignItems: 'center' },
+  downloadText: { color: 'white', fontWeight: 'bold', marginLeft: 10, fontSize: 16 },
+  typeSelector: { flexDirection: 'row', gap: 10, marginBottom: 5 },
+  typeChip: { flexDirection: 'row', alignItems: 'center', paddingVertical: 8, paddingHorizontal: 14, borderRadius: 20, backgroundColor: '#F3F4F6', borderWidth: 1, borderColor: '#E5E7EB' },
+  typeChipActive: { backgroundColor: '#3B3CFF', borderColor: '#3B3CFF' },
+  typeChipText: { fontSize: 12, fontWeight: '700', color: '#4B5563', marginLeft: 6 },
+  typeChipTextActive: { color: '#FFF' },
+  filePickerBtn: {
+    backgroundColor: '#F3F4F6',
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    borderStyle: 'dashed',
+    borderRadius: 16,
+    height: 60,
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    justifyContent: 'space-between'
+  },
+  filePickerText: { fontSize: 14, color: '#374151', fontWeight: '600' },
+  datePickerBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#F3F4F6',
+    padding: 12,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#E5E7EB'
+  },
+  dateText: { marginLeft: 10, fontWeight: '600', color: '#374151' }
 });

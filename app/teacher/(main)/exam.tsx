@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import { 
   View, 
   Text, 
@@ -6,69 +6,67 @@ import {
   ScrollView, 
   TouchableOpacity, 
   TextInput,
-  Dimensions
+  Dimensions,
+  ActivityIndicator,
+  Alert
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { useRouter } from 'expo-router';
+import { useRouter, useFocusEffect } from 'expo-router';
 import Svg, { Circle, Path, Line } from "react-native-svg";
+import { ExamDatabase } from '../services/examDatabase'; 
 
 const { width } = Dimensions.get('window');
-
-// --- Mock Data ---
-const EXAMS_DATA = [
-  {
-    id: '1',
-    examId: 'ID: EX-2094',
-    title: 'Midterm Calculus',
-    subject: 'Mathematics',
-    teacher: 'Robert Fox',
-    dateTime: 'Today, 10:30 AM – 12:30 PM',
-    status: 'ONGOING',
-    statusBg: '#FEF3C7',
-    statusColor: '#D97706',
-    subjectIcon: 'book',
-    subjectColor: '#3B3CFF',
-    actionIcon: 'stop-circle',
-    actionText: 'END EXAM',
-    actionColor: '#EF4444',
-  },
-  {
-    id: '2',
-    examId: 'ID: EX-2105',
-    title: 'World War II History',
-    subject: 'History',
-    teacher: 'Guy Hawkins',
-    dateTime: 'Oct 24, 09:00 AM',
-    status: 'DRAFT',
-    statusBg: '#E0E7FF',
-    statusColor: '#3B3CFF',
-    subjectIcon: 'earth',
-    subjectColor: '#D97706',
-    actionIcon: 'trash',
-    actionText: 'DELETE',
-    actionColor: '#EF4444',
-  },
-  {
-    id: '3',
-    examId: 'ID: EX-2088',
-    title: 'Physics Finals',
-    subject: 'Physics',
-    teacher: 'Bessie Cooper',
-    dateTime: 'Oct 18, 02:00 PM',
-    status: 'COMPLETED',
-    statusBg: '#F3F4F6',
-    statusColor: '#6B7280',
-    subjectIcon: 'flask',
-    subjectColor: '#A855F7',
-    actionIcon: 'lock-closed',
-    actionText: 'ENDED',
-    actionColor: '#FCA5A5',
-  },
-];
-
 const TABS = ['All Exams', 'Published', 'Drafts'];
+// --- Helper: Get Styles based on Status/Subject ---
+const getExamStyles = (status: string, subject: string) => {
+  // Default Styles
+  let styles = { 
+    bg: '#F3F4F6', 
+    color: '#6B7280', 
+    icon: 'eye', 
+    action: 'VIEW', 
+    actionColor: '#6B7280',
+    subIcon: 'book', 
+    subColor: '#6B7280'
+  };
 
-// --- Background Component ---
+  // Status Logic
+  if (status === 'ONGOING') {
+    styles.bg = '#FEF3C7'; 
+    styles.color = '#D97706';
+    styles.icon = 'stop-circle'; 
+    styles.action = 'END EXAM'; 
+    styles.actionColor = '#EF4444';
+  } else if (status === 'DRAFT') {
+    styles.bg = '#E0E7FF'; 
+    styles.color = '#3B3CFF';
+    styles.icon = 'trash'; 
+    styles.action = 'DELETE'; 
+    styles.actionColor = '#EF4444';
+  } else if (status === 'COMPLETED') {
+    styles.bg = '#F3F4F6'; 
+    styles.color = '#6B7280';
+    styles.icon = 'lock-closed'; 
+    styles.action = 'ENDED'; 
+    styles.actionColor = '#FCA5A5';
+  }
+
+  // Subject Logic
+  if (subject === 'Mathematics') { 
+    styles.subColor = '#3B3CFF'; 
+    styles.subIcon = 'calculator'; // or 'book' if calculator icon unavailable
+  } else if (subject === 'History') { 
+    styles.subColor = '#D97706'; 
+    styles.subIcon = 'earth'; 
+  } else if (subject === 'Physics') { 
+    styles.subColor = '#A855F7'; 
+    styles.subIcon = 'flask'; 
+  }
+  
+  return styles;
+};
+
+// --- Background Component (Fully Restored) ---
 const BackgroundDecorations = () => (
   <View style={StyleSheet.absoluteFill} pointerEvents="none">
     
@@ -156,14 +154,55 @@ const BackgroundDecorations = () => (
 
 // --- Main Component ---
 export default function AdminExamsScreen() {
-  const [activeTab, setActiveTab] = useState('All Exams');
   const router = useRouter(); 
+  const [activeTab, setActiveTab] = useState('All Exams');
+  const [exams, setExams] = useState<any[]>([]); 
+  const [loading, setLoading] = useState(true);
+  const [searchQuery, setSearchQuery] = useState('');
 
-  // Local filtering based on tab selection
-  const filteredExams = EXAMS_DATA.filter(exam => {
-    if (activeTab === 'Drafts') return exam.status === 'DRAFT';
-    if (activeTab === 'Published') return exam.status !== 'DRAFT';
-    return true; // All Exams
+  // 1. FETCH DATA ON LOAD
+  // useFocusEffect ensures the list refreshes when you navigate back from "Create" or "Edit"
+  useFocusEffect(
+    useCallback(() => {
+      loadExams();
+    }, [])
+  );
+
+  const loadExams = async () => {
+    try {
+      setLoading(true);
+      const data = await ExamDatabase.getExams();
+      setExams(data);
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // 2. HANDLE DELETE (Database Action)
+  const handleDelete = (id: string) => {
+    Alert.alert("Delete Exam", "Are you sure? This cannot be undone.", [
+      { text: "Cancel", style: 'cancel' },
+      { text: "Delete", style: 'destructive', onPress: async () => {
+          await ExamDatabase.deleteExam(id);
+          loadExams(); // Refresh the list
+      }}
+    ]);
+  };
+
+  // 3. FILTER LOGIC
+  const filteredExams = exams.filter(exam => {
+    // Check Tabs
+    const matchesTab = 
+      activeTab === 'All Exams' ? true :
+      activeTab === 'Published' ? exam.status !== 'DRAFT' :
+      activeTab === 'Drafts' ? exam.status === 'DRAFT' : true;
+    
+    // Check Search
+    const matchesSearch = exam.title?.toLowerCase().includes(searchQuery.toLowerCase());
+    
+    return matchesTab && matchesSearch;
   });
 
   return (
@@ -180,11 +219,12 @@ export default function AdminExamsScreen() {
           <Text style={styles.subtitleText}>Schedule and manage assessments</Text>
         </View>
 
-        {/* Primary Action Button */}
+        {/* Primary Action Button (CREATE) */}
         <TouchableOpacity 
           style={styles.createButton} 
           activeOpacity={0.8}
-          onPress={() => router.push('/admin/createexam' as any)} 
+          // Navigate to Create Exam Page
+          onPress={() => router.push('/teacher/(exam)/createexam')} 
         >
           <Ionicons name="add" size={24} color="#FFF" style={styles.createIcon} />
           <Text style={styles.createButtonText}>Create Exam</Text>
@@ -198,6 +238,8 @@ export default function AdminExamsScreen() {
               style={styles.searchInput}
               placeholder="Search exams..."
               placeholderTextColor="#9CA3AF"
+              value={searchQuery}
+              onChangeText={setSearchQuery}
             />
           </View>
           <TouchableOpacity style={styles.filterBtn}>
@@ -221,84 +263,120 @@ export default function AdminExamsScreen() {
         </View>
 
         {/* Exams List */}
-        <View style={styles.listContainer}>
-          {filteredExams.map((exam) => (
-            <View key={exam.id} style={styles.card}>
-              
-              {/* Top Row: Tags */}
-              <View style={styles.cardTagsRow}>
-                <View style={[styles.statusTag, { backgroundColor: exam.statusBg }]}>
-                  <Text style={[styles.statusText, { color: exam.statusColor }]}>{exam.status}</Text>
-                </View>
-                <Text style={styles.examIdText}>{exam.examId}</Text>
-              </View>
+        {loading ? (
+           <ActivityIndicator size="large" color="#4461F2" style={{ marginTop: 20 }} />
+        ) : (
+          <View style={styles.listContainer}>
+            {filteredExams.map((exam) => {
+              // Calculate dynamic styles
+              const ui = getExamStyles(exam.status, exam.subject);
 
-              {/* Title */}
-              <Text style={styles.examTitle}>{exam.title}</Text>
-
-              {/* Details Grid */}
-              <View style={styles.detailsGrid}>
-                <View style={styles.detailItem}>
-                  <View style={[styles.iconBox, { backgroundColor: `${exam.subjectColor}15` }]}>
-                    {/* @ts-ignore */}
-                    <Ionicons name={exam.subjectIcon} size={16} color={exam.subjectColor} />
+              return (
+                <View key={exam.id} style={styles.card}>
+                  
+                  {/* Top Row: Tags */}
+                  <View style={styles.cardTagsRow}>
+                    <View style={[styles.statusTag, { backgroundColor: ui.bg }]}>
+                      <Text style={[styles.statusText, { color: ui.color }]}>{exam.status}</Text>
+                    </View>
+                    <Text style={styles.examIdText}>{exam.examId}</Text>
                   </View>
-                  <View>
-                    <Text style={styles.detailLabel}>SUBJECT</Text>
-                    <Text style={styles.detailValue}>{exam.subject}</Text>
-                  </View>
-                </View>
-                <View style={styles.detailItem}>
-                  <View style={[styles.iconBox, { backgroundColor: '#10B98115' }]}>
-                    <Ionicons name="person" size={16} color="#10B981" />
-                  </View>
-                  <View>
-                    <Text style={styles.detailLabel}>TEACHER</Text>
-                    <Text style={styles.detailValue}>{exam.teacher}</Text>
-                  </View>
-                </View>
-              </View>
-              
-              <View style={styles.detailItemFull}>
-                <View style={[styles.iconBox, { backgroundColor: '#6B728015' }]}>
-                  <Ionicons name="calendar" size={16} color="#6B7280" />
-                </View>
-                <View>
-                  <Text style={styles.detailLabel}>DATE & TIME</Text>
-                  <Text style={styles.detailValue}>{exam.dateTime}</Text>
-                </View>
-              </View>
 
-              {/* Action Buttons */}
-              <View style={styles.actionsRow}>
-                <TouchableOpacity 
-                  style={styles.actionBtnPrimary}
-                  onPress={() => router.push({ pathname: '/admin/editexam' as any, params: { examId: exam.id } })}
-                >
-                  <Ionicons name="pencil" size={16} color="#4B5563" />
-                  <Text style={styles.actionBtnText}>EDIT</Text>
-                </TouchableOpacity>
-                
-                <TouchableOpacity 
-                  style={styles.actionBtnPrimary}
-                  onPress={() => router.push({ pathname: '/admin/markslist' as any, params: { examId: exam.id } })}
-                >
-                  <Ionicons name="bar-chart" size={16} color="#4B5563" />
-                  <Text style={styles.actionBtnText}>VIEW MARKS</Text>
-                </TouchableOpacity>
+                  {/* Title */}
+                  <Text style={styles.examTitle}>{exam.title}</Text>
 
-                <TouchableOpacity style={[styles.actionBtnDanger, { borderColor: `${exam.actionColor}40` }]}>
-                  {/* @ts-ignore */}
-                  <Ionicons name={exam.actionIcon} size={16} color={exam.actionColor} />
-                  <Text style={[styles.actionBtnTextDanger, { color: exam.actionColor }]}>
-                    {exam.actionText}
-                  </Text>
-                </TouchableOpacity>
+                  {/* Details Grid */}
+                  <View style={styles.detailsGrid}>
+                    <View style={styles.detailItem}>
+                      <View style={[styles.iconBox, { backgroundColor: ui.subColor + '15' }]}>
+                        {/* @ts-ignore */}
+                        <Ionicons name={ui.subIcon} size={16} color={ui.subColor} />
+                      </View>
+                      <View>
+                        <Text style={styles.detailLabel}>SUBJECT</Text>
+                        <Text style={styles.detailValue}>{exam.subject}</Text>
+                      </View>
+                    </View>
+                    <View style={styles.detailItem}>
+                      <View style={[styles.iconBox, { backgroundColor: '#10B98115' }]}>
+                        <Ionicons name="person" size={16} color="#10B981" />
+                      </View>
+                      <View>
+                        <Text style={styles.detailLabel}>TEACHER</Text>
+                        <Text style={styles.detailValue}>{exam.teacher}</Text>
+                      </View>
+                    </View>
+                  </View>
+                  
+                  <View style={styles.detailItemFull}>
+                    <View style={[styles.iconBox, { backgroundColor: '#6B728015' }]}>
+                      <Ionicons name="calendar" size={16} color="#6B7280" />
+                    </View>
+                    <View>
+                      <Text style={styles.detailLabel}>DATE & TIME</Text>
+                      <Text style={styles.detailValue}>{exam.dateTime}</Text>
+                    </View>
+                  </View>
+
+                  {/* Action Buttons */}
+                  <View style={styles.actionsRow}>
+                    {/* EDIT Button */}
+                    <TouchableOpacity 
+                      style={styles.actionBtnPrimary}
+                      onPress={() => router.push({ 
+                        pathname: '/teacher/(exam)/editexam', 
+                        params: { examId: exam.id } 
+                      })}
+                    >
+                      <Ionicons name="pencil" size={16} color="#4B5563" />
+                      <Text style={styles.actionBtnText}>EDIT</Text>
+                    </TouchableOpacity>
+                    
+                    {/* VIEW MARKS Button */}
+                    <TouchableOpacity 
+                      style={styles.actionBtnPrimary}
+                      onPress={() => router.push({ 
+                        pathname: '/teacher/(exam)/markslist', 
+                        params: { examId: exam.id } 
+                      })}
+                    >
+                      <Ionicons name="bar-chart" size={16} color="#4B5563" />
+                      <Text style={styles.actionBtnText}>MARKS</Text>
+                    </TouchableOpacity>
+
+                    {/* DANGER/STATUS Button */}
+                    <TouchableOpacity 
+                      style={[styles.actionBtnDanger, { borderColor: ui.actionColor + '40' }]}
+                      onPress={() => {
+                        // Only allow delete if status is DRAFT
+                        if (exam.status === 'DRAFT') {
+                          handleDelete(exam.id);
+                        } else {
+                           // Logic for 'End Exam' would go here
+                           Alert.alert('Info', 'Cannot delete active/completed exams in this demo.');
+                        }
+                      }}
+                    >
+                      {/* @ts-ignore */}
+                      <Ionicons name={ui.icon} size={16} color={ui.actionColor} />
+                      <Text style={[styles.actionBtnTextDanger, { color: ui.actionColor }]}>
+                        {ui.action}
+                      </Text>
+                    </TouchableOpacity>
+                  </View>
+
+                </View>
+              );
+            })}
+            
+            {/* Show message if list is empty */}
+            {filteredExams.length === 0 && (
+              <View style={{ alignItems: 'center', marginTop: 40 }}>
+                <Text style={{ color: '#9CA3AF' }}>No exams found.</Text>
               </View>
-
-            </View>
-          ))}
-        </View>
+            )}
+          </View>
+        )}
         
       </ScrollView>
     </View>

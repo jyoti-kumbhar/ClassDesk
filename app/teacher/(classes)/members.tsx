@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   View, 
   Text, 
@@ -7,42 +7,36 @@ import {
   TouchableOpacity, 
   TextInput, 
   Image,
-  Dimensions 
+  Dimensions,
+  Alert,
+  ActivityIndicator
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import Svg, { Circle, Path, Line } from "react-native-svg";
+import { useLocalSearchParams } from 'expo-router';
+
+// Firebase Imports
+import { 
+  collection, 
+  query, 
+  where, 
+  onSnapshot, 
+  deleteDoc, 
+  doc
+} from 'firebase/firestore';
+import { db } from '../../../firebase/firebaseConfig';
 
 const { width } = Dimensions.get('window');
-
-// --- Mock Data ---
-const TEACHERS_DATA = [
-  { id: 't1', name: 'Robert Fox', role: 'Mathematics\n(Lead)', avatar: 'https://api.dicebear.com/7.x/avataaars/png?seed=Robert' },
-  { id: 't2', name: 'Sarah Wilson', role: 'Physics', avatar: 'https://api.dicebear.com/7.x/avataaars/png?seed=Sarah' },
-  { id: 't3', name: 'James Miller', role: 'Chemistry', avatar: 'https://api.dicebear.com/7.x/avataaars/png?seed=James' },
-  { id: 't4', name: 'Elena Rodriguez', role: 'English Literature', avatar: 'https://api.dicebear.com/7.x/avataaars/png?seed=Elena' },
-];
-
-const STUDENTS_DATA = [
-  { id: 's1', name: 'Alex Johnson', rollNo: 'Roll No: #1024', avatar: 'https://api.dicebear.com/7.x/avataaars/png?seed=Alex' },
-  { id: 's2', name: 'Sarah Wilson', rollNo: 'Roll No: #1025', avatar: 'https://api.dicebear.com/7.x/avataaars/png?seed=Sarah2' },
-  { id: 's3', name: 'Michael King', rollNo: 'Roll No: #1026', initials: 'MK' }, 
-  { id: 's4', name: 'David Chen', rollNo: 'Roll No: #1027', avatar: 'https://api.dicebear.com/7.x/avataaars/png?seed=David' },
-  { id: 's5', name: 'James Miller', rollNo: 'Roll No: #1028', avatar: 'https://api.dicebear.com/7.x/avataaars/png?seed=James2' },
-];
 
 // --- Background Component ---
 const BackgroundDecorations = () => (
   <View style={StyleSheet.absoluteFill} pointerEvents="none">
-    
-    {/* Top Right Large Soft Glow (Purple) */}
     <View style={{ position: "absolute", top: 30, right: -40 }}>
       <Svg height="200" width="200" viewBox="0 0 200 200">
         <Circle cx="100" cy="100" r="80" fill="#F3E8FF" opacity={0.6} />
         <Circle cx="100" cy="100" r="50" fill="#E9D5FF" opacity={0.4} />
       </Svg>
     </View>
-
-    {/* Top Left - Dashed Connection Line */}
     <View style={{ position: "absolute", top: 60, left: 20 }}>
        <Svg height="100" width="120" viewBox="0 0 120 100">
           <Line x1="10" y1="0" x2="10" y2="60" stroke="#BAE6FD" strokeWidth="2" strokeDasharray="5, 5" />
@@ -50,79 +44,70 @@ const BackgroundDecorations = () => (
           <Circle cx="80" cy="90" r="4" fill="#60A5FA" opacity={0.6} />
        </Svg>
     </View>
-
-    {/* Middle - The "Data Wave" */}
-    <View style={{ position: "absolute", top: 220, width: width, alignItems: 'center', opacity: 0.4 }}>
-       <Svg height="150" width={width} viewBox={`0 0 ${width} 150`}>
-          <Path 
-            d={`M -20 75 C ${width * 0.3} 120, ${width * 0.7} 30, ${width + 20} 75`} 
-            stroke="#99F6E4" 
-            strokeWidth="3" 
-            fill="none" 
-          />
-          <Path 
-            d={`M -20 90 C ${width * 0.3} 135, ${width * 0.7} 45, ${width + 20} 90`} 
-            stroke="#CCFBF1" 
-            strokeWidth="2" 
-            fill="none" 
-            strokeDasharray="10, 10"
-          />
-          <Circle cx={width * 0.2} cy="85" r="3" fill="#34D399" />
-          <Circle cx={width * 0.8} cy="65" r="5" stroke="#34D399" strokeWidth="2" fill="#FFF" />
-       </Svg>
-    </View>
-
-    {/* Middle Right - Dot Grid Matrix */}
-    <View style={{ position: "absolute", top: 380, right: 10, opacity: 0.3 }}>
-       <Svg height="80" width="60">
-             {[0, 15, 30].map((x) => 
-               [0, 15, 30, 45].map((y) => (
-                 <Circle key={`${x}-${y}`} cx={x + 5} cy={y + 5} r="1.5" fill="#FDBA74" />
-               ))
-             )}
-       </Svg>
-    </View>
-
-    {/* Bottom Left - Geometric Stack */}
-    <View style={{ position: "absolute", bottom: 100, left: -20 }}>
-       <Svg height="120" width="120" viewBox="0 0 100 100">
-             <Line x1="0" y1="50" x2="100" y2="50" stroke="#FDE68A" strokeWidth="40" opacity={0.3} transform="rotate(-45 50 50)" />
-             <Line x1="20" y1="50" x2="80" y2="50" stroke="#F59E0B" strokeWidth="2" transform="rotate(-45 50 50)" />
-       </Svg>
-    </View>
-
-    {/* Bottom Right - Abstract Playground */}
-    <View style={{ position: "absolute", bottom: 40, right: -20, opacity: 0.9 }}>
-      <Svg height="220" width="220" viewBox="0 0 200 200">
-        <Circle cx="200" cy="200" r="150" fill="#fdf0fd" />
-        <Path 
-          d="M 100 200 Q 120 120 200 100" 
-          stroke="#fbccf9" 
-          strokeWidth="30" 
-          strokeLinecap="round" 
-          fill="none" 
-        />
-        <Path 
-          d="M 40 130 Q 70 80 100 130 T 160 130" 
-          stroke="#c7bdf1" 
-          strokeWidth="3" 
-          strokeLinecap="round" 
-          fill="none" 
-        />
-        <Circle cx="80" cy="180" r="4" fill="#93C5FD" />
-        <Circle cx="180" cy="150" r="3" fill="#93C5FD" />
-      </Svg>
-    </View>
   </View>
 );
 
 export default function ClassMembersScreen() {
-  const [activeTab, setActiveTab] = useState('Teachers');
+  const params = useLocalSearchParams();
+  const currentClassId = (params.id as string) || 'default-id';
+  const className = (params.grade as string) || 'Grade 10-A';
+
+  // State
+  const [activeTab, setActiveTab] = useState<'Teachers' | 'Students'>('Teachers');
+  const [teachers, setTeachers] = useState<any[]>([]);
+  const [students, setStudents] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  // --- 1. & 2. Connect & Fetch Members ---
+  useEffect(() => {
+    // Assumption: You have a 'classMembers' collection linking users to classes
+    const q = query(
+      collection(db, "classMembers"), 
+      where("classId", "==", currentClassId)
+    );
+
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const allMembers = snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      }));
+
+      // Separate into lists
+      setTeachers(allMembers.filter((m: any) => m.role === 'teacher'));
+      setStudents(allMembers.filter((m: any) => m.role === 'student'));
+      setLoading(false);
+    }, (error) => {
+      console.error("Error fetching members:", error);
+      setLoading(false);
+    });
+
+    return () => unsubscribe();
+  }, [currentClassId]);
+
+  // --- 4. Delete Member Logic ---
+  const handleDelete = (memberId: string, memberName: string) => {
+    Alert.alert(
+      "Remove Member",
+      `Are you sure you want to remove ${memberName} from this class?`,
+      [
+        { text: "Cancel", style: "cancel" },
+        { 
+          text: "Remove", 
+          style: "destructive", 
+          onPress: async () => {
+            try {
+              await deleteDoc(doc(db, "classMembers", memberId));
+            } catch (error) {
+              Alert.alert("Error", "Could not remove member.");
+            }
+          }
+        }
+      ]
+    );
+  };
 
   return (
     <View style={styles.mainContainer}>
-      
-      {/* Background Graphics */}
       <BackgroundDecorations />
 
       <ScrollView contentContainerStyle={styles.contentContainer} showsVerticalScrollIndicator={false}>
@@ -132,8 +117,8 @@ export default function ClassMembersScreen() {
           <Text style={styles.pageTitle}>Class Members</Text>
           <Text style={styles.subTitle}>
             {activeTab === 'Teachers' 
-              ? `GRADE 10-A • ${TEACHERS_DATA.length} ACTIVE MEMBERS` 
-              : `GRADE 10-A • ${STUDENTS_DATA.length} STUDENTS`}
+              ? `${className} • ${teachers.length} FACULTY MEMBERS` 
+              : `${className} • ${students.length} STUDENTS`}
           </Text>
         </View>
 
@@ -160,86 +145,90 @@ export default function ClassMembersScreen() {
           </TouchableOpacity>
         </View>
 
-        {/* --- TEACHERS VIEW --- */}
-        {activeTab === 'Teachers' && (
-          <View style={styles.tabContent}>
-            {/* Add Member Button */}
-            <TouchableOpacity style={styles.addMemberBtn} activeOpacity={0.8}>
-              <Ionicons name="person-add" size={20} color="#FFF" style={styles.addIcon} />
-              <Text style={styles.addMemberBtnText}>Add Member</Text>
-            </TouchableOpacity>
+        {loading ? (
+            <ActivityIndicator size="large" color="#3B3CFF" style={{ marginTop: 40 }} />
+        ) : (
+            <>
+                {/* --- TEACHERS VIEW --- */}
+                {activeTab === 'Teachers' && (
+                  <View style={styles.tabContent}>
+                    <Text style={styles.sectionTitle}>FACULTY MEMBERS</Text>
 
-            <Text style={styles.sectionTitle}>FACULTY MEMBERS</Text>
+                    <View style={styles.listContainer}>
+                      {teachers.map((teacher) => (
+                        <View key={teacher.id} style={styles.memberCard}>
+                          <View style={[styles.avatarBox, { backgroundColor: '#E0E7FF' }]}>
+                            <Image source={{ uri: teacher.avatar }} style={styles.avatarImg} />
+                          </View>
+                          
+                          <View style={styles.memberDetails}>
+                            <Text style={styles.memberName}>{teacher.name}</Text>
+                            <Text style={styles.memberRole}>{teacher.email}</Text>
+                          </View>
 
-            <View style={styles.listContainer}>
-              {TEACHERS_DATA.map((teacher) => (
-                <View key={teacher.id} style={styles.memberCard}>
-                  <View style={[styles.avatarBox, { backgroundColor: '#E0E7FF' }]}>
-                    <Image source={{ uri: teacher.avatar }} style={styles.avatarImg} />
-                  </View>
-                  
-                  <View style={styles.memberDetails}>
-                    <Text style={styles.memberName}>{teacher.name}</Text>
-                    <Text style={styles.memberRole}>{teacher.role}</Text>
-                  </View>
-
-                  <TouchableOpacity style={styles.deleteBtn}>
-                    <Ionicons name="trash" size={18} color="#EF4444" />
-                  </TouchableOpacity>
-                </View>
-              ))}
-            </View>
-          </View>
-        )}
-
-        {/* --- STUDENTS VIEW --- */}
-        {activeTab === 'Students' && (
-          <View style={styles.tabContent}>
-            
-            {/* Search Row */}
-            <View style={styles.searchRow}>
-              <View style={styles.searchBar}>
-                <Ionicons name="search" size={20} color="#9CA3AF" style={styles.searchIcon} />
-                <TextInput 
-                  style={styles.searchInput}
-                  placeholder="Search student..."
-                  placeholderTextColor="#9CA3AF"
-                />
-              </View>
-              
-              <TouchableOpacity style={styles.addStudentBtn}>
-                <Ionicons name="person-add" size={22} color="#FFF" />
-              </TouchableOpacity>
-            </View>
-
-            <View style={styles.listContainer}>
-              {STUDENTS_DATA.map((student) => (
-                <View key={student.id} style={styles.memberCard}>
-                  
-                  {/* Conditionally Render Avatar or Initials */}
-                  {student.avatar ? (
-                    <View style={[styles.avatarBox, { backgroundColor: '#F3F4F6' }]}>
-                      <Image source={{ uri: student.avatar }} style={styles.avatarImg} />
+                          <TouchableOpacity 
+                            style={styles.deleteBtn}
+                            onPress={() => handleDelete(teacher.id, teacher.name)}
+                          >
+                            <Ionicons name="trash" size={18} color="#EF4444" />
+                          </TouchableOpacity>
+                        </View>
+                      ))}
+                      {teachers.length === 0 && <Text style={styles.emptyText}>No teachers added yet.</Text>}
                     </View>
-                  ) : (
-                    <View style={[styles.avatarBox, { backgroundColor: '#F3F4F6' }]}>
-                      <Text style={styles.avatarInitials}>{student.initials}</Text>
-                    </View>
-                  )}
-                  
-                  <View style={styles.memberDetails}>
-                    <Text style={styles.memberName}>{student.name}</Text>
-                    <Text style={styles.memberRole}>{student.rollNo}</Text>
                   </View>
+                )}
 
-                  <TouchableOpacity style={styles.deleteBtn}>
-                    <Ionicons name="trash" size={18} color="#EF4444" />
-                  </TouchableOpacity>
-                </View>
-              ))}
-            </View>
+                {/* --- STUDENTS VIEW --- */}
+                {activeTab === 'Students' && (
+                  <View style={styles.tabContent}>
+                    
+                    <View style={styles.searchRow}>
+                      <View style={styles.searchBar}>
+                        <Ionicons name="search" size={20} color="#9CA3AF" style={styles.searchIcon} />
+                        <TextInput 
+                          style={styles.searchInput}
+                          placeholder="Search student..."
+                          placeholderTextColor="#9CA3AF"
+                        />
+                      </View>
+                    </View>
 
-          </View>
+                    <View style={styles.listContainer}>
+                      {students.map((student) => (
+                        <View key={student.id} style={styles.memberCard}>
+                          
+                          {student.avatar ? (
+                            <View style={[styles.avatarBox, { backgroundColor: '#F3F4F6' }]}>
+                              <Image source={{ uri: student.avatar }} style={styles.avatarImg} />
+                            </View>
+                          ) : (
+                            <View style={[styles.avatarBox, { backgroundColor: '#F3F4F6' }]}>
+                              <Text style={styles.avatarInitials}>
+                                  {student.name ? student.name.substring(0, 2).toUpperCase() : 'ST'}
+                              </Text>
+                            </View>
+                          )}
+                          
+                          <View style={styles.memberDetails}>
+                            <Text style={styles.memberName}>{student.name}</Text>
+                            <Text style={styles.memberRole}>{student.email}</Text>
+                          </View>
+
+                          <TouchableOpacity 
+                            style={styles.deleteBtn}
+                            onPress={() => handleDelete(student.id, student.name)}
+                          >
+                            <Ionicons name="trash" size={18} color="#EF4444" />
+                          </TouchableOpacity>
+                        </View>
+                      ))}
+                      {students.length === 0 && <Text style={styles.emptyText}>No students joined yet.</Text>}
+                    </View>
+
+                  </View>
+                )}
+            </>
         )}
 
       </ScrollView>
@@ -251,12 +240,18 @@ export default function ClassMembersScreen() {
 const styles = StyleSheet.create({
   mainContainer: {
     flex: 1,
-    backgroundColor: '#FFF9F0', // Updated Theme background
+    backgroundColor: '#FFF9F0',
   },
   contentContainer: {
     paddingHorizontal: 20,
     paddingTop: 16,
     paddingBottom: 40,
+  },
+  emptyText: {
+    textAlign: 'center',
+    color: '#9CA3AF',
+    marginTop: 20,
+    fontStyle: 'italic'
   },
   
   // Header
@@ -313,28 +308,6 @@ const styles = StyleSheet.create({
   },
 
   // Teachers View specific
-  addMemberBtn: {
-    backgroundColor: '#3B3CFF',
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 16,
-    borderRadius: 16,
-    marginBottom: 24,
-    shadowColor: '#3B3CFF',
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 6,
-  },
-  addIcon: {
-    marginRight: 8,
-  },
-  addMemberBtnText: {
-    color: '#FFF',
-    fontSize: 16,
-    fontWeight: '600',
-  },
   sectionTitle: {
     fontSize: 12,
     fontWeight: '700',
@@ -368,19 +341,6 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: 15,
     color: '#111827',
-  },
-  addStudentBtn: {
-    width: 54,
-    height: 54,
-    backgroundColor: '#3B3CFF',
-    borderRadius: 16,
-    justifyContent: 'center',
-    alignItems: 'center',
-    shadowColor: '#3B3CFF',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 6,
-    elevation: 4,
   },
 
   // Common List/Card Styles

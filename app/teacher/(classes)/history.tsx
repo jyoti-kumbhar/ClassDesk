@@ -1,62 +1,35 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   View, 
   Text, 
   StyleSheet, 
   ScrollView, 
   TouchableOpacity,
-  Dimensions 
+  Dimensions,
+  Modal,
+  Linking,
+  Alert,
+  ActivityIndicator
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import Svg, { Circle, Path, Line } from "react-native-svg";
+import { useLocalSearchParams } from 'expo-router';
 
-const { width } = Dimensions.get('window');
+// Firebase Imports
+import { 
+  collection, 
+  query, 
+  where, 
+  orderBy, 
+  onSnapshot 
+} from 'firebase/firestore';
+import { db } from '../../../firebase/firebaseConfig'; 
 
-// --- Mock Data ---
-const RESOURCES_DATA = [
-  {
-    id: '1',
-    type: 'pdf',
-    title: 'Calculus Cheat Sheet v2',
-    description: 'A comprehensive guide covering derivatives, integrals, and limit...',
-    date: 'Oct 20, 2023',
-    iconColor: '#EF4444', // Red
-    iconBg: '#FEF2F2',
-  },
-  {
-    id: '2',
-    type: 'doc',
-    title: 'Week 8 Lecture Notes',
-    description: 'Detailed notes from the session on Trigonometric Functions and...',
-    date: 'Oct 18, 2023',
-    iconColor: '#3B3CFF', // Blue
-    iconBg: '#EEF2FF',
-  },
-  {
-    id: '3',
-    type: 'pdf',
-    title: 'Sample Question Paper',
-    description: 'Previous year finals question paper with marking scheme and...',
-    date: 'Oct 15, 2023',
-    iconColor: '#EF4444', // Red
-    iconBg: '#FEF2F2',
-  },
-];
-
-const ASSIGNMENTS_HISTORY = [
-  { id: 'a1', title: 'Chapter 4 Practice', date: 'Oct 24, 2023', status: 'Graded' },
-  { id: 'a2', title: 'Essay on Climate Change', date: 'Oct 21, 2023', status: 'Submitted' },
-];
-
-const NOTICES_HISTORY = [
-  { id: 'n1', title: 'Quarterly Examination Schedule', date: 'Oct 20, 2023' },
-  { id: 'n2', title: 'Class Representative Meeting', date: 'Oct 18, 2023' },
-];
+const { width, height } = Dimensions.get('window');
 
 // --- Background Component ---
 const BackgroundDecorations = () => (
   <View style={StyleSheet.absoluteFill} pointerEvents="none">
-    
     {/* Top Right Large Soft Glow (Purple) */}
     <View style={{ position: "absolute", top: 30, right: -40 }}>
       <Svg height="200" width="200" viewBox="0 0 200 200">
@@ -73,90 +46,78 @@ const BackgroundDecorations = () => (
           <Circle cx="80" cy="90" r="4" fill="#60A5FA" opacity={0.6} />
        </Svg>
     </View>
-
-    {/* Middle - The "Data Wave" */}
-    <View style={{ position: "absolute", top: 220, width: width, alignItems: 'center', opacity: 0.4 }}>
-       <Svg height="150" width={width} viewBox={`0 0 ${width} 150`}>
-          <Path 
-            d={`M -20 75 C ${width * 0.3} 120, ${width * 0.7} 30, ${width + 20} 75`} 
-            stroke="#99F6E4" 
-            strokeWidth="3" 
-            fill="none" 
-          />
-          <Path 
-            d={`M -20 90 C ${width * 0.3} 135, ${width * 0.7} 45, ${width + 20} 90`} 
-            stroke="#CCFBF1" 
-            strokeWidth="2" 
-            fill="none" 
-            strokeDasharray="10, 10"
-          />
-          <Circle cx={width * 0.2} cy="85" r="3" fill="#34D399" />
-          <Circle cx={width * 0.8} cy="65" r="5" stroke="#34D399" strokeWidth="2" fill="#FFF" />
-       </Svg>
-    </View>
-
-    {/* Middle Right - Dot Grid Matrix */}
-    <View style={{ position: "absolute", top: 380, right: 10, opacity: 0.3 }}>
-       <Svg height="80" width="60">
-             {[0, 15, 30].map((x) => 
-               [0, 15, 30, 45].map((y) => (
-                 <Circle key={`${x}-${y}`} cx={x + 5} cy={y + 5} r="1.5" fill="#FDBA74" />
-               ))
-             )}
-       </Svg>
-    </View>
-
-    {/* Bottom Left - Geometric Stack */}
-    <View style={{ position: "absolute", bottom: 100, left: -20 }}>
-       <Svg height="120" width="120" viewBox="0 0 100 100">
-             <Line x1="0" y1="50" x2="100" y2="50" stroke="#FDE68A" strokeWidth="40" opacity={0.3} transform="rotate(-45 50 50)" />
-             <Line x1="20" y1="50" x2="80" y2="50" stroke="#F59E0B" strokeWidth="2" transform="rotate(-45 50 50)" />
-       </Svg>
-    </View>
-
-    {/* Bottom Right - Abstract Playground */}
-    <View style={{ position: "absolute", bottom: 40, right: -20, opacity: 0.9 }}>
-      <Svg height="220" width="220" viewBox="0 0 200 200">
-        <Circle cx="200" cy="200" r="150" fill="#fdf0fd" />
-        <Path 
-          d="M 100 200 Q 120 120 200 100" 
-          stroke="#fbccf9" 
-          strokeWidth="30" 
-          strokeLinecap="round" 
-          fill="none" 
-        />
-        <Path 
-          d="M 40 130 Q 70 80 100 130 T 160 130" 
-          stroke="#c7bdf1" 
-          strokeWidth="3" 
-          strokeLinecap="round" 
-          fill="none" 
-        />
-        <Circle cx="80" cy="180" r="4" fill="#93C5FD" />
-        <Circle cx="180" cy="150" r="3" fill="#93C5FD" />
-      </Svg>
-    </View>
   </View>
 );
 
 export default function ClassHistoryScreen() {
+  // 1. Get Class Details
+  const params = useLocalSearchParams();
+  const currentClassId = (params.id as string) || 'default-id';
+  const className = (params.grade as string) || 'Class History';
+  
+  // State
   const [activeTab, setActiveTab] = useState('Resources');
+  const [items, setItems] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [selectedItem, setSelectedItem] = useState<any | null>(null);
+
+  // 2. Fetch Data from Database
+  useEffect(() => {
+    const q = query(
+      collection(db, "notices"), 
+      where("classId", "==", currentClassId),
+      orderBy("createdAt", "desc")
+    );
+
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const data = snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      }));
+      setItems(data);
+      setLoading(false);
+    }, (error) => {
+      console.error("Fetch error:", error);
+      setLoading(false);
+    });
+
+    return () => unsubscribe();
+  }, [currentClassId]);
+
+  // Filter lists based on the 'notices' collection 'type' field
+  const resourcesList = items.filter(i => i.type === 'resource');
+  const assignmentsList = items.filter(i => i.type === 'assignment');
+  const noticesList = items.filter(i => i.type === 'notice');
+
+  // 5. Allow Resource Download
+  const handleDownload = (url: string) => {
+    if (url) {
+      Linking.openURL(url).catch(() => Alert.alert("Error", "Could not open link."));
+    } else {
+      Alert.alert("No Attachment", "There is no file or link attached.");
+    }
+  };
+
+  const formatDate = (timestamp: any) => {
+    if (!timestamp) return 'Just now';
+    return new Date(timestamp.seconds * 1000).toLocaleDateString('en-US', {
+      month: 'short', day: 'numeric', year: 'numeric'
+    });
+  };
 
   return (
     <View style={styles.mainContainer}>
-      
-      {/* Background Graphics */}
       <BackgroundDecorations />
 
       <ScrollView style={styles.scrollView} contentContainerStyle={styles.contentContainer} showsVerticalScrollIndicator={false}>
         
         {/* Header Section */}
         <View style={styles.headerSection}>
-          <Text style={styles.pageTitle}>10A – Mathematics</Text>
+          <Text style={styles.pageTitle}>{className}</Text>
           <Text style={styles.subTitle}>Classroom Activity History</Text>
         </View>
 
-        {/* Toggle Switch */}
+        {/* 3. Toggle Switch */}
         <View style={styles.toggleContainer}>
           {['Notices', 'Assignments', 'Resources'].map((tab) => (
             <TouchableOpacity 
@@ -173,74 +134,183 @@ export default function ClassHistoryScreen() {
         </View>
 
         {/* --- CONTENT AREA --- */}
+        {loading ? (
+            <ActivityIndicator size="large" color="#3B3CFF" style={{marginTop: 40}} />
+        ) : (
+            <>
+                {/* Resources Tab */}
+                {activeTab === 'Resources' && (
+                  <View style={styles.listContainer}>
+                    {resourcesList.length === 0 && <Text style={styles.emptyText}>No resources shared yet.</Text>}
+                    {resourcesList.map((item) => (
+                      <TouchableOpacity 
+                        key={item.id} 
+                        style={styles.card} 
+                        onPress={() => setSelectedItem(item)}
+                        activeOpacity={0.9}
+                      >
+                        <View style={styles.cardTopRow}>
+                          <View style={[styles.iconBox, { backgroundColor: '#EEF2FF' }]}>
+                            <Ionicons name="document-text" size={24} color="#3B3CFF" />
+                          </View>
+                          <View style={styles.cardTextContainer}>
+                            <Text style={styles.cardTitle} numberOfLines={1}>{item.title}</Text>
+                            {item.subject && <Text style={styles.cardSubject}>{item.subject}</Text>}
+                            <Text style={styles.cardDesc} numberOfLines={2}>{item.description}</Text>
+                          </View>
+                        </View>
 
-        {/* Resources Tab */}
-        {activeTab === 'Resources' && (
-          <View style={styles.listContainer}>
-            {RESOURCES_DATA.map((item) => (
-              <View key={item.id} style={styles.card}>
-                
-                {/* Card Top: Icon and Text */}
-                <View style={styles.cardTopRow}>
-                  <View style={[styles.iconBox, { backgroundColor: item.iconBg }]}>
-                    <Ionicons 
-                      name={item.type === 'pdf' ? 'document' : 'document-text'} 
-                      size={24} 
-                      color={item.iconColor} 
-                    />
+                        <View style={styles.cardBottomRow}>
+                          <View>
+                            <Text style={styles.dateLabel}>POSTED DATE</Text>
+                            <Text style={styles.dateValue}>{formatDate(item.createdAt)}</Text>
+                          </View>
+
+                          {item.link && (
+                              <View style={styles.miniLinkBadge}>
+                                  <Ionicons name="link" size={12} color="#3B3CFF" />
+                                  <Text style={styles.miniLinkText}>Has Link</Text>
+                              </View>
+                          )}
+                        </View>
+                      </TouchableOpacity>
+                    ))}
                   </View>
-                  <View style={styles.cardTextContainer}>
-                    <Text style={styles.cardTitle} numberOfLines={1}>{item.title}</Text>
-                    <Text style={styles.cardDesc} numberOfLines={2}>{item.description}</Text>
+                )}
+
+                {/* Assignments Tab */}
+                {activeTab === 'Assignments' && (
+                  <View style={styles.listContainer}>
+                    {assignmentsList.length === 0 && <Text style={styles.emptyText}>No assignments posted.</Text>}
+                    {assignmentsList.map((item) => (
+                      <TouchableOpacity 
+                        key={item.id} 
+                        style={[styles.card, { paddingVertical: 20 }]}
+                        onPress={() => setSelectedItem(item)}
+                      >
+                          <View style={{flexDirection:'row', justifyContent:'space-between', alignItems:'flex-start'}}>
+                             <View style={{flex: 1}}>
+                                <Text style={styles.cardTitle}>{item.title}</Text>
+                                {item.subject && <Text style={styles.cardSubject}>{item.subject}</Text>}
+                                <Text style={styles.cardDesc} numberOfLines={1}>{item.description}</Text>
+                             </View>
+                             <View style={[styles.iconBox, { width: 36, height: 36, backgroundColor: '#FEF3C7', marginRight: 0 }]}>
+                                <Ionicons name="clipboard" size={18} color="#D97706" />
+                             </View>
+                          </View>
+                          
+                          <View style={[styles.cardBottomRow, { marginTop: 12 }]}>
+                            <Text style={styles.dateValue}>{formatDate(item.createdAt)}</Text>
+                            {item.deadline && (
+                                <Text style={{fontSize:12, color:'#EF4444', fontWeight:'600'}}>
+                                    Due: {formatDate(item.deadline)}
+                                </Text>
+                            )}
+                          </View>
+                      </TouchableOpacity>
+                    ))}
                   </View>
-                </View>
+                )}
 
-                {/* Card Bottom: Date and Action */}
-                <View style={styles.cardBottomRow}>
-                  <View>
-                    <Text style={styles.dateLabel}>POSTED DATE</Text>
-                    <Text style={styles.dateValue}>{item.date}</Text>
+                {/* Notices Tab */}
+                {activeTab === 'Notices' && (
+                  <View style={styles.listContainer}>
+                    {noticesList.length === 0 && <Text style={styles.emptyText}>No notices posted.</Text>}
+                    {noticesList.map((item) => (
+                      <TouchableOpacity 
+                        key={item.id} 
+                        style={[styles.card, { paddingVertical: 20 }]}
+                        onPress={() => setSelectedItem(item)}
+                      >
+                          <View style={{flexDirection:'row', justifyContent:'space-between', alignItems:'flex-start'}}>
+                             <View style={{flex: 1}}>
+                                <Text style={styles.cardTitle}>{item.title}</Text>
+                                <Text style={styles.cardDesc} numberOfLines={2}>{item.description}</Text>
+                             </View>
+                             <Ionicons name="megaphone-outline" size={20} color="#9CA3AF" />
+                          </View>
+                          <Text style={[styles.dateValue, { marginTop: 10, fontSize: 12, color: '#9CA3AF' }]}>
+                             {formatDate(item.createdAt)}
+                          </Text>
+                      </TouchableOpacity>
+                    ))}
                   </View>
-
-                  <TouchableOpacity style={styles.downloadBtn} activeOpacity={0.8}>
-                    <Ionicons name="download-outline" size={16} color="#FFF" style={styles.downloadIcon} />
-                    <Text style={styles.downloadBtnText}>Download</Text>
-                  </TouchableOpacity>
-                </View>
-
-              </View>
-            ))}
-          </View>
-        )}
-
-        {/* Assignments Tab (Mock Layout) */}
-        {activeTab === 'Assignments' && (
-          <View style={styles.listContainer}>
-            {ASSIGNMENTS_HISTORY.map((item) => (
-              <View key={item.id} style={[styles.card, { paddingVertical: 20 }]}>
-                 <Text style={styles.cardTitle}>{item.title}</Text>
-                 <View style={[styles.cardBottomRow, { marginTop: 12 }]}>
-                   <Text style={styles.dateValue}>{item.date}</Text>
-                   <Text style={[styles.dateLabel, { color: '#3B3CFF' }]}>{item.status}</Text>
-                 </View>
-              </View>
-            ))}
-          </View>
-        )}
-
-        {/* Notices Tab (Mock Layout) */}
-        {activeTab === 'Notices' && (
-          <View style={styles.listContainer}>
-            {NOTICES_HISTORY.map((item) => (
-              <View key={item.id} style={[styles.card, { paddingVertical: 20 }]}>
-                 <Text style={styles.cardTitle}>{item.title}</Text>
-                 <Text style={[styles.dateValue, { marginTop: 8 }]}>{item.date}</Text>
-              </View>
-            ))}
-          </View>
+                )}
+            </>
         )}
 
       </ScrollView>
+
+      {/* 4. Full Screen Modal - UPDATED TO SHOW ALL DETAILS */}
+      <Modal visible={selectedItem !== null} animationType="slide" transparent>
+        <View style={styles.fullScreenOverlay}>
+            <View style={styles.fullScreenContainer}>
+                {selectedItem && (
+                    <>
+                        <View style={styles.fsHeader}>
+                            <TouchableOpacity onPress={() => setSelectedItem(null)} style={styles.closeBtn}>
+                                <Ionicons name="close" size={24} color="#111827" />
+                            </TouchableOpacity>
+                            <Text style={styles.fsTypeHeader}>{selectedItem.type.toUpperCase()}</Text>
+                            <View style={{width: 30}} />
+                        </View>
+
+                        <ScrollView contentContainerStyle={{padding: 24}}>
+                            <Text style={styles.fsTitle}>{selectedItem.title}</Text>
+                            
+                            {/* Subject Badge */}
+                            {selectedItem.subject && (
+                                <Text style={styles.fsSubject}>{selectedItem.subject}</Text>
+                            )}
+
+                            <Text style={styles.fsDate}>Posted on {formatDate(selectedItem.createdAt)}</Text>
+                            
+                            {/* Assignment Specific Details */}
+                            {selectedItem.type === 'assignment' && (
+                                <View style={styles.metaRow}>
+                                    {selectedItem.total && (
+                                        <View style={styles.metaItem}>
+                                            <Ionicons name="star" size={14} color="#D97706" />
+                                            <Text style={[styles.metaText, {color: '#D97706'}]}>{selectedItem.total} Points</Text>
+                                        </View>
+                                    )}
+                                    {selectedItem.deadline && (
+                                        <View style={styles.metaItem}>
+                                            <Ionicons name="time" size={14} color="#EF4444" />
+                                            <Text style={[styles.metaText, {color: '#EF4444'}]}>Due: {formatDate(selectedItem.deadline)}</Text>
+                                        </View>
+                                    )}
+                                </View>
+                            )}
+
+                            <View style={styles.divider} />
+                            
+                            <Text style={styles.sectionLabel}>DESCRIPTION</Text>
+                            <Text style={styles.fsDesc}>{selectedItem.description}</Text>
+
+                            {/* Download Button inside Modal if Resource or has link */}
+                            {selectedItem.link && (
+                                <TouchableOpacity 
+                                    style={styles.fsDownloadBtn}
+                                    onPress={() => handleDownload(selectedItem.link)}
+                                >
+                                    <View style={styles.linkIconBox}>
+                                        <Ionicons name="link" size={24} color="#3B3CFF" />
+                                    </View>
+                                    <View style={{flex:1}}>
+                                        <Text style={styles.linkTitle}>Attached Link</Text>
+                                        <Text style={styles.linkUrl} numberOfLines={1}>{selectedItem.link}</Text>
+                                    </View>
+                                    <Ionicons name="open-outline" size={20} color="#9CA3AF" />
+                                </TouchableOpacity>
+                            )}
+                        </ScrollView>
+                    </>
+                )}
+            </View>
+        </View>
+      </Modal>
+
     </View>
   );
 }
@@ -249,7 +319,7 @@ export default function ClassHistoryScreen() {
 const styles = StyleSheet.create({
   mainContainer: {
     flex: 1,
-    backgroundColor: '#FFF9F0', // Updated theme background
+    backgroundColor: '#FFF9F0',
   },
   scrollView: {
     flex: 1,
@@ -259,6 +329,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingTop: 16,
     paddingBottom: 40,
+  },
+  emptyText: {
+    textAlign: 'center',
+    color: '#9CA3AF',
+    marginTop: 20,
+    fontStyle: 'italic'
   },
   
   // Header
@@ -349,6 +425,14 @@ const styles = StyleSheet.create({
     color: '#111827',
     marginBottom: 4,
   },
+  cardSubject: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#3B3CFF',
+    marginBottom: 4,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5
+  },
   cardDesc: {
     fontSize: 13,
     color: '#6B7280',
@@ -372,6 +456,21 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#111827',
   },
+  
+  miniLinkBadge: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      backgroundColor: '#EEF2FF',
+      paddingHorizontal: 8,
+      paddingVertical: 4,
+      borderRadius: 6
+  },
+  miniLinkText: {
+      fontSize: 10,
+      color: '#3B3CFF',
+      fontWeight: '700',
+      marginLeft: 4
+  },
 
   // Download Button
   downloadBtn: {
@@ -390,4 +489,128 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '600',
   },
+
+  // --- Full Screen Modal Styles ---
+  fullScreenOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'flex-end',
+  },
+  fullScreenContainer: {
+    backgroundColor: 'white',
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    height: '90%',
+    overflow: 'hidden'
+  },
+  fsHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: 20,
+    borderBottomWidth: 1,
+    borderColor: '#F3F4F6'
+  },
+  closeBtn: {
+    padding: 4,
+    backgroundColor: '#F3F4F6',
+    borderRadius: 20
+  },
+  fsTypeHeader: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#6B7280',
+    letterSpacing: 1
+  },
+  fsTitle: {
+    fontSize: 24,
+    fontWeight: '800',
+    color: '#111827',
+    marginBottom: 4
+  },
+  fsSubject: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#3B3CFF',
+    marginBottom: 8,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5
+  },
+  fsDate: {
+    fontSize: 14,
+    color: '#9CA3AF',
+    marginBottom: 16
+  },
+  
+  // Meta Row (Marks/Deadline)
+  metaRow: {
+      flexDirection: 'row',
+      gap: 12,
+      marginBottom: 20
+  },
+  metaItem: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      backgroundColor: '#F9FAFB',
+      paddingHorizontal: 10,
+      paddingVertical: 6,
+      borderRadius: 8,
+      borderWidth: 1,
+      borderColor: '#F3F4F6'
+  },
+  metaText: {
+      fontSize: 13,
+      fontWeight: '700',
+      marginLeft: 6
+  },
+
+  divider: {
+    height: 1,
+    backgroundColor: '#E5E7EB',
+    marginBottom: 20
+  },
+  sectionLabel: {
+      fontSize: 11,
+      fontWeight: '800',
+      color: '#9CA3AF',
+      letterSpacing: 1,
+      marginBottom: 8
+  },
+  fsDesc: {
+    fontSize: 16,
+    lineHeight: 26,
+    color: '#374151',
+    marginBottom: 40
+  },
+  
+  // Link Card in Modal
+  fsDownloadBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#F3F4F6',
+    padding: 16,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: '#E5E7EB'
+  },
+  linkIconBox: {
+      width: 40, 
+      height: 40,
+      borderRadius: 10,
+      backgroundColor: '#EEF2FF',
+      alignItems: 'center',
+      justifyContent: 'center',
+      marginRight: 12
+  },
+  linkTitle: {
+      fontSize: 12,
+      color: '#6B7280',
+      fontWeight: '600',
+      marginBottom: 2
+  },
+  linkUrl: {
+      fontSize: 14,
+      color: '#3B3CFF',
+      fontWeight: '700'
+  }
 });
