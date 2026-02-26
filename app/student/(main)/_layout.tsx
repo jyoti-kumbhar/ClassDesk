@@ -44,10 +44,6 @@ const TopBar = () => {
           <Text style={styles.logoText}>ClassDesk</Text>
         </View>
         <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-          <TouchableOpacity style={styles.notifBtn}>
-            <View style={styles.badge} />
-            <Ionicons name="notifications" size={24} color="#1F2937" /> 
-          </TouchableOpacity>
           <TouchableOpacity onPress={() => router.push("/student/profile")}>
             <Image
               source={{ uri: "https://api.dicebear.com/7.x/avataaars/png?seed=Admin" }}

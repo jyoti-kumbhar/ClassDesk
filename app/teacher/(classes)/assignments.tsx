@@ -52,8 +52,9 @@ const BackgroundDecorations = () => (
 
 export default function ClassAssignmentsScreen() {
   const params = useLocalSearchParams();
-  // Safe Fallback: If navigation fails, use 'default-id' so we can at least see something
-  const currentClassId = (params.id as string) || 'default-id'; 
+  // UPDATED: Assuming 'className' is passed in navigation params. 
+  // You can also use params.id if you are passing the name as the ID parameter.
+  const currentClassName = (params.className as string) || (params.id as string) || 'default-class'; 
 
   // UI State
   const [selectedAssignment, setSelectedAssignment] = useState<any | null>(null);
@@ -71,27 +72,24 @@ export default function ClassAssignmentsScreen() {
   const [editDesc, setEditDesc] = useState("");
   const [editTotal, setEditTotal] = useState("100");
 
-  // --- 1. Fetch Assignments (FIXED) ---
+  // --- 1. Fetch Assignments by Class Name ---
   useEffect(() => {
-    // Debugging: Check which ID we are using
-    console.log("Fetching assignments for Class ID:", currentClassId);
+    console.log("Fetching assignments for Class Name:", currentClassName);
 
     const q = query(
       collection(db, "notices"), 
-      where("classId", "==", currentClassId)
+      // UPDATED: Filtering by className instead of classId
+      where("className", "==", currentClassName) 
     );
 
     const unsubscribe = onSnapshot(q, (snapshot) => {
       const fetched = snapshot.docs
         .map(doc => ({ id: doc.id, ...doc.data() }))
         .filter((item: any) => {
-            // FILTER: Must be type 'assignment'
-            // We verify type loosely to catch capitalization errors
             const isAssignment = (item.type || "").toLowerCase() === 'assignment';
             return isAssignment;
         });
 
-      // Sort: Newest first
       fetched.sort((a: any, b: any) => {
           const timeA = a.createdAt?.seconds || 0;
           const timeB = b.createdAt?.seconds || 0;
@@ -105,7 +103,7 @@ export default function ClassAssignmentsScreen() {
         Alert.alert("Error", "Could not load assignments.");
     });
     return () => unsubscribe();
-  }, [currentClassId]);
+  }, [currentClassName]);
 
   // --- 2. Fetch Students & Marks ---
   useEffect(() => {
@@ -115,7 +113,6 @@ export default function ClassAssignmentsScreen() {
   }, [selectedAssignment]);
 
   const fetchStudentsAndMarks = async (assignmentId: string) => {
-    // MOCK STUDENTS (Replace with real student fetch later)
     const dummyStudents = [
         { id: 's1', name: 'Alexander Wright', avatar: 'https://api.dicebear.com/7.x/avataaars/png?seed=Alex', status: 'SUBMITTED' },
         { id: 's2', name: 'Emma Thompson', avatar: 'https://api.dicebear.com/7.x/avataaars/png?seed=Emma', status: 'LATE' },
@@ -213,14 +210,12 @@ export default function ClassAssignmentsScreen() {
     setMarks(prev => ({ ...prev, [studentId]: val }));
   };
 
-  // --- FILTER LOGIC (FIXED: Robust Search) ---
+  // --- FILTER LOGIC ---
   const filteredAssignments = assignments.filter(assignment => {
       const queryLower = searchQuery.toLowerCase().trim();
       
-      // If search is empty, show everything
       if (!queryLower) return true;
 
-      // Safe access: handle cases where title or subject might be undefined
       const title = (assignment.title || "").toLowerCase();
       const subject = (assignment.subject || "").toLowerCase();
       

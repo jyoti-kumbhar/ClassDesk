@@ -1,20 +1,20 @@
 import { Ionicons } from '@expo/vector-icons';
-import React, { useState, useCallback } from 'react';
+import { useFocusEffect, useRouter } from 'expo-router';
+import React, { useCallback, useState } from 'react';
 import {
-  SafeAreaView,
-  ScrollView,
-  StatusBar,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
-  Dimensions,
-  ActivityIndicator
+    ActivityIndicator,
+    Dimensions,
+    SafeAreaView,
+    ScrollView,
+    StatusBar,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View
 } from 'react-native';
-import { useRouter, useFocusEffect } from 'expo-router';
-import Svg, { Circle, Path, Line } from "react-native-svg";
-import { ExamDatabase } from '../services/examDatabase';
-import { ClassDatabase } from '../services/classDatabase'; 
+import Svg, { Circle, Line, Path } from "react-native-svg";
+import { ClassDatabase } from '../../services/classDatabase';
+import { ExamDatabase } from '../../services/examDatabase';
 
 const { width } = Dimensions.get('window');
 type IconName = keyof typeof Ionicons.glyphMap;

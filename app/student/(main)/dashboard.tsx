@@ -1,15 +1,15 @@
-import React from 'react';
-import { 
-  ScrollView, 
-  StyleSheet, 
-  Text, 
-  TouchableOpacity, 
-  View, 
-  Dimensions, 
-  SafeAreaView, 
-  StatusBar 
-} from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import React from 'react';
+import {
+  Dimensions,
+  SafeAreaView,
+  ScrollView,
+  StatusBar,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View
+} from 'react-native';
 import Svg, { Circle, Path } from "react-native-svg";
 
 const { width: W, height: H } = Dimensions.get('window');
@@ -71,7 +71,7 @@ export default function StudentDashboard() {
         >
           {/* Welcome Section - Reduced Top Spacing */}
           <View style={styles.welcomeSection}>
-            <Text style={styles.greetingText}>Good morning, Alex</Text>
+            <Text style={styles.greetingText}>Hello</Text>
           </View>
 
           {/* Stats Section */}

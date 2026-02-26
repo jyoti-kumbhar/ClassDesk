@@ -1,21 +1,21 @@
-import React, { useState, useEffect } from 'react';
-import { 
-  View, 
-  Text, 
-  StyleSheet, 
-  ScrollView, 
-  TouchableOpacity, 
-  TextInput, 
-  KeyboardAvoidingView, 
-  Platform,
-  Dimensions,
-  ActivityIndicator,
-  Alert
-} from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { useRouter, useLocalSearchParams } from 'expo-router';
-import Svg, { Circle, Path, Line } from "react-native-svg";
-import { ExamDatabase } from '../services/examDatabase';
+import { useLocalSearchParams, useRouter } from 'expo-router';
+import React, { useEffect, useState } from 'react';
+import {
+    ActivityIndicator,
+    Alert,
+    Dimensions,
+    KeyboardAvoidingView,
+    Platform,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    View
+} from 'react-native';
+import Svg, { Circle, Line, Path } from "react-native-svg";
+import { ExamDatabase } from '../../services/examDatabase';
 
 const { width } = Dimensions.get('window');
 

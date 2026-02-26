@@ -1,5 +1,5 @@
 // services/examDatabase.ts
-import { db } from '../../../firebase/firebaseConfig';
+import { db } from '../../firebase/firebaseConfig'
 import { 
   collection, 
   addDoc, 
@@ -46,19 +46,33 @@ export const ExamDatabase = {
       await updateDoc(examRef, updatedData);
     } catch (e) {
       console.error("Error updating exam:", e);
+      throw e; // Added throw so the UI knows it failed
     }
   },
 
-  // 4. Delete Exam
+  // --- NEW METHOD ADDED HERE ---
+  // 4. Update Exam Status (Specifically for Ending Exams)
+  updateExamStatus: async (id: string, status: 'COMPLETED' | 'PUBLISHED' | 'DRAFT') => {
+    try {
+      const examRef = doc(db, "exams", id);
+      await updateDoc(examRef, { status });
+    } catch (e) {
+      console.error("Error updating exam status:", e);
+      throw e;
+    }
+  },
+
+  // 5. Delete Exam
   deleteExam: async (id: string) => {
     try {
       await deleteDoc(doc(db, "exams", id));
     } catch (e) {
       console.error("Error deleting exam:", e);
+      throw e;
     }
   },
 
-  // 5. Get Single Exam
+  // 6. Get Single Exam
   getExamById: async (id: string) => {
     try {
       const examRef = doc(db, "exams", id);

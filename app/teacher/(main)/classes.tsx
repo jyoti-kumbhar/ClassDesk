@@ -5,7 +5,7 @@ import {
   TouchableOpacity, 
   StyleSheet, 
   ScrollView, 
-  Dimensions,
+  // Dimensions,
   Modal,
   TextInput,
   ActivityIndicator,
@@ -22,6 +22,7 @@ import {
   collection, 
   addDoc, 
   updateDoc, 
+  deleteDoc,
   doc, 
   getDocs, 
   query, 
@@ -29,7 +30,7 @@ import {
 } from 'firebase/firestore';
 import { db } from '../../../firebase/firebaseConfig'; 
 
-const { width } = Dimensions.get('window');
+// const { width } = Dimensions.get('window');
 
 // --- Helper: Random UI Styles ---
 const getRandomStyle = () => {
@@ -43,7 +44,7 @@ const getRandomStyle = () => {
   return styles[Math.floor(Math.random() * styles.length)];
 };
 
-// --- Background Component ---
+// --- Background Decorations ---
 const BackgroundDecorations = () => (
   <View style={StyleSheet.absoluteFill} pointerEvents="none">
     <View style={{ position: "absolute", top: 30, right: -40 }}>
@@ -59,32 +60,12 @@ const BackgroundDecorations = () => (
           <Circle cx="80" cy="90" r="4" fill="#60A5FA" opacity={0.6} />
        </Svg>
     </View>
-    <View style={{ position: "absolute", top: 220, width: width, alignItems: 'center', opacity: 0.4 }}>
-       <Svg height="150" width={width} viewBox={`0 0 ${width} 150`}>
-          <Path 
-            d={`M -20 75 C ${width * 0.3} 120, ${width * 0.7} 30, ${width + 20} 75`} 
-            stroke="#99F6E4" 
-            strokeWidth="3" 
-            fill="none" 
-          />
-          <Path 
-            d={`M -20 90 C ${width * 0.3} 135, ${width * 0.7} 45, ${width + 20} 90`} 
-            stroke="#CCFBF1" 
-            strokeWidth="2" 
-            fill="none" 
-            strokeDasharray="10, 10"
-          />
-          <Circle cx={width * 0.2} cy="85" r="3" fill="#34D399" />
-          <Circle cx={width * 0.8} cy="65" r="5" stroke="#34D399" strokeWidth="2" fill="#FFF" />
-       </Svg>
-    </View>
   </View>
 );
 
 export default function ClassesScreen() {
   const router = useRouter();
   
-  // State
   const [classes, setClasses] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [modalVisible, setModalVisible] = useState(false);
@@ -95,10 +76,9 @@ export default function ClassesScreen() {
   const [grade, setGrade] = useState('');
   const [subject, setSubject] = useState('');
   const [teacher, setTeacher] = useState('');
-  const [students, setStudents] = useState('');
+  const [classCode, setClassCode] = useState(''); 
   const [tags, setTags] = useState('');
 
-  // Fetch Classes on Mount
   useEffect(() => {
     fetchClasses();
   }, []);
@@ -121,13 +101,36 @@ export default function ClassesScreen() {
     }
   };
 
-  // --- Handlers ---
+  const handleDelete = (id: string, className: string) => {
+    Alert.alert(
+      "Delete Class",
+      `Are you sure you want to delete "${className}"?`,
+      [
+        { text: "Cancel", style: "cancel" },
+        { 
+          text: "Delete", 
+          style: "destructive", 
+          onPress: async () => {
+            try {
+              setLoading(true);
+              await deleteDoc(doc(db, 'classes', id));
+              fetchClasses();
+            } catch {
+              Alert.alert("Error", "Could not delete class.");
+            } finally {
+              setLoading(false);
+            }
+          }
+        }
+      ]
+    );
+  };
 
   const handleCreate = () => {
     setGrade('');
     setSubject('');
     setTeacher('');
-    setStudents('');
+    setClassCode(''); 
     setTags('');
     setCurrentId(null);
     setIsEditing(false);
@@ -138,7 +141,7 @@ export default function ClassesScreen() {
     setGrade(item.grade);
     setSubject(item.subject);
     setTeacher(item.teacher);
-    setStudents(item.students ? String(item.students) : '');
+    setClassCode(item.classCode || ''); 
     setTags(item.tags ? item.tags.join(', ') : '');
     setCurrentId(item.id);
     setIsEditing(true);
@@ -146,8 +149,8 @@ export default function ClassesScreen() {
   };
 
   const handleSave = async () => {
-    if (!grade || !subject || !teacher) {
-      Alert.alert("Missing Fields", "Please fill in Grade, Subject, and Teacher.");
+    if (!grade || !subject || !teacher || !classCode) {
+      Alert.alert("Missing Fields", "Please fill in all required fields.");
       return;
     }
 
@@ -156,64 +159,61 @@ export default function ClassesScreen() {
 
     setLoading(true);
     try {
+      const classData = {
+        grade,
+        subject,
+        teacher,
+        classCode: classCode.toUpperCase().trim(), 
+        tags: tagArray,
+        notices: [],
+        assignments: [],
+        resources: []
+      };
+
       if (isEditing && currentId) {
-        // UPDATE Existing
         const classRef = doc(db, 'classes', currentId);
         await updateDoc(classRef, {
-          grade,
-          subject,
-          teacher,
-          students: Number(students) || 0,
-          tags: tagArray
+            grade: classData.grade,
+            subject: classData.subject,
+            teacher: classData.teacher,
+            classCode: classData.classCode,
+            tags: classData.tags
         });
-        Alert.alert("Success", "Class updated successfully!");
       } else {
-        // CREATE New
         await addDoc(collection(db, 'classes'), {
-          grade,
-          subject,
-          teacher,
-          students: Number(students) || 0,
-          tags: tagArray,
+          ...classData,
           icon: style.icon,
           iconColor: style.color,
           iconBg: style.bg,
           createdAt: new Date()
         });
-        Alert.alert("Success", "New class created!");
       }
 
       setModalVisible(false);
       fetchClasses();
-    } catch (error) {
-      console.error("Error saving class:", error);
+    } catch {
       Alert.alert("Error", "Could not save class.");
     } finally {
       setLoading(false);
     }
   };
 
-  // --- FIXED NAVIGATION HANDLER ---
   const handleView = (item: any) => {
     router.push({
-      // Ensure this path matches your folder structure exactly.
-      // If your file is at app/teacher/(classes)/notice.tsx:
       pathname: '/teacher/(classes)/notice', 
       params: { 
         id: item.id, 
         grade: item.grade,
-        subject: item.subject
+        subject: item.subject,
+        classCode: item.classCode
       }
     });
   };
 
   return (
     <View style={styles.container}>
-      
       <BackgroundDecorations />
-
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
-        
         <Text style={styles.dateText}>
             {new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
         </Text>
@@ -238,16 +238,21 @@ export default function ClassesScreen() {
             <>
              {classes.map((item) => (
                 <View key={item.id} style={styles.card}>
-                  
                   <View style={styles.cardHeader}>
                     <View style={[styles.iconWrapper, { backgroundColor: item.iconBg || '#EEF2FF' }]}>
                       {/* @ts-ignore */}
                       <Ionicons name={item.icon || 'flask'} size={24} color={item.iconColor || '#4461F2'} />
                     </View>
-                    <View>
+                    <View style={{ flex: 1 }}>
                       <Text style={styles.gradeText}>{item.grade}</Text>
-                      <Text style={styles.subjectText}>{item.subject}</Text>
+                      <Text style={styles.subjectText}>{item.subject} • <Text style={{fontWeight: '700', color: '#4461F2'}}>{item.classCode}</Text></Text>
                     </View>
+                    <TouchableOpacity 
+                      style={styles.deleteIconButton} 
+                      onPress={() => handleDelete(item.id, item.grade)}
+                    >
+                      <Ionicons name="trash-outline" size={20} color="#EF4444" />
+                    </TouchableOpacity>
                   </View>
 
                   <View style={styles.infoRow}>
@@ -256,13 +261,6 @@ export default function ClassesScreen() {
                       <View style={styles.infoValueRow}>
                         <Ionicons name="person" size={14} color="#6B7280" />
                         <Text style={styles.infoValue}>{item.teacher}</Text>
-                      </View>
-                    </View>
-                    <View style={styles.infoBlock}>
-                      <Text style={styles.infoLabel}>Students</Text>
-                      <View style={styles.infoValueRow}>
-                        <Ionicons name="people" size={14} color="#6B7280" />
-                        <Text style={styles.infoValue}>{item.students || 0} Total</Text>
                       </View>
                     </View>
                   </View>
@@ -280,8 +278,6 @@ export default function ClassesScreen() {
                       <Ionicons name="pencil" size={16} color="#374151" />
                       <Text style={styles.editBtnText}>Edit</Text>
                     </TouchableOpacity>
-                    
-                    {/* View Button Triggers Navigation */}
                     <TouchableOpacity style={styles.viewBtn} onPress={() => handleView(item)}>
                       <Ionicons name="eye" size={18} color="#FFF" />
                       <Text style={styles.viewBtnText}>View</Text>
@@ -290,19 +286,13 @@ export default function ClassesScreen() {
                 </View>
               ))}
               {classes.length === 0 && !loading && (
-                  <Text style={{ textAlign: 'center', color: '#9CA3AF', marginTop: 20 }}>No classes found. Create one!</Text>
+                  <Text style={{ textAlign: 'center', color: '#9CA3AF', marginTop: 20 }}>No classes found.</Text>
               )}
             </>
         )}
       </ScrollView>
 
-      {/* --- CRUD MODAL --- */}
-      <Modal
-        animationType="slide"
-        transparent={true}
-        visible={modalVisible}
-        onRequestClose={() => setModalVisible(false)}
-      >
+      <Modal animationType="slide" transparent={true} visible={modalVisible}>
         <KeyboardAvoidingView 
             behavior={Platform.OS === "ios" ? "padding" : "height"}
             style={styles.modalContainer}
@@ -317,58 +307,27 @@ export default function ClassesScreen() {
 
             <ScrollView showsVerticalScrollIndicator={false}>
                 <Text style={styles.inputLabel}>Grade / Class Name</Text>
-                <TextInput 
-                    style={styles.input} 
-                    placeholder="e.g. Grade 10 - A" 
-                    value={grade}
-                    onChangeText={setGrade}
-                />
+                <TextInput style={styles.input} placeholder="e.g. Grade 10 - A" value={grade} onChangeText={setGrade} />
 
                 <Text style={styles.inputLabel}>Subject</Text>
-                <TextInput 
-                    style={styles.input} 
-                    placeholder="e.g. Mathematics" 
-                    value={subject}
-                    onChangeText={setSubject}
-                />
+                <TextInput style={styles.input} placeholder="e.g. Mathematics" value={subject} onChangeText={setSubject} />
+
+                <Text style={styles.inputLabel}>Class Code</Text>
+                <TextInput style={styles.input} placeholder="e.g. MATH101" value={classCode} onChangeText={setClassCode} autoCapitalize="characters" />
 
                 <Text style={styles.inputLabel}>Teacher Name</Text>
-                <TextInput 
-                    style={styles.input} 
-                    placeholder="e.g. Mr. Smith" 
-                    value={teacher}
-                    onChangeText={setTeacher}
-                />
-
-                <Text style={styles.inputLabel}>Number of Students</Text>
-                <TextInput 
-                    style={styles.input} 
-                    placeholder="e.g. 35" 
-                    value={students}
-                    onChangeText={setStudents}
-                    keyboardType="numeric"
-                />
+                <TextInput style={styles.input} placeholder="e.g. Mr. Smith" value={teacher} onChangeText={setTeacher} />
 
                 <Text style={styles.inputLabel}>Tags (comma separated)</Text>
-                <TextInput 
-                    style={styles.input} 
-                    placeholder="MATH, SCIENCE" 
-                    value={tags}
-                    onChangeText={setTags}
-                />
+                <TextInput style={styles.input} placeholder="MATH, SCIENCE" value={tags} onChangeText={setTags} />
 
                 <TouchableOpacity style={styles.saveBtn} onPress={handleSave}>
-                    {loading ? (
-                        <ActivityIndicator color="#FFF" />
-                    ) : (
-                        <Text style={styles.saveBtnText}>{isEditing ? 'Update Class' : 'Create Class'}</Text>
-                    )}
+                    {loading ? <ActivityIndicator color="#FFF" /> : <Text style={styles.saveBtnText}>{isEditing ? 'Update Class' : 'Create Class'}</Text>}
                 </TouchableOpacity>
             </ScrollView>
           </View>
         </KeyboardAvoidingView>
       </Modal>
-
     </View>
   );
 }
@@ -376,53 +335,33 @@ export default function ClassesScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#FFF9F0' },
   scrollContent: { paddingHorizontal: 20, paddingTop: 10, paddingBottom: 100 }, 
-  
   dateText: { fontSize: 14, color: '#6B7280', fontWeight: '500', marginBottom: 4 },
   pageTitle: { fontSize: 28, fontWeight: 'bold', color: '#111827', marginBottom: 20 },
-  
-  createBtn: {
-    backgroundColor: '#4461F2',
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 16,
-    borderRadius: 16,
-    marginBottom: 30,
-    shadowColor: "#4461F2",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 5,
-  },
+  createBtn: { backgroundColor: '#4461F2', flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingVertical: 16, borderRadius: 16, marginBottom: 30, elevation: 5 },
   createBtnText: { color: '#FFF', fontSize: 16, fontWeight: '700', marginLeft: 8 },
-
   sectionHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 15 },
   sectionTitle: { fontSize: 20, fontWeight: 'bold', color: '#111827' },
   filterBtn: { flexDirection: 'row', alignItems: 'center', padding: 5 },
   filterText: { color: '#6B7280', fontSize: 14, marginLeft: 4, fontWeight: '500' },
-
-  card: { backgroundColor: '#FFF', borderRadius: 24, padding: 20, marginBottom: 20, shadowColor: "#000", shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 10, elevation: 2 },
+  card: { backgroundColor: '#FFF', borderRadius: 24, padding: 20, marginBottom: 20, elevation: 2 },
   cardHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: 20 },
   iconWrapper: { width: 48, height: 48, borderRadius: 12, alignItems: 'center', justifyContent: 'center', marginRight: 15 },
   gradeText: { fontSize: 20, fontWeight: 'bold', color: '#111827', marginBottom: 2 },
   subjectText: { fontSize: 14, color: '#6B7280' },
-  
+  deleteIconButton: { padding: 8, backgroundColor: '#FEF2F2', borderRadius: 10 },
   infoRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 20 },
   infoBlock: { flex: 1 },
   infoLabel: { fontSize: 12, color: '#9CA3AF', marginBottom: 4 },
   infoValueRow: { flexDirection: 'row', alignItems: 'center' },
   infoValue: { fontSize: 14, fontWeight: '600', color: '#111827', marginLeft: 6 },
-
   tagRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 20 },
   tag: { backgroundColor: '#F3F4F6', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 12 },
   tagText: { fontSize: 10, fontWeight: '700', color: '#4B5563' },
-
   actionRow: { flexDirection: 'row', gap: 12 },
   editBtn: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingVertical: 12, borderRadius: 12, borderWidth: 1, borderColor: '#E5E7EB' },
   editBtnText: { fontSize: 16, fontWeight: '600', color: '#374151', marginLeft: 6 },
   viewBtn: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingVertical: 12, borderRadius: 12, backgroundColor: '#4461F2' },
   viewBtnText: { fontSize: 16, fontWeight: '600', color: '#FFF', marginLeft: 6 },
-
   modalContainer: { flex: 1, justifyContent: 'flex-end', backgroundColor: 'rgba(0,0,0,0.5)' },
   modalContent: { backgroundColor: 'white', borderTopLeftRadius: 25, borderTopRightRadius: 25, padding: 25, maxHeight: '80%' },
   modalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 },

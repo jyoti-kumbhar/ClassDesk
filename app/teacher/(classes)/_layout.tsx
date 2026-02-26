@@ -21,10 +21,6 @@ const TopBar = () => {
       </View>
       
       <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-        <TouchableOpacity style={styles.notifBtn}>
-          <View style={styles.badge} />
-          <Ionicons name="notifications" size={24} color="#FFF" /> 
-        </TouchableOpacity>
         {/* Updated path: Profile is in /teacher/profile.tsx based on your structure */}
         <TouchableOpacity onPress={() => router.push("/teacher/profile")}>
           <Image
