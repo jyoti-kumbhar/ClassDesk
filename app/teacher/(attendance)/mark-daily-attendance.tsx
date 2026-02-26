@@ -9,41 +9,18 @@ import {
   Platform,
   Dimensions,
   ActivityIndicator,
-  Alert
+  Alert,
+  TextInput // 👈 NEW: Imported TextInput
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import Svg, { Circle, Path, Line } from "react-native-svg";
 
+// --- Firebase Imports ---
+import { db } from '../../../firebase/firebaseConfig'; 
+import { collection, query, where, getDocs, addDoc } from 'firebase/firestore'; // 👈 NEW: Imported addDoc
+
 const { width } = Dimensions.get('window');
-
-// --- 1. Mock Database Service ---
-const AttendanceDatabase = {
-  // Fetch students for a specific class to mark attendance
-  fetchClassList: async (classId: string) => {
-    return new Promise<any[]>((resolve) => {
-      setTimeout(() => {
-        resolve([
-          { id: '1', name: 'Aria Johnson', rollNo: '101', initials: 'AJ', status: 'present' },
-          { id: '2', name: 'Benjamin Miller', rollNo: '102', initials: 'BM', status: 'absent' },
-          { id: '3', name: 'Chloe Hudson', rollNo: '103', initials: 'CH', status: 'present' },
-          { id: '4', name: 'David Wilson', rollNo: '104', initials: 'DW', status: 'present' },
-          { id: '5', name: 'Emily Fisher', rollNo: '105', initials: 'EF', status: 'present' },
-        ]);
-      }, 600);
-    });
-  },
-
-  // Save the daily attendance record
-  saveDailyAttendance: async (classId: string, date: string, records: any[]) => {
-    return new Promise((resolve) => {
-      setTimeout(() => {
-        console.log(`Saved Attendance for ${classId} on ${date}:`, records);
-        resolve(true);
-      }, 800);
-    });
-  }
-};
 
 // --- Background Component ---
 const BackgroundDecorations = () => (
@@ -82,21 +59,49 @@ export default function MarkDailyAttendanceScreen() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [students, setStudents] = useState<any[]>([]);
-  const currentDate = new Date().toDateString();
 
-  // --- 1. Fetch Data ---
+  // 👈 NEW: State variables for the new input fields
+  const [subjectName, setSubjectName] = useState('');
+  const [topic, setTopic] = useState('');
+  const [attendanceDate, setAttendanceDate] = useState(new Date().toISOString().split('T')[0]); // Defaults to YYYY-MM-DD
+  const [startTime, setStartTime] = useState('');
+  const [endTime, setEndTime] = useState('');
+
+  // --- 1. Fetch Students Data ---
   useEffect(() => {
     const loadStudents = async () => {
       try {
-        const data = await AttendanceDatabase.fetchClassList(classId);
-        setStudents(data);
+        const usersRef = collection(db, 'users');
+        const q = query(usersRef, where('joinedClasses', 'array-contains', classId));
+        const querySnapshot = await getDocs(q);
+
+        const fetchedStudents = querySnapshot.docs.map(doc => {
+          const data = doc.data();
+          const studentName = data.name || data.fullName || 'Unknown Student';
+          const initials = studentName.split(' ').map((n: string) => n[0]).join('').substring(0, 2).toUpperCase();
+
+          return {
+            id: doc.id,
+            name: studentName,
+            initials: initials,
+            status: 'present', // Default to present
+            ...data
+          };
+        });
+        setStudents(fetchedStudents);
       } catch (error) {
+        console.error(error);
         Alert.alert("Error", "Failed to load student list.");
       } finally {
         setLoading(false);
       }
     };
-    loadStudents();
+    
+    if (classId && classId !== 'default') {
+      loadStudents();
+    } else {
+      setLoading(false);
+    }
   }, [classId]);
 
   // --- 2. Calculate Totals Dynamically ---
@@ -110,15 +115,43 @@ export default function MarkDailyAttendanceScreen() {
     );
   };
 
-  // --- 4. Save Logic ---
+  // --- 4. Save Logic directly to Firestore ---
   const handleSave = async () => {
+    // Basic validation
+    if (!subjectName.trim() || !attendanceDate.trim() || !startTime.trim() || !endTime.trim() || !topic.trim()) {
+      Alert.alert("Missing Details", "Please fill in all the class session details (Subject, Date, Times, and Topic).");
+      return;
+    }
+
     setSaving(true);
     try {
-      await AttendanceDatabase.saveDailyAttendance(classId, currentDate, students);
-      Alert.alert("Success", "Attendance marked successfully!", [
+      const attendancesRef = collection(db, 'attendances');
+      
+      // Save data structure
+      await addDoc(attendancesRef, {
+        classId: classId,
+        className: className,
+        subjectName: subjectName.trim(),
+        topic: topic.trim(),
+        date: attendanceDate.trim(),
+        startTime: startTime.trim(),
+        endTime: endTime.trim(),
+        totalPresent,
+        totalAbsent,
+        createdAt: new Date(),
+        // Save minimal student data to keep document lightweight
+        students: students.map(s => ({
+          id: s.id,
+          name: s.name,
+          status: s.status
+        }))
+      });
+
+      Alert.alert("Success", "Attendance marked and saved successfully!", [
         { text: "OK", onPress: () => router.back() }
       ]);
     } catch (error) {
+      console.error("Error saving attendance:", error);
       Alert.alert("Error", "Failed to save attendance.");
     } finally {
       setSaving(false);
@@ -135,7 +168,6 @@ export default function MarkDailyAttendanceScreen() {
 
   return (
     <View style={styles.mainContainer}>
-      
       <BackgroundDecorations />
 
       <SafeAreaView style={styles.safeArea}>
@@ -147,38 +179,71 @@ export default function MarkDailyAttendanceScreen() {
             </TouchableOpacity>
             <View>
                 <Text style={styles.pageTitle}>Mark Attendance</Text>
-                <Text style={styles.pageSubtitle}>{className} • {currentDate}</Text>
+                <Text style={styles.pageSubtitle}>{className}</Text>
             </View>
         </View>
 
         <ScrollView contentContainerStyle={styles.container} showsVerticalScrollIndicator={false}>
 
-          {/* Subject Info Cards */}
-          <Text style={styles.sectionLabel}>SUBJECT DETAILS</Text>
-          <View style={styles.infoCard}>
-            <View style={styles.iconBox}>
-              <Ionicons name="book" size={16} color="#9CA3AF" />
-            </View>
-            <Text style={styles.infoText}>{className}</Text>
-          </View>
-
-          <View style={styles.row}>
-            <View style={styles.halfWidth}>
-              <Text style={styles.sectionLabel}>TIME</Text>
-              <View style={styles.infoCard}>
-                <View style={[styles.iconBox, { borderRadius: 12 }]}>
-                   <Ionicons name="time" size={16} color="#9CA3AF" />
-                </View>
-                <Text style={styles.infoText}>10:30 AM</Text>
-              </View>
-            </View>
+          {/* --- NEW Form Inputs --- */}
+          <Text style={styles.sectionLabel}>SESSION DETAILS</Text>
+          
+          <View style={styles.formCard}>
             
-            <View style={styles.halfWidth}>
-              <Text style={styles.sectionLabel}>TOPIC</Text>
-              <View style={styles.infoCard}>
-                <Text style={[styles.infoText, { marginLeft: 5 }]}>General</Text>
+            <Text style={styles.inputLabel}>Subject Name</Text>
+            <TextInput 
+              style={styles.input} 
+              placeholder="e.g. Advanced Physics" 
+              placeholderTextColor="#9CA3AF"
+              value={subjectName}
+              onChangeText={setSubjectName}
+            />
+
+            <Text style={styles.inputLabel}>Topic / Lesson</Text>
+            <TextInput 
+              style={styles.input} 
+              placeholder="e.g. Thermodynamics" 
+              placeholderTextColor="#9CA3AF"
+              value={topic}
+              onChangeText={setTopic}
+            />
+
+            <View style={styles.row}>
+              <View style={[styles.halfWidth, { width: '100%' }]}>
+                <Text style={styles.inputLabel}>Date</Text>
+                <TextInput 
+                  style={styles.input} 
+                  placeholder="YYYY-MM-DD" 
+                  placeholderTextColor="#9CA3AF"
+                  value={attendanceDate}
+                  onChangeText={setAttendanceDate}
+                />
               </View>
             </View>
+
+            <View style={styles.row}>
+              <View style={styles.halfWidth}>
+                <Text style={styles.inputLabel}>Start Time</Text>
+                <TextInput 
+                  style={styles.input} 
+                  placeholder="10:00 AM" 
+                  placeholderTextColor="#9CA3AF"
+                  value={startTime}
+                  onChangeText={setStartTime}
+                />
+              </View>
+              <View style={styles.halfWidth}>
+                <Text style={styles.inputLabel}>End Time</Text>
+                <TextInput 
+                  style={styles.input} 
+                  placeholder="11:30 AM" 
+                  placeholderTextColor="#9CA3AF"
+                  value={endTime}
+                  onChangeText={setEndTime}
+                />
+              </View>
+            </View>
+
           </View>
 
           {/* Attendance List Header */}
@@ -192,66 +257,77 @@ export default function MarkDailyAttendanceScreen() {
 
           {/* Students List */}
           <View style={styles.studentList}>
-            {students.map((student) => {
-               const isPresent = student.status === 'present';
-               
-               return (
-                  <View key={student.id} style={styles.studentCard}>
-                    
-                    <View style={styles.studentInfo}>
-                      <View style={styles.avatar}>
-                        <Text style={styles.avatarText}>{student.initials}</Text>
-                      </View>
-                      <View>
-                        <Text style={styles.studentName}>{student.name}</Text>
-                        <Text style={styles.rollNo}>Roll No: {student.rollNo}</Text>
-                      </View>
-                    </View>
-
-                    {/* Toggle Switch */}
-                    <View style={styles.toggleContainer}>
-                      <TouchableOpacity 
-                        style={[styles.toggleBtn, isPresent && styles.toggleBtnPresent]}
-                        onPress={() => toggleStatus(student.id, 'present')}
-                        activeOpacity={0.7}
-                      >
-                        <Text style={[styles.toggleText, isPresent && styles.toggleTextActive]}>P</Text>
-                      </TouchableOpacity>
+            {students.length === 0 ? (
+               <View style={{ padding: 20, alignItems: 'center' }}>
+                 <Ionicons name="people-outline" size={40} color="#9CA3AF" style={{marginBottom: 10}} />
+                 <Text style={{ textAlign: 'center', color: '#6B7280', fontSize: 15 }}>
+                   No students have joined this class yet.
+                 </Text>
+               </View>
+            ) : (
+              students.map((student) => {
+                 const isPresent = student.status === 'present';
+                 
+                 return (
+                    <View key={student.id} style={styles.studentCard}>
                       
-                      <TouchableOpacity 
-                        style={[styles.toggleBtn, !isPresent && styles.toggleBtnAbsent]}
-                        onPress={() => toggleStatus(student.id, 'absent')}
-                        activeOpacity={0.7}
-                      >
-                        <Text style={[styles.toggleText, !isPresent && styles.toggleTextActive]}>A</Text>
-                      </TouchableOpacity>
-                    </View>
+                      <View style={styles.studentInfo}>
+                        <View style={styles.avatar}>
+                          <Text style={styles.avatarText}>{student.initials}</Text>
+                        </View>
+                        <View>
+                          <Text style={styles.studentName}>{student.name}</Text>
+                          {/* 👈 Removed Roll Number Text completely */}
+                        </View>
+                      </View>
 
-                  </View>
-               );
-            })}
+                      {/* Toggle Switch */}
+                      <View style={styles.toggleContainer}>
+                        <TouchableOpacity 
+                          style={[styles.toggleBtn, isPresent && styles.toggleBtnPresent]}
+                          onPress={() => toggleStatus(student.id, 'present')}
+                          activeOpacity={0.7}
+                        >
+                          <Text style={[styles.toggleText, isPresent && styles.toggleTextActive]}>P</Text>
+                        </TouchableOpacity>
+                        
+                        <TouchableOpacity 
+                          style={[styles.toggleBtn, !isPresent && styles.toggleBtnAbsent]}
+                          onPress={() => toggleStatus(student.id, 'absent')}
+                          activeOpacity={0.7}
+                        >
+                          <Text style={[styles.toggleText, !isPresent && styles.toggleTextActive]}>A</Text>
+                        </TouchableOpacity>
+                      </View>
+
+                    </View>
+                 );
+              })
+            )}
           </View>
           
           <View style={{ height: 100 }} />
         </ScrollView>
 
-        {/* Floating Save Button */}
-        <View style={styles.bottomBar}>
-          <TouchableOpacity 
-            style={styles.saveBtn} 
-            onPress={handleSave}
-            disabled={saving}
-          >
-            {saving ? (
-               <ActivityIndicator color="#FFF" />
-            ) : (
-               <>
-                 <Ionicons name="checkmark-done" size={24} color="#FFF" style={{ marginRight: 8 }} />
-                 <Text style={styles.saveBtnText}>Submit Attendance</Text>
-               </>
-            )}
-          </TouchableOpacity>
-        </View>
+        {/* Floating Save Button - Only show if there are students */}
+        {students.length > 0 && (
+          <View style={styles.bottomBar}>
+            <TouchableOpacity 
+              style={styles.saveBtn} 
+              onPress={handleSave}
+              disabled={saving}
+            >
+              {saving ? (
+                 <ActivityIndicator color="#FFF" />
+              ) : (
+                 <>
+                   <Ionicons name="checkmark-done" size={24} color="#FFF" style={{ marginRight: 8 }} />
+                   <Text style={styles.saveBtnText}>Submit Attendance</Text>
+                 </>
+              )}
+            </TouchableOpacity>
+          </View>
+        )}
 
       </SafeAreaView>
     </View>
@@ -267,7 +343,7 @@ const styles = StyleSheet.create({
   header: { 
     flexDirection: 'row', 
     alignItems: 'center', 
-    marginBottom: 25, 
+    marginBottom: 20, 
     paddingHorizontal: 20, 
     marginTop: Platform.OS === 'android' ? 40 : 10 
   },
@@ -276,9 +352,12 @@ const styles = StyleSheet.create({
   pageSubtitle: { fontSize: 13, color: '#6B7280', marginTop: 2, fontWeight: '500' },
   
   sectionLabel: { fontSize: 11, fontWeight: '700', color: '#9CA3AF', letterSpacing: 1, marginBottom: 8, marginTop: 5 },
-  infoCard: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#FFF', borderRadius: 16, padding: 14, marginBottom: 20, borderWidth: 1, borderColor: '#F3F4F6' },
-  iconBox: { backgroundColor: '#F3F4F6', width: 30, height: 30, borderRadius: 8, justifyContent: 'center', alignItems: 'center', marginRight: 12 },
-  infoText: { fontSize: 14, fontWeight: '700', color: '#111827' },
+  
+  // Form Styles
+  formCard: { backgroundColor: '#FFF', borderRadius: 20, padding: 16, marginBottom: 20, borderWidth: 1, borderColor: '#E5E7EB', shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.02, shadowRadius: 5, elevation: 1 },
+  inputLabel: { fontSize: 12, fontWeight: '700', color: '#4B5563', marginBottom: 6, marginLeft: 4 },
+  input: { backgroundColor: '#F9FAFB', borderRadius: 12, paddingHorizontal: 16, paddingVertical: 12, fontSize: 14, color: '#111827', borderWidth: 1, borderColor: '#E5E7EB', marginBottom: 15 },
+  
   row: { flexDirection: 'row', justifyContent: 'space-between' },
   halfWidth: { width: '48%' },
 
@@ -293,7 +372,6 @@ const styles = StyleSheet.create({
   avatar: { width: 44, height: 44, borderRadius: 22, backgroundColor: '#EEF2FF', justifyContent: 'center', alignItems: 'center', marginRight: 12 },
   avatarText: { color: '#4461F2', fontWeight: '700', fontSize: 15 },
   studentName: { fontSize: 15, fontWeight: '700', color: '#111827' },
-  rollNo: { fontSize: 12, color: '#9CA3AF', marginTop: 2, fontWeight: '500' },
 
   // Toggle Switch
   toggleContainer: { flexDirection: 'row', backgroundColor: '#F3F4F6', borderRadius: 12, padding: 4 },

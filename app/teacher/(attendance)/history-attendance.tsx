@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { 
   View, 
   Text, 
@@ -9,42 +9,19 @@ import {
   Platform,
   Dimensions,
   ActivityIndicator,
-  Alert
+  Alert,
+  TextInput
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import Svg, { Circle, Path, Line } from "react-native-svg";
 
-const { width } = Dimensions.get('window');
+// --- Firebase Imports ---
+// Notice: writeBatch replaced with updateDoc
+import { collection, query, where, getDocs, doc, updateDoc } from 'firebase/firestore';
+import { db } from '../../../firebase/firebaseConfig'; 
 
-// --- 1. Mock Database Service ---
-const AttendanceDatabase = {
-  fetchAttendanceSheet: async (classId: string, date: string) => {
-    // Simulating API Call
-    return new Promise<any[]>((resolve) => {
-      setTimeout(() => {
-        resolve([
-          { id: '1', name: 'Aria Johnson', initials: 'AJ', status: 'present' },
-          { id: '2', name: 'Benjamin Miller', initials: 'BM', status: 'absent' },
-          { id: '3', name: 'Chloe Hudson', initials: 'CH', status: 'absent' },
-          { id: '4', name: 'David Wilson', initials: 'DW', status: 'present' },
-          { id: '5', name: 'Ethan Hunt', initials: 'EH', status: 'present' },
-          { id: '6', name: 'Fiona Gallagher', initials: 'FG', status: 'present' },
-        ]);
-      }, 500);
-    });
-  },
-  
-  updateAttendance: async (classId: string, date: string, students: any[]) => {
-    // Simulating DB Update
-    return new Promise((resolve) => {
-      setTimeout(() => {
-        console.log(`Updated DB for ${classId} on ${date}:`, students);
-        resolve(true);
-      }, 500);
-    });
-  }
-};
+const { width } = Dimensions.get('window');
 
 // --- Background Component ---
 const BackgroundDecorations = () => (
@@ -77,37 +54,65 @@ const BackgroundDecorations = () => (
 export default function AttendanceHistoryScreen() {
   const router = useRouter();
   const params = useLocalSearchParams();
-  const classId = params.classId as string || 'default';
-  const className = params.className as string || 'Class';
-
+  
   // --- State ---
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [students, setStudents] = useState<any[]>([]);
+  const [attendanceDocId, setAttendanceDocId] = useState<string | null>(null); // Store the main doc ID
   const [isEditing, setIsEditing] = useState(false);
   
-  // Note: setSelectedDate removed to silence linter since it wasn't used yet. 
-  // Add it back when you implement the Date Picker.
-  const [selectedDate] = useState(new Date().toDateString());
+  // Filters State
+  const [subjectFilter, setSubjectFilter] = useState((params.className as string) || '');
+  const [dateFilter, setDateFilter] = useState(new Date().toISOString().split('T')[0]);
 
-  // --- 1. Fetch Data ---
-  useEffect(() => {
-    const loadData = async () => {
-      setLoading(true);
-      try {
-        const data = await AttendanceDatabase.fetchAttendanceSheet(classId, selectedDate);
-        setStudents(data);
-      } catch (error) {
-        console.error(error); // Log error to satisfy linter
-        Alert.alert("Error", "Failed to load attendance records.");
-      } finally {
-        setLoading(false);
+  // --- 1. Fetch Data from Firestore ---
+  const fetchAttendance = useCallback(async () => {
+    if (!subjectFilter || !dateFilter) return;
+    
+    setLoading(true);
+    try {
+      const attendanceRef = collection(db, 'attendances');
+      const q = query(
+        attendanceRef, 
+        where('subjectName', '==', subjectFilter.trim()),
+        where('date', '==', dateFilter.trim())
+      );
+      
+      const querySnapshot = await getDocs(q);
+      
+      if (!querySnapshot.empty) {
+        // We assume one document matches a specific class+date combo
+        const docSnap = querySnapshot.docs[0]; 
+        setAttendanceDocId(docSnap.id); // Save document ID for updates
+        
+        const data = docSnap.data();
+        if (data.students && Array.isArray(data.students)) {
+          setStudents(data.students);
+        } else {
+          setStudents([]);
+        }
+      } else {
+        // No document found
+        setAttendanceDocId(null);
+        setStudents([]);
       }
-    };
+    } catch (error) {
+      console.error("Error fetching attendance: ", error);
+      Alert.alert("Error", "Failed to load attendance records.");
+    } finally {
+      setLoading(false);
+    }
+  }, [subjectFilter, dateFilter]);
 
-    loadData();
-  }, [classId, selectedDate]); // Added dependencies
+  // Re-fetch when date or subject filter changes
+  useEffect(() => {
+    const timeoutId = setTimeout(() => {
+      fetchAttendance();
+    }, 500);
+    return () => clearTimeout(timeoutId);
+  }, [fetchAttendance]);
 
-  // --- 2. Calculate Percentage (Dynamic) ---
+  // --- Calculate Percentage (Dynamic) ---
   const stats = useMemo(() => {
     const total = students.length;
     const present = students.filter(s => s.status === 'present').length;
@@ -115,7 +120,7 @@ export default function AttendanceHistoryScreen() {
     return { total, present, percentage };
   }, [students]);
 
-  // --- 3. Edit Handler ---
+  // --- Edit Handler ---
   const toggleAttendance = (studentId: string) => {
     if (!isEditing) return;
 
@@ -130,23 +135,41 @@ export default function AttendanceHistoryScreen() {
     }));
   };
 
+  // --- Save to Firestore ---
   const handleEditSave = async () => {
     if (isEditing) {
-      // Saving...
+      if (!attendanceDocId) return;
+
       setLoading(true);
-      await AttendanceDatabase.updateAttendance(classId, selectedDate, students);
-      setLoading(false);
-      setIsEditing(false);
-      Alert.alert("Success", "Attendance updated successfully!");
+      try {
+        const docRef = doc(db, 'attendances', attendanceDocId);
+        
+        // Recalculate totals to keep DB accurate
+        const totalPresent = students.filter(s => s.status === 'present').length;
+        const totalAbsent = students.length - totalPresent;
+
+        // Update the single document with the modified students array
+        await updateDoc(docRef, { 
+          students: students,
+          totalPresent: totalPresent,
+          totalAbsent: totalAbsent
+        });
+
+        Alert.alert("Success", "Attendance updated successfully!");
+        setIsEditing(false);
+      } catch (error) {
+        console.error("Error updating DB: ", error);
+        Alert.alert("Error", "Failed to save attendance updates.");
+      } finally {
+        setLoading(false);
+      }
     } else {
-      // Start Editing
       setIsEditing(true);
     }
   };
 
   return (
     <View style={styles.mainContainer}>
-      
       <BackgroundDecorations />
 
       <SafeAreaView style={styles.safeArea}>
@@ -163,22 +186,33 @@ export default function AttendanceHistoryScreen() {
 
           {/* Filters Row */}
           <View style={styles.filtersRow}>
-            {/* Date Filter */}
             <View style={styles.filterBlock}>
-              <Text style={styles.filterLabel}>DATE</Text>
-              <TouchableOpacity style={styles.filterCard}>
-                <Text style={styles.filterText}>Oct 24, 2024</Text>
+              <Text style={styles.filterLabel}>DATE (YYYY-MM-DD)</Text>
+              <View style={styles.filterCard}>
+                <TextInput 
+                  style={styles.filterTextInput}
+                  value={dateFilter}
+                  onChangeText={setDateFilter}
+                  placeholder="2026-02-26"
+                  placeholderTextColor="#9CA3AF"
+                  keyboardType="numeric"
+                />
                 <Ionicons name="calendar-outline" size={18} color="#9CA3AF" />
-              </TouchableOpacity>
+              </View>
             </View>
 
-            {/* Subject Filter */}
             <View style={styles.filterBlock}>
               <Text style={styles.filterLabel}>SUBJECT</Text>
-              <TouchableOpacity style={styles.filterCard}>
-                <Text style={styles.filterText} numberOfLines={1}>{className}</Text>
-                <Ionicons name="chevron-down" size={18} color="#9CA3AF" />
-              </TouchableOpacity>
+              <View style={styles.filterCard}>
+                <TextInput 
+                  style={styles.filterTextInput}
+                  value={subjectFilter}
+                  onChangeText={setSubjectFilter}
+                  placeholder="Enter Subject..."
+                  placeholderTextColor="#9CA3AF"
+                />
+                <Ionicons name="search" size={18} color="#9CA3AF" />
+              </View>
             </View>
           </View>
 
@@ -189,9 +223,7 @@ export default function AttendanceHistoryScreen() {
               <Text style={styles.summaryPercentage}>{stats.percentage}%</Text>
             </View>
 
-            {/* Progress Bar */}
             <View style={styles.progressBarContainer}>
-              {/* Fix: Added 'as any' to solve Type error */}
               <View style={[styles.progressBarFill, { width: `${stats.percentage}%` as any }]} />
             </View>
 
@@ -205,11 +237,11 @@ export default function AttendanceHistoryScreen() {
           <View style={styles.listHeaderRow}>
             <Text style={styles.sectionLabel}>STUDENTS LIST</Text>
             
-            {/* Edit / Save Button */}
+            {/* Edit / Save Button - Disabled if no document was found */}
             <TouchableOpacity 
                 style={[styles.editBtn, isEditing && styles.saveBtnState]} 
                 onPress={handleEditSave}
-                disabled={loading}
+                disabled={loading || !attendanceDocId || students.length === 0}
             >
               <Ionicons 
                 name={isEditing ? "checkmark" : "pencil"} 
@@ -226,17 +258,19 @@ export default function AttendanceHistoryScreen() {
           {/* Students List */}
           {loading ? (
              <ActivityIndicator size="large" color="#4461F2" style={{ marginTop: 20 }} />
+          ) : students.length === 0 ? (
+             <Text style={styles.emptyText}>No attendance records found for this date/subject.</Text>
           ) : (
              <View style={styles.studentList}>
                {students.map((student) => {
                  const isPresent = student.status === 'present';
- 
+
                  return (
                    <TouchableOpacity 
                      key={student.id} 
                      style={[
                         styles.studentCard,
-                        isEditing && styles.studentCardEditing // Visual cue for editing
+                        isEditing && styles.studentCardEditing
                      ]}
                      activeOpacity={isEditing ? 0.7 : 1}
                      onPress={() => toggleAttendance(student.id)}
@@ -244,11 +278,12 @@ export default function AttendanceHistoryScreen() {
                      
                      <View style={styles.studentInfo}>
                        <View style={styles.avatar}>
-                         <Text style={styles.avatarText}>{student.initials}</Text>
+                         {/* Fallback to first letter of name since 'initials' isn't in your DB schema */}
+                         <Text style={styles.avatarText}>{student.name?.charAt(0).toUpperCase() || '?'}</Text>
                        </View>
                        <Text style={styles.studentName}>{student.name}</Text>
                      </View>
- 
+
                      {/* Status Badge */}
                      <View style={[styles.badge, isPresent ? styles.badgePresent : styles.badgeAbsent]}>
                        <Ionicons 
@@ -261,7 +296,7 @@ export default function AttendanceHistoryScreen() {
                          {isPresent ? 'PRESENT' : 'ABSENT'}
                        </Text>
                      </View>
- 
+
                    </TouchableOpacity>
                  );
                })}
@@ -295,8 +330,8 @@ const styles = StyleSheet.create({
   filtersRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 25 },
   filterBlock: { width: '48%' },
   filterLabel: { fontSize: 11, fontWeight: '700', color: '#9CA3AF', letterSpacing: 1, marginBottom: 8 },
-  filterCard: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', backgroundColor: '#FFF', paddingHorizontal: 16, paddingVertical: 14, borderRadius: 12, borderWidth: 1, borderColor: '#F3F4F6' },
-  filterText: { fontSize: 14, fontWeight: '600', color: '#111827', flex: 1 },
+  filterCard: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', backgroundColor: '#FFF', paddingHorizontal: 16, paddingVertical: 14, borderRadius: 12, borderWidth: 1, borderColor: '#F3F4F6', height: 48 },
+  filterTextInput: { fontSize: 14, fontWeight: '600', color: '#111827', flex: 1, padding: 0 },
 
   // Summary Card
   summaryCard: { backgroundColor: '#FFF', borderRadius: 16, padding: 20, marginBottom: 30, borderWidth: 1, borderColor: '#F3F4F6', shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.02, shadowRadius: 5, elevation: 1 },
@@ -311,6 +346,7 @@ const styles = StyleSheet.create({
   // List Header
   listHeaderRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 15 },
   sectionLabel: { fontSize: 13, fontWeight: '800', color: '#6B7280', letterSpacing: 1 },
+  emptyText: { textAlign: 'center', color: '#6B7280', marginTop: 20, fontSize: 14 },
   
   // Edit Button
   editBtn: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#EEF2FF', paddingHorizontal: 16, paddingVertical: 8, borderRadius: 12 },
@@ -320,7 +356,7 @@ const styles = StyleSheet.create({
   // Student Cards
   studentList: { paddingBottom: 20 },
   studentCard: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', backgroundColor: '#FFF', padding: 16, borderRadius: 16, marginBottom: 12, borderWidth: 1, borderColor: '#F3F4F6', shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.02, shadowRadius: 5, elevation: 1 },
-  studentCardEditing: { borderColor: '#4461F2', backgroundColor: '#F0F4FF' }, // Highlight when editing
+  studentCardEditing: { borderColor: '#4461F2', backgroundColor: '#F0F4FF' }, 
   
   studentInfo: { flexDirection: 'row', alignItems: 'center' },
   avatar: { width: 40, height: 40, borderRadius: 20, backgroundColor: '#EEF2FF', justifyContent: 'center', alignItems: 'center', marginRight: 12 },
