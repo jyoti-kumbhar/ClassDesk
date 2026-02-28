@@ -98,7 +98,7 @@ export default function ClassesLayout() {
 
 // --- Combined Layout Styles ---
 const styles = StyleSheet.create({
-  safeArea: { flex: 1, backgroundColor: '#F9FAFB' },
+  safeArea: { flex: 1, backgroundColor: '#ffffff' },
   mainLayout: { flex: 1 },
   
   // Top Bar Styles

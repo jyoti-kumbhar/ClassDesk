@@ -177,11 +177,11 @@ export default function StudentLayout() {
 
 // --- Layout Styles ---
 const styles = StyleSheet.create({
-  safeArea: { flex: 1, backgroundColor: '#FFF9F0' },
+  safeArea: { flex: 1, backgroundColor: '#ffffff' },
   
   // Top Bar 
   header: { 
-    backgroundColor: '#FFF9F0', 
+    backgroundColor: '#ffffff', 
     borderBottomLeftRadius: 30, 
     borderBottomRightRadius: 30,
     zIndex: 10,

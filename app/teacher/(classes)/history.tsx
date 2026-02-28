@@ -25,7 +25,7 @@ import {
 } from 'firebase/firestore';
 import { db } from '../../../firebase/firebaseConfig'; 
 
-const { width, height } = Dimensions.get('window');
+const { width } = Dimensions.get('window');
 
 // --- Background Component ---
 const BackgroundDecorations = () => (
@@ -46,6 +46,57 @@ const BackgroundDecorations = () => (
           <Circle cx="80" cy="90" r="4" fill="#60A5FA" opacity={0.6} />
        </Svg>
     </View>
+
+    {/* Middle - The "Data Wave" */}
+    <View style={{ position: "absolute", top: 220, width: width, alignItems: 'center', opacity: 0.4 }}>
+       <Svg height="150" width={width} viewBox={`0 0 ${width} 150`}>
+          <Path 
+            d={`M -20 75 C ${width * 0.3} 120, ${width * 0.7} 30, ${width + 20} 75`} 
+            stroke="#99F6E4" 
+            strokeWidth="3" 
+            fill="none" 
+          />
+          <Path 
+            d={`M -20 90 C ${width * 0.3} 135, ${width * 0.7} 45, ${width + 20} 90`} 
+            stroke="#CCFBF1" 
+            strokeWidth="2" 
+            fill="none" 
+            strokeDasharray="10, 10"
+          />
+          <Circle cx={width * 0.2} cy="85" r="3" fill="#34D399" />
+          <Circle cx={width * 0.8} cy="65" r="5" stroke="#34D399" strokeWidth="2" fill="#FFF" />
+       </Svg>
+    </View>
+
+    {/* Middle Right - Dot Grid Matrix */}
+    <View style={{ position: "absolute", top: 380, right: 10, opacity: 0.3 }}>
+       <Svg height="80" width="60">
+             {[0, 15, 30].map((x) => 
+               [0, 15, 30, 45].map((y) => (
+                 <Circle key={`${x}-${y}`} cx={x + 5} cy={y + 5} r="1.5" fill="#FDBA74" />
+               ))
+             )}
+       </Svg>
+    </View>
+
+    {/* Bottom Left - Geometric Stack */}
+    <View style={{ position: "absolute", bottom: 100, left: -20 }}>
+       <Svg height="120" width="120" viewBox="0 0 100 100">
+             <Line x1="0" y1="50" x2="100" y2="50" stroke="#FDE68A" strokeWidth="40" opacity={0.3} transform="rotate(-45 50 50)" />
+             <Line x1="20" y1="50" x2="80" y2="50" stroke="#F59E0B" strokeWidth="2" transform="rotate(-45 50 50)" />
+       </Svg>
+    </View>
+
+    {/* Bottom Right - Abstract Playground */}
+    <View style={{ position: "absolute", bottom: 40, right: -20, opacity: 0.9 }}>
+      <Svg height="220" width="220" viewBox="0 0 200 200">
+        <Circle cx="200" cy="200" r="150" fill="#fdf0fd" />
+        <Path d="M 100 200 Q 120 120 200 100" stroke="#fbccf9" strokeWidth="30" strokeLinecap="round" fill="none" />
+        <Path d="M 40 130 Q 70 80 100 130 T 160 130" stroke="#c7bdf1" strokeWidth="3" strokeLinecap="round" fill="none" />
+        <Circle cx="80" cy="180" r="4" fill="#93C5FD" />
+        <Circle cx="180" cy="150" r="3" fill="#93C5FD" />
+      </Svg>
+    </View>
   </View>
 );
 
@@ -61,11 +112,21 @@ export default function ClassHistoryScreen() {
   const [loading, setLoading] = useState(true);
   const [selectedItem, setSelectedItem] = useState<any | null>(null);
 
-  // 2. Fetch Data from Database
+  // 2. Fetch Data from Database (OPTIMIZED)
   useEffect(() => {
+    setLoading(true); // Show loader when switching tabs
+
+    // Convert UI Tab Name ('Resources') to Database Type Name ('resource')
+    // This allows us to use one flexible query for all three tabs!
+    let queryType = "resource"; 
+    if (activeTab === 'Assignments') queryType = "assignment";
+    if (activeTab === 'Notices') queryType = "notice";
+
+    // Ask Firebase ONLY for the specific type we need right now
     const q = query(
       collection(db, "notices"), 
       where("classId", "==", currentClassId),
+      where("type", "==", queryType), // <--- New filter added here!
       orderBy("createdAt", "desc")
     );
 
@@ -82,12 +143,7 @@ export default function ClassHistoryScreen() {
     });
 
     return () => unsubscribe();
-  }, [currentClassId]);
-
-  // Filter lists based on the 'notices' collection 'type' field
-  const resourcesList = items.filter(i => i.type === 'resource');
-  const assignmentsList = items.filter(i => i.type === 'assignment');
-  const noticesList = items.filter(i => i.type === 'notice');
+  }, [currentClassId, activeTab]); // <--- Added activeTab to dependency array!
 
   // 5. Allow Resource Download
   const handleDownload = (url: string) => {
@@ -141,8 +197,8 @@ export default function ClassHistoryScreen() {
                 {/* Resources Tab */}
                 {activeTab === 'Resources' && (
                   <View style={styles.listContainer}>
-                    {resourcesList.length === 0 && <Text style={styles.emptyText}>No resources shared yet.</Text>}
-                    {resourcesList.map((item) => (
+                    {items.length === 0 && <Text style={styles.emptyText}>No resources shared yet.</Text>}
+                    {items.map((item) => (
                       <TouchableOpacity 
                         key={item.id} 
                         style={styles.card} 
@@ -181,8 +237,8 @@ export default function ClassHistoryScreen() {
                 {/* Assignments Tab */}
                 {activeTab === 'Assignments' && (
                   <View style={styles.listContainer}>
-                    {assignmentsList.length === 0 && <Text style={styles.emptyText}>No assignments posted.</Text>}
-                    {assignmentsList.map((item) => (
+                    {items.length === 0 && <Text style={styles.emptyText}>No assignments posted.</Text>}
+                    {items.map((item) => (
                       <TouchableOpacity 
                         key={item.id} 
                         style={[styles.card, { paddingVertical: 20 }]}
@@ -215,8 +271,8 @@ export default function ClassHistoryScreen() {
                 {/* Notices Tab */}
                 {activeTab === 'Notices' && (
                   <View style={styles.listContainer}>
-                    {noticesList.length === 0 && <Text style={styles.emptyText}>No notices posted.</Text>}
-                    {noticesList.map((item) => (
+                    {items.length === 0 && <Text style={styles.emptyText}>No notices posted.</Text>}
+                    {items.map((item) => (
                       <TouchableOpacity 
                         key={item.id} 
                         style={[styles.card, { paddingVertical: 20 }]}
@@ -319,7 +375,7 @@ export default function ClassHistoryScreen() {
 const styles = StyleSheet.create({
   mainContainer: {
     flex: 1,
-    backgroundColor: '#FFF9F0',
+    backgroundColor: '#ffffff',
   },
   scrollView: {
     flex: 1,

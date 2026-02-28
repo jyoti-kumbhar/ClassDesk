@@ -1,33 +1,94 @@
 import React from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Platform, Image, StatusBar } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, Platform, Image, StatusBar, Dimensions } from 'react-native';
 import { Tabs, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import Svg, { Circle, Path, Defs, LinearGradient, Stop } from "react-native-svg";
+
+const { width: W } = Dimensions.get('window');
+
+// --- Top Bar Graphics Component ---
+const TopBarGraphics = () => {
+  return (
+    <View style={[StyleSheet.absoluteFill, { zIndex: 1, overflow: 'hidden', borderBottomLeftRadius: 30, borderBottomRightRadius: 30 }]}>
+      <Svg height="100%" width="100%">
+        <Defs>
+          <LinearGradient id="grad" x1="0" y1="0" x2="0" y2="1">
+            <Stop offset="0" stopColor="#FFF9F0" stopOpacity="1" />
+            <Stop offset="1" stopColor="#EEF2FF" stopOpacity="1" />
+          </LinearGradient>
+        </Defs>
+
+        {/* 1. Base Background with Soft Curve */}
+        <Path 
+          d={`M 0 0 L ${W} 0 L ${W} 100 Q ${W * 0.5} 140 0 100 Z`} 
+          fill="url(#grad)" 
+        />
+
+        {/* 2. Large Hollow Circle (Pastel Purple - Top Right) */}
+        <Circle 
+          cx={W * 0.85} 
+          cy={20} 
+          r={60} 
+          stroke="#E9D5FF" 
+          strokeWidth={6} 
+          fill="transparent" 
+          opacity={0.6} 
+        />
+
+        {/* 3. Solid Circle (Pastel Pink - Left) */}
+        <Circle 
+          cx={W * 0.2} 
+          cy={55} 
+          r={20} 
+          fill="#FBCFE8" 
+          opacity={0.8} 
+        />
+
+        {/* 4. Small Hollow Ring (Pastel Blue - Center Left) */}
+        <Circle 
+          cx={W * 0.25} 
+          cy={100} 
+          r={8} 
+          stroke="#BAE6FD" 
+          strokeWidth={3} 
+          fill="transparent" 
+        />
+      </Svg>
+    </View>
+  );
+};
 
 // --- Top Bar Component ---
 const TopBar = () => {
   const router = useRouter();
   
   return (
-    <View style={styles.header}>
-      <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-        <TouchableOpacity 
-          onPress={() => router.back()} 
-          style={styles.backButton}
-          activeOpacity={0.7}
-        >
-          <Ionicons name="chevron-back" size={28} color="#FFF" />
-        </TouchableOpacity>
-        <Text style={styles.logoText}>ClassDesk</Text>
-      </View>
+    <View style={styles.headerContainer}>
+      {/* Background Graphics */}
+      <TopBarGraphics />
       
-      <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-        {/* Updated path: Profile is in /teacher/profile.tsx based on your structure */}
-        <TouchableOpacity onPress={() => router.push("/teacher/profile")}>
-          <Image
-            source={{ uri: "https://api.dicebear.com/7.x/avataaars/png?seed=Bharat" }}
-            style={styles.avatar}
-          />
-        </TouchableOpacity>
+      {/* Actual Header Content */}
+      <View style={styles.headerContent}>
+        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+          <TouchableOpacity 
+            onPress={() => router.back()} 
+            style={styles.backButton}
+            activeOpacity={0.7}
+          >
+            <Ionicons name="chevron-back" size={28} color="#1F2937" />
+          </TouchableOpacity>
+          <Text style={styles.logoText}>ClassDesk</Text>
+        </View>
+        
+        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+          {/* Updated path: Profile is in /teacher/profile.tsx based on your structure */}
+          <TouchableOpacity onPress={() => router.push("/teacher/profile")}>
+            <Image
+              source={{ uri: "https://api.dicebear.com/7.x/avataaars/png?seed=Bharat" }}
+              style={styles.avatar}
+            />
+          </TouchableOpacity>
+        </View>
       </View>
     </View>
   );
@@ -80,7 +141,7 @@ function CustomBottomNav({ state, descriptors, navigation }: any) {
 export default function ClassDetailsLayout() {
   return (
     <View style={styles.safeArea}>
-      <StatusBar barStyle="light-content" backgroundColor="transparent" translucent={true} />
+      <StatusBar barStyle="dark-content" backgroundColor="transparent" translucent={true} />
       
       <TopBar />
       <View style={{ flex: 1 }}>
@@ -102,15 +163,11 @@ export default function ClassDetailsLayout() {
 }
 
 const styles = StyleSheet.create({
-  safeArea: { flex: 1, backgroundColor: '#F9FAFB' },
-  header: { 
-    flexDirection: 'row', 
-    justifyContent: 'space-between', 
-    alignItems: 'center', 
-    paddingHorizontal: 20,
-    paddingTop: Platform.OS === 'android' ? 50 : 60, 
-    paddingBottom: 20, 
-    backgroundColor: '#4461F2', 
+  safeArea: { flex: 1, backgroundColor: '#ffffff' },
+  
+  // Header Styles
+  headerContainer: {
+    backgroundColor: '#ffffff', // Base fallback color
     borderBottomLeftRadius: 30, 
     borderBottomRightRadius: 30, 
     shadowColor: "#000",
@@ -119,12 +176,23 @@ const styles = StyleSheet.create({
     shadowRadius: 12,
     elevation: 10,
     zIndex: 10,
+    paddingBottom: 20,
+  },
+  headerContent: { 
+    flexDirection: 'row', 
+    justifyContent: 'space-between', 
+    alignItems: 'center', 
+    paddingHorizontal: 20,
+    paddingTop: Platform.OS === 'android' ? 50 : 60, 
+    zIndex: 2, // Keeps content above absolute graphics
   },
   backButton: { padding: 4, marginRight: 8, marginLeft: -4 },
-  logoText: { fontSize: 22, fontWeight: '700', color: '#FFF' },
+  logoText: { fontSize: 22, fontWeight: '700', color: '#1F2937' },
   notifBtn: { marginRight: 15, position: 'relative' },
   badge: { position: 'absolute', top: 0, right: 2, width: 8, height: 8, borderRadius: 4, backgroundColor: '#EF4444', zIndex: 10 },
-  avatar: { width: 40, height: 40, borderRadius: 20, borderWidth: 2, borderColor: '#FFF' },
+  avatar: { width: 40, height: 40, borderRadius: 20, borderWidth: 2, borderColor: '#4461F2' },
+  
+  // Bottom Nav Styles
   bottomNav: { 
     backgroundColor: '#4461F2', 
     flexDirection: 'row', 

@@ -122,7 +122,7 @@ export default function MembersScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#F9FAFB' },
+  container: { flex: 1, backgroundColor: '#ffffff' },
   scrollContent: { paddingHorizontal: 20, paddingTop: 40, paddingBottom: 120 },
   bgDot: { position: "absolute", width: 12, height: 12, borderRadius: 6, opacity: 0.3 },
   pageHeader: { marginBottom: 24 },

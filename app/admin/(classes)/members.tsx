@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, Dimensions, ActivityIndicator } from 'react-native';
-import Svg, { Circle, Path } from 'react-native-svg';
+import Svg, { Circle, Path, Line } from 'react-native-svg';
 import { useLocalSearchParams } from 'expo-router';
 
 // --- Firebase Imports ---
 import { db } from "../../../firebase/firebaseConfig"; 
-import { collection, query, where, getDocs } from "firebase/firestore";
+import { collection, query, where, onSnapshot } from "firebase/firestore";
 
 // --- Types ---
 interface Student {
@@ -17,36 +17,78 @@ interface Student {
   role: string;
 }
 
-// const { width: W } = Dimensions.get('window');
+const { width } = Dimensions.get('window');
 
 // --- Background Component ---
 const BackgroundDecorations = () => (
   <View style={StyleSheet.absoluteFill} pointerEvents="none">
-    <View style={StyleSheet.absoluteFill}>
-      <Svg height="100%" width="100%">
-        <Path d="M-50 150 Q 150 50 450 250" stroke="#93C5FD" strokeWidth="2" fill="none" opacity={0.4} />
-        <Path d="M-20 350 Q 150 450 400 300" stroke="#6EE7B7" strokeWidth="2" strokeDasharray="6, 6" fill="none" opacity={0.5} />
-        <Path d="M-50 600 Q 200 750 450 550" stroke="#F9A8D4" strokeWidth="2" fill="none" opacity={0.4} />
+    {/* Top Right Large Soft Glow (Purple) */}
+    <View style={{ position: "absolute", top: 30, right: -40 }}>
+      <Svg height="200" width="200" viewBox="0 0 200 200">
+        <Circle cx="100" cy="100" r="80" fill="#F3E8FF" opacity={0.6} />
+        <Circle cx="100" cy="100" r="50" fill="#E9D5FF" opacity={0.4} />
       </Svg>
     </View>
 
-    <View style={{ position: "absolute", top: -60, right: -40, opacity: 0.6 }}>
-      <Svg height="300" width="400" viewBox="0 0 100 100">
-        <Circle cx="90" cy="70" r="50" fill="#93C5FD" opacity={0.5} />
-        <Circle cx="30" cy="80" r="40" fill="#C4B5FD" opacity={0.5} />
-        <Circle cx="60" cy="70" r="25" fill="#F9A8D4" opacity={0.6} />
-      </Svg>
+    {/* Top Left - Dashed Connection Line */}
+    <View style={{ position: "absolute", top: 60, left: 20 }}>
+       <Svg height="100" width="120" viewBox="0 0 120 100">
+          <Line x1="10" y1="0" x2="10" y2="60" stroke="#BAE6FD" strokeWidth="2" strokeDasharray="5, 5" />
+          <Path d="M 10 60 Q 10 90 40 90 L 80 90" stroke="#BAE6FD" strokeWidth="2" fill="none" />
+          <Circle cx="80" cy="90" r="4" fill="#60A5FA" opacity={0.6} />
+       </Svg>
     </View>
 
-    <View style={{ position: "absolute", bottom: -50, right: -20, opacity: 0.6 }}>
-      <Svg height="200" width="300" viewBox="0 0 100 100">
-        <Circle cx="50" cy="80" r="60" fill="#FDBA74" opacity={0.5} />
-        <Circle cx="80" cy="40" r="30" fill="#FCA5A5" opacity={0.4} />
-      </Svg>
+    {/* Middle - The "Data Wave" */}
+    <View style={{ position: "absolute", top: 220, width: width, alignItems: 'center', opacity: 0.4 }}>
+       <Svg height="150" width={width} viewBox={`0 0 ${width} 150`}>
+          <Path 
+            d={`M -20 75 C ${width * 0.3} 120, ${width * 0.7} 30, ${width + 20} 75`} 
+            stroke="#99F6E4" 
+            strokeWidth="3" 
+            fill="none" 
+          />
+          <Path 
+            d={`M -20 90 C ${width * 0.3} 135, ${width * 0.7} 45, ${width + 20} 90`} 
+            stroke="#CCFBF1" 
+            strokeWidth="2" 
+            fill="none" 
+            strokeDasharray="10, 10"
+          />
+          <Circle cx={width * 0.2} cy="85" r="3" fill="#34D399" />
+          <Circle cx={width * 0.8} cy="65" r="5" stroke="#34D399" strokeWidth="2" fill="#FFF" />
+       </Svg>
     </View>
 
-    <View style={[styles.dot, { top: 180, left: 40, backgroundColor: "#93C5FD", width: 14, height: 14, opacity: 0.7 }]} />
-    <View style={[styles.dot, { top: 350, right: 60, backgroundColor: "#C4B5FD", width: 20, height: 20, opacity: 0.6 }]} />
+    {/* Middle Right - Dot Grid Matrix */}
+    <View style={{ position: "absolute", top: 380, right: 10, opacity: 0.3 }}>
+       <Svg height="80" width="60">
+             {[0, 15, 30].map((x) => 
+               [0, 15, 30, 45].map((y) => (
+                 <Circle key={`${x}-${y}`} cx={x + 5} cy={y + 5} r="1.5" fill="#FDBA74" />
+               ))
+             )}
+       </Svg>
+    </View>
+
+    {/* Bottom Left - Geometric Stack */}
+    <View style={{ position: "absolute", bottom: 100, left: -20 }}>
+       <Svg height="120" width="120" viewBox="0 0 100 100">
+             <Line x1="0" y1="50" x2="100" y2="50" stroke="#FDE68A" strokeWidth="40" opacity={0.3} transform="rotate(-45 50 50)" />
+             <Line x1="20" y1="50" x2="80" y2="50" stroke="#F59E0B" strokeWidth="2" transform="rotate(-45 50 50)" />
+       </Svg>
+    </View>
+
+    {/* Bottom Right - Abstract Playground */}
+    <View style={{ position: "absolute", bottom: 40, right: -20, opacity: 0.9 }}>
+      <Svg height="220" width="220" viewBox="0 0 200 200">
+        <Circle cx="200" cy="200" r="150" fill="#fdf0fd" />
+        <Path d="M 100 200 Q 120 120 200 100" stroke="#fbccf9" strokeWidth="30" strokeLinecap="round" fill="none" />
+        <Path d="M 40 130 Q 70 80 100 130 T 160 130" stroke="#c7bdf1" strokeWidth="3" strokeLinecap="round" fill="none" />
+        <Circle cx="80" cy="180" r="4" fill="#93C5FD" />
+        <Circle cx="180" cy="150" r="3" fill="#93C5FD" />
+      </Svg>
+    </View>
   </View>
 );
 
@@ -55,34 +97,45 @@ export default function MembersScreen() {
   const [students, setStudents] = useState<Student[]>([]);
   const [loading, setLoading] = useState(true);
 
+  // --- Lightning Fast Data Fetching ---
   useEffect(() => {
-    const fetchStudents = async () => {
-      if (!classId) return;
-      
-      try {
-        // Query users where joinedClasses array contains this classId
-        // AND ensure they are actually students (just in case a teacher is in the array)
-        const q = query(
-          collection(db, "users"), 
-          where("joinedClasses", "array-contains", classId),
-          where("role", "==", "student") 
-        );
+    // Prevent fetching if params haven't loaded yet
+    if (!classId || typeof classId !== 'string') {
+      setLoading(false);
+      return;
+    }
+
+    setLoading(true);
+
+    // 1. Fetch EVERYONE in the class (This avoids the need for a complex composite index)
+    const q = query(
+      collection(db, "users"), 
+      where("joinedClasses", "array-contains", classId)
+    );
+    
+    const unsubscribe = onSnapshot(q, (querySnapshot) => {
+      const studentList: Student[] = [];
+
+      querySnapshot.forEach((doc) => {
+        const data = doc.data();
         
-        const querySnapshot = await getDocs(q);
-        const studentList: Student[] = querySnapshot.docs.map(doc => ({
-          id: doc.id,
-          ...(doc.data() as Omit<Student, 'id'>)
-        }));
+        // 2. Filter by role LOCALLY on the phone. This is instantaneous!
+        if (data.role === 'student') {
+          studentList.push({
+            id: doc.id,
+            ...(data as Omit<Student, 'id'>)
+          });
+        }
+      });
 
-        setStudents(studentList);
-      } catch (error) {
-        console.error("Error fetching students:", error);
-      } finally {
-        setLoading(false);
-      }
-    };
+      setStudents(studentList);
+      setLoading(false);
+    }, (error) => {
+      console.error("Error fetching students:", error);
+      setLoading(false);
+    });
 
-    fetchStudents();
+    return () => unsubscribe();
   }, [classId]);
 
   if (loading) {
@@ -136,8 +189,7 @@ export default function MembersScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#ffffff' },
-  dot: { position: "absolute", borderRadius: 999 }, // Fixed style
+  container: { flex: 1, backgroundColor: '#ffffff' }, 
   scrollContent: { paddingHorizontal: 20, paddingTop: 40, paddingBottom: 120 },
   pageHeader: { marginBottom: 24 },
   pageTitle: { fontSize: 24, fontWeight: '900', color: '#111827', marginBottom: 6 },
@@ -171,4 +223,5 @@ const styles = StyleSheet.create({
   studentName: { fontSize: 16, fontWeight: 'bold', color: '#111827', marginBottom: 4 },
   studentDetails: { fontSize: 12, color: '#6B7280', fontWeight: '600' },
   emptyText: { textAlign: 'center', color: '#9CA3AF', marginTop: 40, fontSize: 16 },
+  dot: { position: "absolute", borderRadius: 999 }
 });

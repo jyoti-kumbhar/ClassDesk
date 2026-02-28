@@ -297,7 +297,7 @@ export default function ActiveExamScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#F9FAFB' },
+  container: { flex: 1, backgroundColor: '#ffffff' },
   bgCircle: { position: "absolute", borderRadius: 999 },
   bgDot: { position: "absolute", width: 12, height: 12, borderRadius: 6 },
   headerContainer: {

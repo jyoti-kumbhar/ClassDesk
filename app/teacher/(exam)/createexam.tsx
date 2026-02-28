@@ -5,7 +5,6 @@ import React, { useEffect, useState } from 'react';
 import {
     ActivityIndicator,
     Alert,
-    // Dimensions,
     FlatList,
     KeyboardAvoidingView,
     Modal,
@@ -15,13 +14,14 @@ import {
     Text,
     TextInput,
     TouchableOpacity,
-    View
+    View,
+    Dimensions
 } from 'react-native';
 import Svg, { Circle, Line, Path } from "react-native-svg";
 import { db } from '../../../firebase/firebaseConfig';
 import { ExamDatabase } from '../../services/examDatabase';
 
-// const { width } = Dimensions.get('window');
+const { width } = Dimensions.get('window');
 
 // --- Helper: Default Empty Question Structure ---
 const DEFAULT_QUESTION = () => ({
@@ -60,15 +60,13 @@ const BackgroundDecorations = () => (
 export default function CreateExamScreen() {
     const router = useRouter();
     
-    // --- Form State ---
     const [examName, setExamName] = useState('');
     const [subject, setSubject] = useState(''); 
     const [duration, setDuration] = useState('60'); 
-    const [instructions, ] = useState('');
+    const [instructions] = useState('');
     const [questions, setQuestions] = useState([DEFAULT_QUESTION()]);
     const [loading, setLoading] = useState(false);
 
-    // --- Class Dropdown State ---
     const [classList, setClassList] = useState<any[]>([]);
     const [selectedClass, setSelectedClass] = useState<any | null>(null);
     const [showClassDropdown, setShowClassDropdown] = useState(false);
@@ -153,7 +151,12 @@ export default function CreateExamScreen() {
     return (
         <View style={styles.mainContainer}>
             <BackgroundDecorations />
-            <KeyboardAvoidingView style={styles.keyboardContainer} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+            {/* Added offset and proper behavior for better keyboard handling */}
+            <KeyboardAvoidingView 
+                style={styles.keyboardContainer} 
+                behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+                keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
+            >
                 
                 <View style={styles.header}>
                     <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
@@ -164,7 +167,13 @@ export default function CreateExamScreen() {
                     </View>
                 </View>
 
-                <ScrollView style={styles.scrollArea} contentContainerStyle={styles.contentContainer} showsVerticalScrollIndicator={false}>
+                {/* Added keyboardShouldPersistTaps to allow clicking inputs while keyboard is up */}
+                <ScrollView 
+                    style={styles.scrollArea} 
+                    contentContainerStyle={styles.contentContainer} 
+                    showsVerticalScrollIndicator={false}
+                    keyboardShouldPersistTaps="handled"
+                >
                     
                     {/* Settings Card */}
                     <View style={styles.card}>
@@ -230,7 +239,7 @@ export default function CreateExamScreen() {
                                     <Text style={styles.marksLabel}>POINTS</Text>
                                     <TextInput 
                                         style={styles.marksInput} 
-                                        value={q.marks} 
+                                        value={String(q.marks)} 
                                         onChangeText={(t) => updateQuestion(qIndex, 'marks', t)} 
                                         keyboardType="numeric" 
                                     />
@@ -281,7 +290,7 @@ export default function CreateExamScreen() {
 }
 
 const styles = StyleSheet.create({
-    mainContainer: { flex: 1, backgroundColor: '#FFF9F0' },
+    mainContainer: { flex: 1, backgroundColor: '#FFF9F0' }, // Updated to match pastel theme
     keyboardContainer: { flex: 1 },
     header: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 20, paddingTop: 50, paddingBottom: 20 },
     backButton: { marginRight: 16 },
@@ -289,14 +298,28 @@ const styles = StyleSheet.create({
     headerTitle: { fontSize: 24, fontWeight: '800', color: '#111827' },
     headerSubtitle: { fontSize: 13, color: '#6B7280' },
     scrollArea: { flex: 1 },
-    contentContainer: { padding: 20, paddingBottom: 40, gap: 20 },
+    contentContainer: { padding: 20, paddingBottom: 100, gap: 20 }, // Increased paddingBottom for bottomBar clearance
     card: { backgroundColor: '#FFF', borderRadius: 20, padding: 20, borderWidth: 1, borderColor: '#F3F4F6', elevation: 1 },
     inputLabel: { fontSize: 10, fontWeight: '800', color: '#9CA3AF', marginBottom: 8, letterSpacing: 1 },
-    textInput: { backgroundColor: '#F9FAFB', borderRadius: 12, paddingHorizontal: 16, height: 50, fontSize: 15, color: '#111827', borderWidth:1, borderColor:'#F3F4F6' },
+    textInput: { 
+        backgroundColor: '#F9FAFB', 
+        borderRadius: 12, 
+        paddingHorizontal: 16, 
+        height: 50, 
+        fontSize: 15, 
+        color: '#111827', 
+        borderWidth: 1, 
+        borderColor: '#F3F4F6' 
+    },
     dropdown: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', backgroundColor: '#F3F4F6', padding: 15, borderRadius: 12 },
     dropdownText: { fontSize: 16, fontWeight: '600', color: '#111827' },
     row: { flexDirection: 'row' },
-    questionTextArea: { height: 80, paddingTop: 12, marginBottom: 15, textAlignVertical: 'top' },
+    questionTextArea: { 
+        height: 100, // Increased height
+        paddingTop: 14, 
+        marginBottom: 15, 
+        textAlignVertical: 'top' 
+    },
     questionHeader: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 15 },
     questionBadge: { backgroundColor: '#EEF2FF', paddingHorizontal: 12, paddingVertical: 4, borderRadius: 10 },
     questionBadgeText: { color: '#3B3CFF', fontSize: 12, fontWeight: '800' },
@@ -304,14 +327,30 @@ const styles = StyleSheet.create({
     optionRow: { flexDirection: 'row', alignItems: 'center' },
     optionLabelBox: { width: 34, height: 34, borderRadius: 17, backgroundColor: '#FFF', justifyContent: 'center', alignItems: 'center', marginRight: 10, borderWidth: 1.5, borderColor: '#E5E7EB' },
     optionLabelText: { fontSize: 14, fontWeight: '800', color: '#6B7280' },
-    optionInput: { flex: 1, height: 40, borderBottomWidth: 1, borderBottomColor: '#E5E7EB', fontSize: 14, paddingHorizontal: 5 },
+    optionInput: { 
+        flex: 1, 
+        height: 44, // Increased height
+        borderBottomWidth: 1, 
+        borderBottomColor: '#E5E7EB', 
+        fontSize: 14, 
+        paddingHorizontal: 5,
+        color: '#111827'
+    },
     questionFooter: { marginTop: 15, paddingTop: 10, borderTopWidth: 1, borderTopColor: '#F3F4F6' },
     marksContainer: { flexDirection: 'row', alignItems: 'center' },
     marksLabel: { fontSize: 10, fontWeight: '800', color: '#9CA3AF', marginRight: 10 },
-    marksInput: { width: 50, height: 30, backgroundColor: '#F3F4F6', borderRadius: 6, textAlign: 'center', fontWeight: '700' },
+    marksInput: { width: 50, height: 36, backgroundColor: '#F3F4F6', borderRadius: 8, textAlign: 'center', fontWeight: '700' },
     addQuestionBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: '#D1D5DB', borderStyle: 'dashed', borderRadius: 15, padding: 15, backgroundColor: '#FFF' },
     addQuestionText: { color: '#6B7280', fontSize: 15, fontWeight: '600', marginLeft: 8 },
-    bottomBar: { flexDirection: 'row', padding: 20, gap: 10, backgroundColor: '#FFF', borderTopWidth: 1, borderTopColor: '#F3F4F6' },
+    bottomBar: { 
+        flexDirection: 'row', 
+        padding: 20, 
+        gap: 10, 
+        backgroundColor: '#FFF', 
+        borderTopWidth: 1, 
+        borderTopColor: '#F3F4F6',
+        paddingBottom: Platform.OS === 'ios' ? 40 : 20 // Safer padding for iOS
+    },
     draftButton: { flex: 1, height: 50, borderRadius: 12, backgroundColor: '#F3F4F6', justifyContent: 'center', alignItems: 'center' },
     draftButtonText: { fontWeight: '700' },
     publishButton: { flex: 2, height: 50, borderRadius: 12, backgroundColor: '#3B3CFF', justifyContent: 'center', alignItems: 'center' },

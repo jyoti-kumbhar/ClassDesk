@@ -294,7 +294,7 @@ export default function Login() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#fff9f0" },
+  container: { flex: 1, backgroundColor: "#ffffff" },
   scrollContent: { flexGrow: 1, paddingHorizontal: 25, paddingBottom: 40, justifyContent: "center" },
   circle: { position: "absolute", borderRadius: 999 },
   dot: { position: "absolute", width: 12, height: 12, borderRadius: 6 },

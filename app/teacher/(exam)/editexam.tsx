@@ -18,388 +18,249 @@ import Svg, { Circle, Line, Path } from "react-native-svg";
 import { ExamDatabase } from '../../services/examDatabase';
 
 const { width } = Dimensions.get('window');
+const STUDENT_INFO = {
+    name: 'Amara Walker',
+    id: 'ID: CD-2024-8832',
+    status: 'SUBMITTED',
+    statusBg: '#D1FAE5',
+    statusColor: '#10B981',
+    class: 'Grade 10 - Section B',
+    submissionTime: 'Oct 24, 10:45 AM',
+    initials: 'A',
+};
 
-// --- Background Component ---
+// --- Background Graphics ---
 const BackgroundDecorations = () => (
-  <View style={StyleSheet.absoluteFill} pointerEvents="none">
-    
-    {/* Top Right Large Soft Glow (Purple) */}
-    <View style={{ position: "absolute", top: 30, right: -40 }}>
-      <Svg height="200" width="200" viewBox="0 0 200 200">
-        <Circle cx="100" cy="100" r="80" fill="#F3E8FF" opacity={0.6} />
-        <Circle cx="100" cy="100" r="50" fill="#E9D5FF" opacity={0.4} />
-      </Svg>
+    <View style={StyleSheet.absoluteFill} pointerEvents="none">
+        <View style={{ position: "absolute", top: 30, right: -40 }}>
+            <Svg height="200" width="200" viewBox="0 0 200 200">
+                <Circle cx="100" cy="100" r="80" fill="#F3E8FF" opacity={0.6} />
+                <Circle cx="100" cy="100" r="50" fill="#E9D5FF" opacity={0.4} />
+            </Svg>
+        </View>
+        <View style={{ position: "absolute", top: 60, left: 20 }}>
+            <Svg height="100" width="120" viewBox="0 0 120 100">
+                <Line x1="10" y1="0" x2="10" y2="60" stroke="#BAE6FD" strokeWidth="2" strokeDasharray="5, 5" />
+                <Path d="M 10 60 Q 10 90 40 90 L 80 90" stroke="#BAE6FD" strokeWidth="2" fill="none" />
+                <Circle cx="80" cy="90" r="4" fill="#60A5FA" opacity={0.6} />
+            </Svg>
+        </View>
+        <View style={{ position: "absolute", top: 220, width: width, alignItems: 'center', opacity: 0.4 }}>
+            <Svg height="150" width={width} viewBox={`0 0 ${width} 150`}>
+                <Path d={`M -20 75 C ${width * 0.3} 120, ${width * 0.7} 30, ${width + 20} 75`} stroke="#99F6E4" strokeWidth="3" fill="none" />
+                <Path d={`M -20 90 C ${width * 0.3} 135, ${width * 0.7} 45, ${width + 20} 90`} stroke="#CCFBF1" strokeWidth="2" fill="none" strokeDasharray="10, 10" />
+                <Circle cx={width * 0.2} cy="85" r="3" fill="#34D399" />
+                <Circle cx={width * 0.8} cy="65" r="5" stroke="#34D399" strokeWidth="2" fill="#FFF" />
+            </Svg>
+        </View>
     </View>
-
-    {/* Top Left - Dashed Connection Line */}
-    <View style={{ position: "absolute", top: 60, left: 20 }}>
-       <Svg height="100" width="120" viewBox="0 0 120 100">
-          <Line x1="10" y1="0" x2="10" y2="60" stroke="#BAE6FD" strokeWidth="2" strokeDasharray="5, 5" />
-          <Path d="M 10 60 Q 10 90 40 90 L 80 90" stroke="#BAE6FD" strokeWidth="2" fill="none" />
-          <Circle cx="80" cy="90" r="4" fill="#60A5FA" opacity={0.6} />
-       </Svg>
-    </View>
-
-    {/* Middle - The "Data Wave" */}
-    <View style={{ position: "absolute", top: 220, width: width, alignItems: 'center', opacity: 0.4 }}>
-       <Svg height="150" width={width} viewBox={`0 0 ${width} 150`}>
-          <Path 
-            d={`M -20 75 C ${width * 0.3} 120, ${width * 0.7} 30, ${width + 20} 75`} 
-            stroke="#99F6E4" 
-            strokeWidth="3" 
-            fill="none" 
-          />
-          <Path 
-            d={`M -20 90 C ${width * 0.3} 135, ${width * 0.7} 45, ${width + 20} 90`} 
-            stroke="#CCFBF1" 
-            strokeWidth="2" 
-            fill="none" 
-            strokeDasharray="10, 10"
-          />
-          <Circle cx={width * 0.2} cy="85" r="3" fill="#34D399" />
-          <Circle cx={width * 0.8} cy="65" r="5" stroke="#34D399" strokeWidth="2" fill="#FFF" />
-       </Svg>
-    </View>
-
-    {/* Middle Right - Dot Grid Matrix */}
-    <View style={{ position: "absolute", top: 380, right: 10, opacity: 0.3 }}>
-       <Svg height="80" width="60">
-             {[0, 15, 30].map((x) => 
-               [0, 15, 30, 45].map((y) => (
-                 <Circle key={`${x}-${y}`} cx={x + 5} cy={y + 5} r="1.5" fill="#FDBA74" />
-               ))
-             )}
-       </Svg>
-    </View>
-
-    {/* Bottom Left - Geometric Stack */}
-    <View style={{ position: "absolute", bottom: 100, left: -20 }}>
-       <Svg height="120" width="120" viewBox="0 0 100 100">
-             <Line x1="0" y1="50" x2="100" y2="50" stroke="#FDE68A" strokeWidth="40" opacity={0.3} transform="rotate(-45 50 50)" />
-             <Line x1="20" y1="50" x2="80" y2="50" stroke="#F59E0B" strokeWidth="2" transform="rotate(-45 50 50)" />
-       </Svg>
-    </View>
-
-    {/* Bottom Right - Abstract Playground */}
-    <View style={{ position: "absolute", bottom: 40, right: -20, opacity: 0.9 }}>
-      <Svg height="220" width="220" viewBox="0 0 200 200">
-        <Circle cx="200" cy="200" r="150" fill="#fdf0fd" />
-        <Path 
-          d="M 100 200 Q 120 120 200 100" 
-          stroke="#fbccf9" 
-          strokeWidth="30" 
-          strokeLinecap="round" 
-          fill="none" 
-        />
-        <Path 
-          d="M 40 130 Q 70 80 100 130 T 160 130" 
-          stroke="#c7bdf1" 
-          strokeWidth="3" 
-          strokeLinecap="round" 
-          fill="none" 
-        />
-        <Circle cx="80" cy="180" r="4" fill="#93C5FD" />
-        <Circle cx="180" cy="150" r="3" fill="#93C5FD" />
-      </Svg>
-    </View>
-  </View>
 );
 
-export default function EditExamScreen() {
-  const router = useRouter();
-  const { examId } = useLocalSearchParams(); 
+export default function EvaluateResponseScreen() {
+    const router = useRouter();
+    const { examId } = useLocalSearchParams();
 
-  // --- State Variables ---
-  const [loading, setLoading] = useState(true);
-  const [originalExam, setOriginalExam] = useState<any>(null); // Stores ID and metadata
-  
-  const [examName, setExamName] = useState('');
-  const [subject, setSubject] = useState('');
-  const [instructions, setInstructions] = useState('');
-  const [questions, setQuestions] = useState<any[]>([]);
+    // --- State ---
+    const [loading, setLoading] = useState(true);
+    const [questions, setQuestions] = useState<any[]>([]);
+    const [totalScore, setTotalScore] = useState(0);
 
-  // --- 1. Fetch Data on Load ---
-  useEffect(() => {
-    const fetchExamData = async () => {
-      if (examId) {
-        try {
-          const data = await ExamDatabase.getExamById(examId as string);
-          if (data) {
-            setOriginalExam(data);
-            setExamName(data.title);
-            setSubject(data.subject);
-            setInstructions(data.instructions || '');
-            setQuestions(data.questions || []);
-          } else {
-            Alert.alert("Error", "Exam not found.");
-            router.back();
-          }
-        } catch (e) {
-          console.error("Failed to load exam", e);
-          Alert.alert("Error", "Could not load exam data.");
-        } finally {
-          setLoading(false);
-        }
-      }
-    };
-    fetchExamData();
-  }, [examId]);
+    // Form State
+    const [marksObtained, setMarksObtained] = useState('');
+    const [feedback, setFeedback] = useState('Great work!');
 
-  // --- 2. Handlers for Editing ---
+    // --- 1. Fetch Data from DB ---
+    useEffect(() => {
+        const fetchExamDetails = async () => {
+            if (examId) {
+                try {
+                    const examData = await ExamDatabase.getExamById(examId as string);
 
-  // Add a new empty question
-  const handleAddQuestion = () => {
-    const newNum = questions.length + 1;
-    const newQuestion = {
-      id: `q${Date.now()}`,
-      number: newNum,
-      type: 'Single Correct',
-      text: '',
-      marks: '1',
-      options: [
-        { id: 'a', label: 'A', text: '' },
-        { id: 'b', label: 'B', text: '' },
-        { id: 'c', label: 'C', text: '' },
-        { id: 'd', label: 'D', text: '' },
-      ]
-    };
-    setQuestions([...questions, newQuestion]);
-  };
+                    // FIX: Use type assertion to access questions property
+                    const exam = examData as any;
 
-  // Update question text or marks
-  const updateQuestion = (index: number, field: string, value: string) => {
-    const updated = [...questions];
-    updated[index] = { ...updated[index], [field]: value };
-    setQuestions(updated);
-  };
+                    if (exam && exam.questions) {
+                        const questionsWithMockAnswers = exam.questions.map((q: any) => {
+                            const isCorrectMock = Math.random() > 0.4;
+                            return {
+                                ...q,
+                                studentAnswer: q.options ? q.options[0].text : 'Sample answer.',
+                                isCorrect: isCorrectMock,
+                                awardedPoints: isCorrectMock ? q.marks : '0'
+                            };
+                        });
 
-  // Update option text
-  const updateOption = (qIndex: number, optIndex: number, text: string) => {
-    const updated = [...questions];
-    const updatedOptions = [...updated[qIndex].options];
-    updatedOptions[optIndex] = { ...updatedOptions[optIndex], text: text };
-    updated[qIndex].options = updatedOptions;
-    setQuestions(updated);
-  };
+                        setQuestions(questionsWithMockAnswers);
 
-  // Delete a question
-  const handleDeleteQuestion = (index: number) => {
-    if (questions.length <= 1) {
-      Alert.alert("Cannot Delete", "You must have at least one question.");
-      return;
-    }
-    const filtered = questions.filter((_, i) => i !== index);
-    // Renumber the questions sequentially
-    const renumbered = filtered.map((q, i) => ({ ...q, number: i + 1 }));
-    setQuestions(renumbered);
-  };
+                        const total = questionsWithMockAnswers.reduce((sum: number, q: any) => sum + Number(q.marks || 0), 0);
+                        setTotalScore(total);
 
-  // --- 3. Save Changes to Database ---
-  const handleUpdate = async () => {
-    if (!examName.trim() || !subject.trim()) {
-      Alert.alert("Missing Info", "Exam Name and Subject are required.");
-      return;
-    }
+                        const obtained = questionsWithMockAnswers.reduce((sum: number, q: any) => sum + Number(q.awardedPoints || 0), 0);
+                        setMarksObtained(obtained.toString());
+                    }
+                } catch (error) {
+                    console.error("Error fetching exam:", error);
+                    Alert.alert("Error", "Could not fetch details.");
+                } finally {
+                    setLoading(false);
+                }
+            }
+        };
 
-    try {
-      const updatedExam = {
-        ...originalExam, // Keep the original ID, created date, etc.
-        title: examName,
-        subject: subject,
-        instructions: instructions,
-        questions: questions,
-        // Update timestamp if desired:
-        // dateTime: new Date().toDateString() 
-      };
+        fetchExamDetails();
+    }, [examId]);
 
-      await ExamDatabase.updateExam(updatedExam);
-      
-      Alert.alert("Success", "Exam updated successfully!", [
-        { text: "OK", onPress: () => router.back() }
-      ]);
-    } catch (error) {
-      console.error(error);
-      Alert.alert("Error", "Failed to update exam.");
-    }
-  };
-
-  if (loading) {
-    return (
-      <View style={[styles.mainContainer, { justifyContent: 'center', alignItems: 'center' }]}>
-        <ActivityIndicator size="large" color="#4461F2" />
-      </View>
-    );
-  }
-
-  return (
-    <View style={styles.mainContainer}>
-      
-      <BackgroundDecorations />
-
-      <KeyboardAvoidingView 
-        style={styles.keyboardContainer} 
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-      >
-        {/* Header */}
-        <View style={styles.header}>
-          <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-            <Ionicons name="arrow-back" size={24} color="#111827" />
-          </TouchableOpacity>
-          <View style={styles.headerTextContainer}>
-            <Text style={styles.headerTitle}>Edit Exam</Text>
-            <Text style={styles.headerSubtitle}>Modify content & settings</Text>
-          </View>
-        </View>
-
-        <ScrollView 
-          style={styles.scrollArea} 
-          contentContainerStyle={styles.contentContainer} 
-          showsVerticalScrollIndicator={false}
-        >
-          
-          {/* Exam Details Section */}
-          <View style={styles.card}>
-            <Text style={styles.inputLabel}>EXAM NAME</Text>
-            <TextInput
-              style={styles.textInput}
-              value={examName}
-              onChangeText={setExamName}
-              placeholder="Exam Name"
-              placeholderTextColor="#9CA3AF"
-            />
-
-            <Text style={[styles.inputLabel, { marginTop: 16 }]}>SUBJECT</Text>
-            <TextInput
-              style={styles.textInput}
-              value={subject}
-              onChangeText={setSubject}
-              placeholder="Subject"
-              placeholderTextColor="#9CA3AF"
-            />
-
-            <Text style={[styles.inputLabel, { marginTop: 16 }]}>INSTRUCTIONS</Text>
-            <TextInput
-              style={[styles.textInput, styles.textArea]}
-              value={instructions}
-              onChangeText={setInstructions}
-              placeholder="Instructions..."
-              placeholderTextColor="#9CA3AF"
-              multiline
-              textAlignVertical="top"
-            />
-          </View>
-
-          {/* Questions List */}
-          {questions.map((q, qIndex) => (
-            <View key={q.id} style={styles.card}>
-              
-              {/* Question Header */}
-              <View style={styles.questionHeader}>
-                <View style={styles.questionBadge}>
-                  <Text style={styles.questionBadgeText}>Question {q.number}</Text>
-                </View>
-                {/* Delete Button */}
-                <TouchableOpacity onPress={() => handleDeleteQuestion(qIndex)}>
-                  <Ionicons name="trash-outline" size={20} color="#EF4444" />
-                </TouchableOpacity>
-              </View>
-
-              {/* Question Text */}
-              <TextInput
-                style={[styles.textInput, styles.questionTextArea]}
-                value={q.text}
-                onChangeText={(text) => updateQuestion(qIndex, 'text', text)}
-                placeholder="Question text..."
-                placeholderTextColor="#9CA3AF"
-                multiline
-                textAlignVertical="top"
-              />
-
-              {/* Options */}
-              <View style={styles.optionsContainer}>
-                {q.options.map((opt: any, optIndex: number) => (
-                  <View key={opt.id} style={styles.optionRow}>
-                    <View style={styles.optionLabelBox}>
-                      <Text style={styles.optionLabelText}>{opt.label}</Text>
-                    </View>
-                    <TextInput
-                      style={styles.optionInput}
-                      value={opt.text}
-                      onChangeText={(text) => updateOption(qIndex, optIndex, text)}
-                      placeholder={`Option ${opt.label}`}
-                      placeholderTextColor="#9CA3AF"
-                    />
-                  </View>
-                ))}
-              </View>
-
-              {/* Marks Input */}
-              <View style={styles.questionFooter}>
-                <View style={styles.marksContainer}>
-                  <Text style={styles.marksLabel}>MARKS</Text>
-                  <TextInput
-                    style={styles.marksInput}
-                    value={q.marks}
-                    onChangeText={(text) => updateQuestion(qIndex, 'marks', text)}
-                    keyboardType="numeric"
-                  />
-                </View>
-              </View>
-
+    if (loading) {
+        return (
+            <View style={[styles.mainContainer, { justifyContent: 'center', alignItems: 'center' }]}>
+                <ActivityIndicator size="large" color="#3B3CFF" />
             </View>
-          ))}
+        );
+    }
 
-          {/* Add Question Button */}
-          <TouchableOpacity style={styles.addQuestionBtn} onPress={handleAddQuestion}>
-            <Ionicons name="add-circle-outline" size={22} color="#6B7280" />
-            <Text style={styles.addQuestionText}>Add Question</Text>
-          </TouchableOpacity>
+    return (
+        <View style={styles.mainContainer}>
+            <BackgroundDecorations />
 
-        </ScrollView>
+            <KeyboardAvoidingView
+                style={styles.keyboardContainer}
+                behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+            >
+                <View style={styles.header}>
+                    <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+                        <Ionicons name="chevron-back" size={24} color="#111827" />
+                    </TouchableOpacity>
+                    <Text style={styles.headerTitle}>Evaluate Response</Text>
+                    <Text style={styles.headerRightAction}>Reviewing</Text>
+                </View>
 
-        {/* Bottom Save Bar */}
-        <View style={styles.bottomBar}>
-          <TouchableOpacity style={styles.updateButton} onPress={handleUpdate}>
-            <Text style={styles.updateButtonText}>Update Exam</Text>
-          </TouchableOpacity>
+                <ScrollView
+                    style={styles.scrollArea}
+                    contentContainerStyle={styles.contentContainer}
+                    showsVerticalScrollIndicator={false}
+                    keyboardShouldPersistTaps="handled"
+                >
+                    {/* Student Info Card */}
+                    <View style={styles.card}>
+                        <View style={styles.studentHeaderRow}>
+                            <View style={styles.avatarPlaceholder}>
+                                <Text style={{ color: '#3B3CFF', fontWeight: 'bold', fontSize: 18 }}>
+                                    {STUDENT_INFO.initials}
+                                </Text>
+                            </View>
+                            <View style={styles.studentNameCol}>
+                                <Text style={styles.studentName}>{STUDENT_INFO.name}</Text>
+                                <Text style={styles.studentId}>{STUDENT_INFO.id}</Text>
+                            </View>
+                            <View style={[styles.statusBadge, { backgroundColor: STUDENT_INFO.statusBg }]}>
+                                <Text style={[styles.statusText, { color: STUDENT_INFO.statusColor }]}>
+                                    {STUDENT_INFO.status}
+                                </Text>
+                            </View>
+                        </View>
+
+                        <View style={styles.studentDetailsRow}>
+                            <View style={styles.studentDetailBlock}>
+                                <Text style={styles.detailLabel}>CLASS</Text>
+                                <Text style={styles.detailValue}>{STUDENT_INFO.class}</Text>
+                            </View>
+                            <View style={styles.studentDetailBlock}>
+                                <Text style={styles.detailLabel}>SUBMISSION</Text>
+                                <Text style={styles.detailValue}>{STUDENT_INFO.submissionTime}</Text>
+                            </View>
+                        </View>
+                    </View>
+
+                    {/* Questions List */}
+                    {questions.map((q, index) => (
+                        <View key={q.id || index} style={styles.card}>
+                            <View style={styles.questionHeader}>
+                                <Text style={styles.questionNumberText}>Q {q.number} • {q.type}</Text>
+                                <View style={[styles.pointsBadge, { backgroundColor: q.isCorrect ? '#D1FAE5' : '#FEE2E2' }]}>
+                                    <Text style={{ fontSize: 11, fontWeight: '700', color: q.isCorrect ? '#10B981' : '#EF4444' }}>
+                                        {q.isCorrect ? `+${q.marks}` : '0.0'} Marks
+                                    </Text>
+                                </View>
+                            </View>
+                            <Text style={styles.questionText}>{q.text}</Text>
+                            {q.type === 'Single Correct' || q.type === 'MCQ' ? (
+                                <View style={[styles.mcqAnswerBox, q.isCorrect ? styles.mcqCorrect : styles.mcqIncorrect]}>
+                                    <Text style={[styles.mcqAnswerText, q.isCorrect ? { color: '#065F46' } : { color: '#991B1B' }]}>{q.studentAnswer}</Text>
+                                    <Ionicons name={q.isCorrect ? "checkmark-circle" : "close-circle"} size={20} color={q.isCorrect ? "#10B981" : "#EF4444"} />
+                                </View>
+                            ) : (
+                                <View style={styles.descriptiveBox}><Text style={styles.descriptiveText}>{q.studentAnswer}</Text></View>
+                            )}
+                        </View>
+                    ))}
+
+                    <View style={styles.gradingSection}>
+                        <View style={styles.marksRow}>
+                            <View style={styles.marksInputWrapper}>
+                                <Text style={styles.inputLabel}>MARKS OBTAINED</Text>
+                                <TextInput style={styles.marksInput} value={marksObtained} onChangeText={setMarksObtained} keyboardType="decimal-pad" />
+                            </View>
+                            <View style={styles.totalMarksWrapper}>
+                                <Text style={styles.inputLabel}>TOTAL</Text>
+                                <View style={styles.totalMarksBox}><Text style={styles.totalMarksText}>/ {totalScore}</Text></View>
+                            </View>
+                        </View>
+                        <Text style={styles.inputLabel}>FEEDBACK</Text>
+                        <TextInput style={styles.feedbackInput} value={feedback} onChangeText={setFeedback} multiline textAlignVertical="top" />
+                    </View>
+                </ScrollView>
+
+                <View style={styles.footer}>
+                    <TouchableOpacity style={styles.saveBtn} activeOpacity={0.8} onPress={() => Alert.alert("Success", "Saved!", [{ text: "OK", onPress: () => router.back() }])}>
+                        <Text style={styles.saveBtnText}>Save Grade</Text>
+                    </TouchableOpacity>
+                </View>
+            </KeyboardAvoidingView>
         </View>
-
-      </KeyboardAvoidingView>
-    </View>
-  );
+    );
 }
 
-// --- Styles ---
 const styles = StyleSheet.create({
-  mainContainer: { flex: 1, backgroundColor: '#FFF9F0' },
-  keyboardContainer: { flex: 1 },
-  header: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 20, paddingTop: 50, paddingBottom: 20 },
-  backButton: { marginRight: 16 },
-  headerTextContainer: { flex: 1 },
-  headerTitle: { fontSize: 24, fontWeight: '800', color: '#111827' },
-  headerSubtitle: { fontSize: 14, color: '#6B7280', marginTop: 2 },
-  scrollArea: { flex: 1 },
-  contentContainer: { padding: 20, paddingBottom: 40, gap: 20 },
-  card: { backgroundColor: '#FFF', borderRadius: 20, padding: 20, borderWidth: 1, borderColor: '#F3F4F6', shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.02, shadowRadius: 8, elevation: 1 },
-  inputLabel: { fontSize: 11, fontWeight: '700', color: '#9CA3AF', marginBottom: 8, letterSpacing: 0.5 },
-  textInput: { backgroundColor: '#F9FAFB', borderWidth: 1, borderColor: '#F3F4F6', borderRadius: 12, paddingHorizontal: 16, height: 50, fontSize: 15, color: '#111827' },
-  textArea: { height: 80, paddingTop: 16 },
-  questionTextArea: { height: 100, paddingTop: 16, marginBottom: 20 },
-  questionHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 },
-  questionBadge: { backgroundColor: '#EEF2FF', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 20 },
-  questionBadgeText: { color: '#3B3CFF', fontSize: 12, fontWeight: '700' },
-  optionsContainer: { gap: 12, marginBottom: 20 },
-  optionRow: { flexDirection: 'row', alignItems: 'center' },
-  optionLabelBox: { width: 36, height: 36, borderRadius: 10, backgroundColor: '#F3F4F6', justifyContent: 'center', alignItems: 'center', marginRight: 12 },
-  optionLabelText: { fontSize: 14, fontWeight: '700', color: '#6B7280' },
-  optionInput: { flex: 1, height: 44, borderWidth: 1, borderColor: '#E5E7EB', borderRadius: 8, paddingHorizontal: 12, fontSize: 14, color: '#111827' },
-  questionFooter: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingTop: 16, borderTopWidth: 1, borderTopColor: '#F3F4F6' },
-  marksContainer: { flexDirection: 'row', alignItems: 'center' },
-  marksLabel: { fontSize: 11, fontWeight: '700', color: '#9CA3AF', marginRight: 12, letterSpacing: 0.5 },
-  marksInput: { width: 60, height: 36, backgroundColor: '#F3F4F6', borderRadius: 8, textAlign: 'center', fontSize: 14, fontWeight: '600', color: '#111827' },
-  addQuestionBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', borderWidth: 1.5, borderColor: '#D1D5DB', borderStyle: 'dashed', borderRadius: 24, paddingVertical: 18, marginTop: 8, backgroundColor: '#FFF' },
-  addQuestionText: { color: '#6B7280', fontSize: 16, fontWeight: '600', marginLeft: 8 },
-  bottomBar: { padding: 20, backgroundColor: '#FFF', borderTopWidth: 1, borderTopColor: '#F3F4F6', paddingBottom: Platform.OS === 'ios' ? 34 : 20 },
-  updateButton: { height: 56, borderRadius: 16, backgroundColor: '#4461F2', justifyContent: 'center', alignItems: 'center', shadowColor: '#4461F2', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 8, elevation: 4 },
-  updateButtonText: { color: '#FFF', fontSize: 16, fontWeight: '700' },
+    mainContainer: { flex: 1, backgroundColor: '#FFF9F0' },
+    keyboardContainer: { flex: 1 },
+    header: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 20, paddingTop: 50, paddingBottom: 20 },
+    backButton: { padding: 4 },
+    headerTitle: { fontSize: 18, fontWeight: '700', color: '#111827', flex: 1, marginLeft: 12 },
+    headerRightAction: { color: '#3B3CFF', fontSize: 14, fontWeight: '600' },
+    scrollArea: { flex: 1 },
+    contentContainer: { padding: 20, paddingBottom: 40 },
+    card: { backgroundColor: '#FFF', borderRadius: 20, padding: 20, marginBottom: 16, borderWidth: 1, borderColor: '#F3F4F6', elevation: 1 },
+    studentHeaderRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 20, paddingBottom: 20, borderBottomWidth: 1, borderBottomColor: '#F3F4F6' },
+    avatarPlaceholder: { width: 48, height: 48, borderRadius: 24, backgroundColor: '#EEF2FF', justifyContent: 'center', alignItems: 'center', marginRight: 12 },
+    studentNameCol: { flex: 1 },
+    studentName: { fontSize: 16, fontWeight: '700', color: '#111827' },
+    studentId: { fontSize: 12, color: '#6B7280', marginTop: 2 },
+    statusBadge: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: 8 },
+    statusText: { fontSize: 10, fontWeight: '700' },
+    studentDetailsRow: { flexDirection: 'row', justifyContent: 'space-between' },
+    studentDetailBlock: { flex: 1 },
+    detailLabel: { fontSize: 10, fontWeight: '700', color: '#9CA3AF', marginBottom: 4 },
+    detailValue: { fontSize: 13, fontWeight: '600', color: '#111827' },
+    questionHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 },
+    questionNumberText: { fontSize: 12, fontWeight: '700', color: '#9CA3AF', letterSpacing: 0.5 },
+    pointsBadge: { paddingHorizontal: 8, paddingVertical: 2, borderRadius: 6 },
+    questionText: { fontSize: 15, fontWeight: '600', color: '#111827', marginBottom: 16, lineHeight: 22 },
+    mcqAnswerBox: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 14, borderRadius: 12, borderWidth: 1 },
+    mcqCorrect: { backgroundColor: '#F0FDF4', borderColor: '#10B981' },
+    mcqIncorrect: { backgroundColor: '#FEF2F2', borderColor: '#EF4444' },
+    mcqAnswerText: { fontSize: 15, fontWeight: '600' },
+    descriptiveBox: { backgroundColor: '#F9FAFB', padding: 16, borderRadius: 12, borderWidth: 1, borderColor: '#F3F4F6' },
+    descriptiveText: { fontSize: 14, color: '#4B5563', fontStyle: 'italic', lineHeight: 22 },
+    gradingSection: { marginTop: 8, marginBottom: 20 },
+    marksRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 16, gap: 16 },
+    marksInputWrapper: { flex: 2 },
+    totalMarksWrapper: { flex: 1 },
+    inputLabel: { fontSize: 11, fontWeight: '700', color: '#9CA3AF', marginBottom: 8 },
+    marksInput: { backgroundColor: '#FFF', borderWidth: 1, borderColor: '#E5E7EB', borderRadius: 12, height: 48, paddingHorizontal: 16 },
+    totalMarksBox: { backgroundColor: '#F3F4F6', borderRadius: 12, height: 48, justifyContent: 'center', alignItems: 'center' },
+    totalMarksText: { fontSize: 15, fontWeight: '600', color: '#111827' },
+    feedbackInput: { backgroundColor: '#FFF', borderWidth: 1, borderColor: '#E5E7EB', borderRadius: 12, paddingHorizontal: 16, paddingVertical: 12, height: 100 },
+    footer: { backgroundColor: '#FFF', paddingHorizontal: 20, paddingVertical: 16, borderTopWidth: 1, borderTopColor: '#F3F4F6' },
+    saveBtn: { backgroundColor: '#3B3CFF', height: 56, borderRadius: 16, justifyContent: 'center', alignItems: 'center' },
+    saveBtnText: { color: '#FFF', fontSize: 16, fontWeight: '700' },
 });

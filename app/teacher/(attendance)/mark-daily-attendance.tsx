@@ -336,7 +336,7 @@ export default function MarkDailyAttendanceScreen() {
 
 // --- Styles ---
 const styles = StyleSheet.create({
-  mainContainer: { flex: 1, backgroundColor: '#FFF9F0' },
+  mainContainer: { flex: 1, backgroundColor: '#ffffff' },
   safeArea: { flex: 1, backgroundColor: 'transparent' },
   container: { paddingHorizontal: 20, paddingTop: 10 },
   

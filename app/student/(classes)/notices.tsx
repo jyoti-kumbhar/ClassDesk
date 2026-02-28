@@ -280,7 +280,7 @@ export default function NoticesScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#F9FAFB' },
+  container: { flex: 1, backgroundColor: '#ffffff' },
   scrollContent: { paddingHorizontal: 20, paddingTop: 24, paddingBottom: 120 },
   
   // Background style helpers

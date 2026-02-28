@@ -245,7 +245,7 @@ export default function TeacherDashboard() {
 
 // --- Styles ---
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#FFF9F0' },
+  container: { flex: 1, backgroundColor: '#ffffff' },
   scrollContent: { padding: 20, paddingTop: 10 },
   section: { marginBottom: 25 },
   

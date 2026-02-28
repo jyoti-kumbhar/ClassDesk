@@ -166,7 +166,7 @@ export default function StudentDashboard() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#FFF9F0' },
+  container: { flex: 1, backgroundColor: '#ffffff' },
   contentWrapper: { flex: 1, paddingHorizontal: 20 },
   
   // Reduced paddingTop from 60 to 15 for tighter top spacing

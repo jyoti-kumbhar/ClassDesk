@@ -200,7 +200,7 @@ export default function AttendanceScreen() {
 }
 
 const styles = StyleSheet.create({
-  mainWrapper: { flex: 1, backgroundColor: '#FFF9F0' },
+  mainWrapper: { flex: 1, backgroundColor: '#ffffff' },
   scrollContentContainer: { paddingHorizontal: 20, paddingTop: 10 },
   pageTitle: { fontSize: 28, fontWeight: '800', color: '#111827', marginBottom: 20 },
   

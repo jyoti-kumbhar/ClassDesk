@@ -298,7 +298,7 @@ export default function AttendanceScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#FFF9F0' },
+  container: { flex: 1, backgroundColor: '#ffffff' },
   scrollContent: { paddingHorizontal: 20, paddingTop: 20, paddingBottom: 120 },
   dot: { position: 'absolute', borderRadius: 100 },
   pageTitle: { fontSize: 32, fontWeight: '900', color: '#111827', marginBottom: 24 },

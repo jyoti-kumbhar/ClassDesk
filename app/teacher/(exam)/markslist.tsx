@@ -306,7 +306,7 @@ export default function MarksListScreen() {
 }
 
 const styles = StyleSheet.create({
-    mainContainer: { flex: 1, backgroundColor: '#FFF9F0' },
+    mainContainer: { flex: 1, backgroundColor: '#ffffff' },
     header: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 20, paddingTop: 50, paddingBottom: 20 },
     backButton: { marginRight: 16 },
     headerTextContainer: { flex: 1 },

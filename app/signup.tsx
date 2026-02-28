@@ -14,7 +14,8 @@ import {
   TextInput,
   TouchableOpacity,
   View,
-  ActivityIndicator
+  ActivityIndicator,
+  Platform
 } from "react-native";
 import Svg, { Circle, Path } from "react-native-svg";
 
@@ -74,25 +75,18 @@ export default function Signup() {
     setLoading(true);
 
     try {
-      // 1. Create Auth User
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
       const user = userCredential.user;
-
-      // 2. Prepare Data
       const roleLower = role.toLowerCase(); 
 
-      // 3. Save to "users" Collection (UNIFIED)
-      // We explicitly use "users" for everyone now.
       await setDoc(doc(db, "users", user.uid), {
         name: username,
         email: user.email,
-        role: roleLower, // "student" or "teacher"
+        role: roleLower,
         createdAt: new Date(),
-        // Optional: Add specific IDs if needed
         ...(roleLower === 'student' ? { studentId: user.uid.slice(0, 8) } : { teacherId: user.uid.slice(0, 8) })
       });
 
-      // 4. Send Verification
       await sendEmailVerification(user);
 
       Alert.alert(
@@ -143,13 +137,27 @@ export default function Signup() {
   return (
     <View style={styles.container}>
       <BackgroundArt />
-      <KeyboardAvoidingView style={{ flex: 1 }}>
-        <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+      
+      {/* 1. behavior="padding" is best for iOS. 
+          2. On Android, the OS usually handles resizing automatically if your app.json/Manifest is set to adjustResize.
+      */}
+      <KeyboardAvoidingView 
+        style={{ flex: 1 }} 
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+        keyboardVerticalOffset={Platform.OS === "ios" ? 0 : 20}
+      >
+        <ScrollView 
+          // 3. keyboardShouldPersistTaps allows buttons to be clicked without hiding the keyboard first
+          keyboardShouldPersistTaps="handled"
+          contentContainerStyle={styles.scrollContent} 
+          showsVerticalScrollIndicator={false}
+        >
           <View style={styles.headerIconContainer}>
             <View style={styles.logoBox}>
               <Ionicons name="school" size={40} color="white" />
             </View>
           </View>
+
           <Text style={styles.title}>Create your account</Text>
           <Text style={styles.subtitle}>Empowering education for students and teachers.</Text>
 
@@ -164,25 +172,50 @@ export default function Signup() {
             <Text style={styles.label}>Username</Text>
             <View style={styles.inputWrapper}>
               <Ionicons name="person" size={20} color="#9E9E9E" style={styles.inputIcon} />
-              <TextInput style={styles.textInput} placeholder="Choose a username" placeholderTextColor="#A0AEC0" value={username} onChangeText={setUsername} />
+              <TextInput 
+                style={styles.textInput} 
+                placeholder="Choose a username" 
+                placeholderTextColor="#A0AEC0" 
+                value={username} 
+                onChangeText={setUsername} 
+              />
             </View>
 
             <Text style={styles.label}>Email</Text>
             <View style={styles.inputWrapper}>
               <Ionicons name="mail" size={20} color="#9E9E9E" style={styles.inputIcon} />
-              <TextInput style={styles.textInput} placeholder="Enter your email" placeholderTextColor="#A0AEC0" value={email} onChangeText={setEmail} keyboardType="email-address" autoCapitalize="none" />
+              <TextInput 
+                style={styles.textInput} 
+                placeholder="Enter your email" 
+                placeholderTextColor="#A0AEC0" 
+                value={email} 
+                onChangeText={setEmail} 
+                keyboardType="email-address" 
+                autoCapitalize="none" 
+              />
             </View>
 
             <Text style={styles.label}>Password</Text>
             <View style={styles.inputWrapper}>
               <Ionicons name="lock-closed" size={20} color="#9E9E9E" style={styles.inputIcon} />
-              <TextInput style={styles.textInput} placeholder="Create a password" placeholderTextColor="#A0AEC0" value={password} onChangeText={setPassword} secureTextEntry={!isPasswordVisible} />
+              <TextInput 
+                style={styles.textInput} 
+                placeholder="Create a password" 
+                placeholderTextColor="#A0AEC0" 
+                value={password} 
+                onChangeText={setPassword} 
+                secureTextEntry={!isPasswordVisible} 
+              />
               <TouchableOpacity onPress={() => setIsPasswordVisible(!isPasswordVisible)}>
                 <Ionicons name={isPasswordVisible ? "eye" : "eye-off"} size={20} color="#9E9E9E" />
               </TouchableOpacity>
             </View>
 
-            <TouchableOpacity style={[styles.signupButton, loading && { opacity: 0.7 }]} onPress={handleSignup} disabled={loading}>
+            <TouchableOpacity 
+              style={[styles.signupButton, loading && { opacity: 0.7 }]} 
+              onPress={handleSignup} 
+              disabled={loading}
+            >
               {loading ? <ActivityIndicator color="white" /> : <Text style={styles.signupButtonText}>Sign Up</Text>}
             </TouchableOpacity>
 
@@ -209,8 +242,8 @@ export default function Signup() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#FFFCF9" },
-  scrollContent: { paddingHorizontal: 30, paddingTop: 60, paddingBottom: 40 },
+  container: { flex: 1, backgroundColor: "#ffffff" },
+  scrollContent: { paddingHorizontal: 30, paddingTop: 60, paddingBottom: 80 },
   headerIconContainer: { alignItems: "center", marginBottom: 20 },
   logoBox: { width: 80, height: 80, backgroundColor: "#4461F2", borderRadius: 20, justifyContent: "center", alignItems: "center", shadowColor: "#4461F2", shadowOffset: { width: 0, height: 10 }, shadowOpacity: 0.3, shadowRadius: 10, elevation: 8 },
   title: { fontSize: 28, fontWeight: "bold", color: "#1A202C", textAlign: "center", marginBottom: 10 },

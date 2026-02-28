@@ -178,7 +178,7 @@ export default function AdminProfile() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#F4F0EA" },
+  container: { flex: 1, backgroundColor: "#ffffff" },
   scrollContent: { padding: 20, paddingBottom: 100 },
   header: { ...rowBetween, marginTop: 30, marginBottom: 20 },
   logoText: { fontSize: 20, fontWeight: '700', color: '#000', marginLeft: -10 },

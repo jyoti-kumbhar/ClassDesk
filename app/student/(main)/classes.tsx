@@ -175,7 +175,7 @@ export default function ClassesScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#FFF9F0' },
+  container: { flex: 1, backgroundColor: '#ffffff' },
   flexCenter: { justifyContent: 'center', alignItems: 'center' },
   scrollContent: { paddingHorizontal: 20, paddingTop: 60, paddingBottom: 100 }, 
   dot: { position: 'absolute', borderRadius: 100 },

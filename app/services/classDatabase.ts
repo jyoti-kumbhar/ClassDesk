@@ -1,100 +1,67 @@
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import { db } from '../../firebase/firebaseConfig';
+import { 
+  collection, 
+  addDoc, 
+  getDocs, 
+  getDoc, 
+  doc, 
+  deleteDoc 
+} from 'firebase/firestore';
 
-const STORAGE_KEY = '@classes_data';
-
-// --- Types ---
 export interface Classroom {
-  id: string;
+  id?: string;
   title: string;
   subject: string;
   section: string;
-  students: number;
-  // UI Customization
-  iconText?: string; // For initials like "10A"
-  iconName?: string; // For ionicons name like "flask"
+  students: number | any[]; // Handles both a flat number or an array of student objects
+  iconText?: string; 
+  iconName?: string; 
   iconColor: string;
   iconBg: string;
 }
 
-// --- Initial Mock Data (Loads if DB is empty) ---
-const INITIAL_CLASSES: Classroom[] = [
-  {
-    id: 'c1',
-    title: '10-A Mathematics',
-    subject: 'Mathematics',
-    section: '10-A',
-    students: 32,
-    iconText: 'Σ',
-    iconColor: '#4461F2',
-    iconBg: '#EFF6FF',
-  },
-  {
-    id: 'c2',
-    title: '12-B Physics',
-    subject: 'Physics',
-    section: '12-B',
-    students: 28,
-    iconName: 'flask',
-    iconColor: '#9333EA',
-    iconBg: '#F3E8FF',
-  },
-  {
-    id: 'c3',
-    title: '9-C History',
-    subject: 'History',
-    section: '9-C',
-    students: 45,
-    iconName: 'earth',
-    iconColor: '#D97706',
-    iconBg: '#FFFBEB',
-  }
-];
-
 export const ClassDatabase = {
-  // 1. Get All Classes
-  getClasses: async (): Promise<Classroom[]> => {
+  // 1. Get All Classes from Firebase
+  getClasses: async () => {
     try {
-      const jsonValue = await AsyncStorage.getItem(STORAGE_KEY);
-      if (jsonValue != null) {
-        return JSON.parse(jsonValue);
-      } else {
-        // Initialize with default data if empty
-        await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(INITIAL_CLASSES));
-        return INITIAL_CLASSES;
-      }
+      const snapshot = await getDocs(collection(db, "classes"));
+      return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
     } catch (e) {
-      console.error("Error reading class data", e);
+      console.error("Error reading class data from Firebase", e);
       return [];
     }
   },
 
-  // 2. Add New Class
-  addClass: async (newClass: Classroom) => {
+  // 2. Add New Class to Firebase
+  addClass: async (newClass: Omit<Classroom, 'id'>) => {
     try {
-      const currentClasses = await ClassDatabase.getClasses();
-      const updatedClasses = [newClass, ...currentClasses];
-      await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(updatedClasses));
+      await addDoc(collection(db, "classes"), newClass);
       return true;
     } catch (e) {
-      console.error("Error adding class", e);
+      console.error("Error adding class to Firebase", e);
       return false;
     }
   },
 
   // 3. Get Single Class
   getClassById: async (id: string) => {
-    const all = await ClassDatabase.getClasses();
-    return all.find((c) => c.id === id);
+    try {
+      const docRef = doc(db, "classes", id);
+      const snapshot = await getDoc(docRef);
+      return snapshot.exists() ? { id: snapshot.id, ...snapshot.data() } : null;
+    } catch (e) {
+      console.error("Error fetching single class", e);
+      return null;
+    }
   },
 
   // 4. Delete Class
   deleteClass: async (id: string) => {
     try {
-      const currentClasses = await ClassDatabase.getClasses();
-      const newList = currentClasses.filter((c) => c.id !== id);
-      await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(newList));
+      await deleteDoc(doc(db, "classes", id));
       return true;
     } catch (e) {
+      console.error("Error deleting class", e);
       return false;
     }
   }

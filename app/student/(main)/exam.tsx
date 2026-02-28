@@ -1,24 +1,53 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, ActivityIndicator, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import Svg, { Path } from 'react-native-svg';
+import Svg, { Path, Circle } from 'react-native-svg';
 import { useRouter } from 'expo-router'; 
 
 // --- Firebase Imports ---
 import { auth, db } from '../../../firebase/firebaseConfig'; 
 import { collection, query, where, getDocs, doc, getDoc } from 'firebase/firestore';
 
-// --- Background Decorations ---
 const BackgroundDecorations = () => (
   <View style={StyleSheet.absoluteFill} pointerEvents="none">
-    <View style={{ position: "absolute", top: -50, right: -50 }}>
-      <Svg height="200" width="200" viewBox="0 0 100 100">
-        <Path d="M0 0 L100 0 L100 100 Z" fill="#E0E7FF" opacity={0.6} />
+    {/* Soft Flowing Background Lines */}
+    <View style={StyleSheet.absoluteFill}>
+      <Svg height="100%" width="100%">
+        <Path d="M-50 150 Q 150 50 450 250" stroke="#93C5FD" strokeWidth="2" fill="none" opacity={0.4} />
+        <Path d="M-20 350 Q 150 450 400 300" stroke="#6EE7B7" strokeWidth="2" strokeDasharray="6, 6" fill="none" opacity={0.5} />
+        <Path d="M-50 600 Q 200 750 450 550" stroke="#F9A8D4" strokeWidth="2" fill="none" opacity={0.4} />
       </Svg>
     </View>
-    <View style={[styles.bgCircle, { top: 60, left: -20, backgroundColor: "#DBEAFE", width: 100, height: 100, opacity: 0.5 }]} />
-    <View style={[styles.bgDot, { top: 150, right: 80, backgroundColor: "#818CF8", opacity: 0.6 }]} />
-    <View style={[styles.bgDot, { bottom: 100, left: 40, backgroundColor: "#C7D2FE", width: 20, height: 20 }]} />
+
+    {/* Top Right: Orbs */}
+    <View style={{ position: "absolute", top: -60, right: -40, opacity: 0.6 }}>
+      <Svg height="300" width="400" viewBox="0 0 100 100">
+        <Circle cx="90" cy="70" r="50" fill="#93C5FD" opacity={0.5} />
+        <Circle cx="30" cy="80" r="40" fill="#C4B5FD" opacity={0.5} />
+        <Circle cx="60" cy="70" r="25" fill="#F9A8D4" opacity={0.6} />
+      </Svg>
+    </View>
+
+    {/* Middle Left: Bubble */}
+    <View style={{ position: "absolute", top: 300, left: -40, opacity: 0.5 }}>
+      <Svg height="150" width="150" viewBox="0 0 100 100">
+        <Circle cx="40" cy="50" r="40" fill="#6EE7B7" opacity={0.4} />
+        <Circle cx="60" cy="30" r="15" fill="#93C5FD" opacity={0.6} />
+      </Svg>
+    </View>
+
+    {/* Bottom Right: Orbs */}
+    <View style={{ position: "absolute", bottom: -50, right: -20, opacity: 0.6 }}>
+      <Svg height="200" width="300" viewBox="0 0 100 100">
+        <Circle cx="50" cy="80" r="60" fill="#FDBA74" opacity={0.5} />
+        <Circle cx="80" cy="40" r="30" fill="#FCA5A5" opacity={0.4} />
+      </Svg>
+    </View>
+
+    {/* Floating Mini Bubbles */}
+    <View style={[styles.dot, { top: 180, left: 40, backgroundColor: "#93C5FD", width: 14, height: 14, opacity: 0.7 }]} />
+    <View style={[styles.dot, { top: 350, right: 60, backgroundColor: "#C4B5FD", width: 20, height: 20, opacity: 0.6 }]} />
+    <View style={[styles.dot, { bottom: 120, left: 80, backgroundColor: "#F9A8D4", width: 10, height: 10, opacity: 0.8 }]} />
   </View>
 );
 
@@ -206,7 +235,8 @@ export default function ExamsScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#F9FAFB' },
+  container: { flex: 1, backgroundColor: '#ffffff' },
+  dot: { position: 'absolute', borderRadius: 100 },
   scrollContent: { paddingHorizontal: 20, paddingTop: 40, paddingBottom: 100 },
   
   bgCircle: { position: "absolute", borderRadius: 999 },
