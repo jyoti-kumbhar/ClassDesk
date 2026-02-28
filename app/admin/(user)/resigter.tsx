@@ -1,9 +1,26 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, Modal, SafeAreaView, StatusBar, Platform } from 'react-native';
+import { 
+  View, 
+  Text, 
+  StyleSheet, 
+  ScrollView, 
+  TouchableOpacity, 
+  TextInput, 
+  Modal, 
+  SafeAreaView, 
+  StatusBar, 
+  Platform,
+  ActivityIndicator,
+  Alert
+} from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-// Added SVG imports
 import Svg, { Path, Circle } from 'react-native-svg';
+
+// --- Firebase Imports ---
+import { auth, db } from '../../../firebase/firebaseConfig'; // Adjust path if needed
+import { createUserWithEmailAndPassword } from 'firebase/auth';
+import { doc, setDoc } from 'firebase/firestore';
 
 // --- Background Component ---
 const BackgroundDecorations = () => (
@@ -51,8 +68,72 @@ const BackgroundDecorations = () => (
 
 export default function RegisterScreen() {
   const router = useRouter();
+  
+  // State for form inputs
+  const [name, setName] = useState('');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  
+  // State for UI handling
   const [showPassword, setShowPassword] = useState(false);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [errorMessage, setErrorMessage] = useState('');
+
+  const handleRegister = async () => {
+    // Basic validation
+    setErrorMessage('');
+    if (!name.trim() || !email.trim() || !password || !confirmPassword) {
+      setErrorMessage("Please fill in all fields.");
+      return;
+    }
+    if (password !== confirmPassword) {
+      setErrorMessage("Passwords do not match.");
+      return;
+    }
+    if (password.length < 6) {
+      setErrorMessage("Password must be at least 6 characters.");
+      return;
+    }
+
+    setIsLoading(true);
+
+    try {
+      // 1. Create the user in Firebase Auth
+      const userCredential = await createUserWithEmailAndPassword(auth, email.trim(), password);
+      const user = userCredential.user;
+
+      // 2. Save additional user details in Firestore 'users' collection
+      await setDoc(doc(db, 'users', user.uid), {
+        name: name.trim(),
+        email: email.trim().toLowerCase(),
+        role: 'Teacher', // Assigning role automatically
+        status: 'online', 
+        createdAt: new Date().toISOString(),
+        // Setting default fallback values for UI display
+        subject: 'GENERAL',
+        subjectColor: '#3B3CFF',
+        icon: 'book',
+        avatar: `https://api.dicebear.com/7.x/avataaars/png?seed=${name.trim()}`,
+      });
+
+      // Show success modal
+      setShowSuccessModal(true);
+    } catch (error: any) {
+      console.error("Registration error: ", error);
+      // Handle Firebase specific errors
+      if (error.code === 'auth/email-already-in-use') {
+        setErrorMessage('That email address is already in use.');
+      } else if (error.code === 'auth/invalid-email') {
+        setErrorMessage('That email address is invalid.');
+      } else {
+        setErrorMessage('An error occurred during registration. Please try again.');
+      }
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   return (
     <SafeAreaView style={styles.container}>
@@ -75,6 +156,14 @@ export default function RegisterScreen() {
         <Text style={styles.pageTitle}>Complete Your Registration</Text>
         <Text style={styles.pageSubtitle}>Join our community of expert educators.</Text>
 
+        {/* Error Message Display */}
+        {errorMessage ? (
+          <View style={styles.errorContainer}>
+            <Ionicons name="alert-circle" size={20} color="#EF4444" />
+            <Text style={styles.errorText}>{errorMessage}</Text>
+          </View>
+        ) : null}
+
         {/* Form Card */}
         <View style={styles.formCard}>
           
@@ -86,7 +175,10 @@ export default function RegisterScreen() {
               <TextInput 
                 style={styles.inputField} 
                 placeholder="Enter your full name" 
-                placeholderTextColor="#9CA3AF" 
+                placeholderTextColor="#9CA3AF"
+                value={name}
+                onChangeText={setName}
+                autoCapitalize="words"
               />
             </View>
           </View>
@@ -94,26 +186,16 @@ export default function RegisterScreen() {
           {/* Email Address */}
           <View style={styles.inputGroup}>
             <Text style={styles.inputLabel}>Email Address</Text>
-            <View style={[styles.inputWrapper, { backgroundColor: 'rgba(249, 250, 251, 0.8)' }]}>
+            <View style={styles.inputWrapper}>
               <Ionicons name="at" size={18} color="#9CA3AF" style={styles.inputIcon} />
               <TextInput 
-                style={[styles.inputField, { color: '#6B7280' }]} 
-                value="robert.fox@classdesk.edu" 
-                editable={false}
-              />
-            </View>
-          </View>
-
-          {/* Phone Number */}
-          <View style={styles.inputGroup}>
-            <Text style={styles.inputLabel}>Phone Number</Text>
-            <View style={styles.inputWrapper}>
-              <Ionicons name="phone-portrait-outline" size={18} color="#9CA3AF" style={styles.inputIcon} />
-              <TextInput 
                 style={styles.inputField} 
-                placeholder="+1 (555) 000-0000" 
+                placeholder="teacher@classdesk.edu"
                 placeholderTextColor="#9CA3AF"
-                keyboardType="phone-pad"
+                value={email}
+                onChangeText={setEmail}
+                keyboardType="email-address"
+                autoCapitalize="none"
               />
             </View>
           </View>
@@ -125,7 +207,10 @@ export default function RegisterScreen() {
               <Ionicons name="lock-closed-outline" size={18} color="#9CA3AF" style={styles.inputIcon} />
               <TextInput 
                 style={styles.inputField} 
-                value="••••••••" 
+                placeholder="Create a password"
+                placeholderTextColor="#9CA3AF"
+                value={password}
+                onChangeText={setPassword}
                 secureTextEntry={!showPassword}
               />
               <TouchableOpacity onPress={() => setShowPassword(!showPassword)}>
@@ -134,15 +219,19 @@ export default function RegisterScreen() {
             </View>
             
             {/* Password Strength Indicator */}
-            <View style={styles.strengthContainer}>
-              <View style={styles.strengthBarsRow}>
-                <View style={[styles.strengthBar, styles.strengthBarActive]} />
-                <View style={[styles.strengthBar, styles.strengthBarActive]} />
-                <View style={styles.strengthBar} />
-                <View style={styles.strengthBar} />
+            {password.length > 0 && (
+              <View style={styles.strengthContainer}>
+                <View style={styles.strengthBarsRow}>
+                  <View style={[styles.strengthBar, password.length > 0 ? styles.strengthBarActive : null]} />
+                  <View style={[styles.strengthBar, password.length > 4 ? styles.strengthBarActive : null]} />
+                  <View style={[styles.strengthBar, password.length > 7 ? styles.strengthBarActive : null]} />
+                  <View style={styles.strengthBar} />
+                </View>
+                <Text style={styles.strengthText}>
+                  {password.length < 6 ? 'Too short' : 'Fairly strong password'}
+                </Text>
               </View>
-              <Text style={styles.strengthText}>Fairly strong password</Text>
-            </View>
+            )}
           </View>
 
           {/* Confirm Password */}
@@ -152,7 +241,10 @@ export default function RegisterScreen() {
               <Ionicons name="lock-closed-outline" size={18} color="#9CA3AF" style={styles.inputIcon} />
               <TextInput 
                 style={styles.inputField} 
-                value="••••••••" 
+                placeholder="Confirm your password"
+                placeholderTextColor="#9CA3AF"
+                value={confirmPassword}
+                onChangeText={setConfirmPassword}
                 secureTextEntry={true}
               />
             </View>
@@ -162,9 +254,14 @@ export default function RegisterScreen() {
           <TouchableOpacity 
             style={styles.registerBtn} 
             activeOpacity={0.8}
-            onPress={() => setShowSuccessModal(true)}
+            onPress={handleRegister}
+            disabled={isLoading}
           >
-            <Text style={styles.registerBtnText}>Register</Text>
+            {isLoading ? (
+              <ActivityIndicator color="#FFF" />
+            ) : (
+              <Text style={styles.registerBtnText}>Register</Text>
+            )}
           </TouchableOpacity>
 
         </View>
@@ -176,12 +273,6 @@ export default function RegisterScreen() {
             <Text style={styles.redirectLink}>Login</Text>
           </TouchableOpacity>
         </View>
-
-        {/* Footer Terms */}
-        <Text style={styles.footerText}>
-          By registering, you agree to ClassDesks{'\n'}Terms of Service and Privacy Policy.
-        </Text>
-
       </ScrollView>
 
       {/* --- SUCCESS MODAL --- */}
@@ -197,9 +288,9 @@ export default function RegisterScreen() {
               </View>
             </View>
 
-            <Text style={styles.successTitle}>Success</Text>
+            <Text style={styles.successTitle}>Success!</Text>
             <Text style={styles.successSubtitle}>
-              Invitation link has been sent to{'\n'}the email address.
+              Teacher profile has been created{'\n'}and added to the database.
             </Text>
 
             <TouchableOpacity 
@@ -210,7 +301,7 @@ export default function RegisterScreen() {
                 router.back(); 
               }}
             >
-              <Text style={styles.doneBtnText}>Done</Text>
+              <Text style={styles.doneBtnText}>Return to Dashboard</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -223,7 +314,7 @@ export default function RegisterScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F9FAFB',
+    backgroundColor: '#ffffff',
   },
   dot: {
     position: 'absolute',
@@ -265,8 +356,26 @@ const styles = StyleSheet.create({
   pageSubtitle: {
     fontSize: 15,
     color: '#6B7280',
-    marginBottom: 30,
+    marginBottom: 20,
     textAlign: 'center',
+  },
+  errorContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FEF2F2',
+    padding: 12,
+    borderRadius: 12,
+    marginBottom: 20,
+    width: '100%',
+    borderWidth: 1,
+    borderColor: '#FECACA',
+  },
+  errorText: {
+    color: '#EF4444',
+    fontSize: 14,
+    marginLeft: 8,
+    fontWeight: '500',
+    flex: 1,
   },
   formCard: {
     width: '100%',

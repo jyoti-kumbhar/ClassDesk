@@ -1,21 +1,44 @@
-import React from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, Image } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-// Added SVG imports
-import Svg, { Path, Circle } from 'react-native-svg';
+import React, { useEffect, useState } from 'react';
+import { useRouter } from 'expo-router'; 
+import {
+  ActivityIndicator,
+  Alert,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View
+} from 'react-native';
+import Svg, { Circle, Path } from 'react-native-svg';
+
+// --- Firebase Imports ---
+import { collection, getDocs, query, where, doc, deleteDoc } from 'firebase/firestore';
+import { db } from '../../../firebase/firebaseConfig';
+
+// --- Types ---
+type IconName = keyof typeof Ionicons.glyphMap;
+
+interface Teacher {
+  id: string;
+  name: string;
+  email: string;
+  subject: string;
+  subjectColor: string;
+  icon: IconName;
+  status: string;
+  avatar: string;
+}
 
 // --- Background Component ---
 const BackgroundDecorations = () => (
   <View style={StyleSheet.absoluteFill} pointerEvents="none">
-    
     {/* Soft Flowing Background Lines */}
     <View style={StyleSheet.absoluteFill}>
       <Svg height="100%" width="100%">
-        {/* Top sweeping blue curve */}
         <Path d="M-50 150 Q 150 50 450 250" stroke="#93C5FD" strokeWidth="2" fill="none" opacity={0.4} />
-        {/* Middle dashed mint accent line */}
         <Path d="M-20 350 Q 150 450 400 300" stroke="#6EE7B7" strokeWidth="2" strokeDasharray="6, 6" fill="none" opacity={0.5} />
-        {/* Bottom sweeping pink curve */}
         <Path d="M-50 600 Q 200 750 450 550" stroke="#F9A8D4" strokeWidth="2" fill="none" opacity={0.4} />
       </Svg>
     </View>
@@ -52,55 +75,78 @@ const BackgroundDecorations = () => (
   </View>
 );
 
-// --- Mock Data ---
-const TEACHERS_DATA = [
-  {
-    id: '1',
-    name: 'Robert Fox',
-    email: 'robert.fox@classdesk.edu',
-    subject: 'MATHEMATICS',
-    subjectColor: '#3B3CFF',
-    icon: 'book',
-    status: 'online',
-    avatar: 'https://api.dicebear.com/7.x/avataaars/png?seed=Robert',
-  },
-  {
-    id: '2',
-    name: 'Jenny Wilson',
-    email: 'jenny.w@classdesk.edu',
-    subject: 'ENGLISH & ARTS',
-    subjectColor: '#D97706',
-    icon: 'language',
-    status: 'online',
-    avatar: 'https://api.dicebear.com/7.x/avataaars/png?seed=Jenny',
-  },
-  {
-    id: '3',
-    name: 'Guy Hawkins',
-    email: 'guy.h88@classdesk.edu',
-    subject: 'MODERN HISTORY',
-    subjectColor: '#059669',
-    icon: 'earth',
-    status: 'offline',
-    avatar: 'https://api.dicebear.com/7.x/avataaars/png?seed=Guy',
-  },
-  {
-    id: '4',
-    name: 'Bessie Cooper',
-    email: 'bessie.c@classdesk.edu',
-    subject: 'PHYSICS',
-    subjectColor: '#7C3AED',
-    icon: 'flask',
-    status: 'online',
-    avatar: 'https://api.dicebear.com/7.x/avataaars/png?seed=Bessie',
-  },
-];
-
 // --- Main Component ---
 export default function AdminUsersScreen() {
+  const router = useRouter(); 
+  const [teachers, setTeachers] = useState<Teacher[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  // Fetch teachers from Firebase
+  useEffect(() => {
+    const fetchTeachers = async () => {
+      try {
+        const q = query(collection(db, "users"), where("role", "==", "teacher"));
+        const querySnapshot = await getDocs(q);
+        
+        const teachersList: Teacher[] = [];
+        
+        querySnapshot.forEach((doc) => {
+          const data = doc.data();
+          
+          teachersList.push({
+            id: doc.id,
+            name: data.name || 'Unknown Teacher',
+            email: data.email || 'No email provided',
+            subject: data.subject || 'GENERAL',
+            subjectColor: data.subjectColor || '#3B3CFF',
+            icon: (data.icon as IconName) || 'book',
+            status: data.status || 'offline',
+            avatar: data.avatar || `https://api.dicebear.com/7.x/avataaars/png?seed=${data.name || doc.id}`,
+          });
+        });
+
+        setTeachers(teachersList);
+      } catch (error) {
+        console.error("Error fetching teachers:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchTeachers();
+  }, []);
+
+  // Handle Deleting a Teacher
+  const handleDeleteTeacher = (id: string) => {
+    Alert.alert(
+      "Delete Teacher",
+      "Are you sure you want to completely remove this teacher?",
+      [
+        {
+          text: "Cancel",
+          style: "cancel"
+        },
+        {
+          text: "Delete",
+          style: "destructive",
+          onPress: async () => {
+            try {
+              // Delete from Firestore
+              await deleteDoc(doc(db, "users", id));
+              // Update local state to remove the deleted teacher from UI
+              setTeachers((prevTeachers) => prevTeachers.filter((teacher) => teacher.id !== id));
+            } catch (error) {
+              console.error("Error deleting teacher:", error);
+              Alert.alert("Error", "Could not delete the teacher. Please try again.");
+            }
+          }
+        }
+      ]
+    );
+  };
+
   return (
     <View style={styles.container}>
-      {/* Background stays static behind the ScrollView */}
       <BackgroundDecorations />
       
       <ScrollView 
@@ -114,7 +160,11 @@ export default function AdminUsersScreen() {
         </View>
 
         {/* Primary Action Button */}
-        <TouchableOpacity style={styles.addButton} activeOpacity={0.8}>
+        <TouchableOpacity 
+          style={styles.addButton} 
+          activeOpacity={0.8}
+          onPress={() => router.push('/admin/(user)/resigter')} 
+        >
           <Ionicons name="person-add" size={20} color="#FFF" style={styles.addIcon} />
           <Text style={styles.addButtonText}>Add Teacher</Text>
         </TouchableOpacity>
@@ -134,45 +184,44 @@ export default function AdminUsersScreen() {
           </TouchableOpacity>
         </View>
 
-        {/* Teachers List */}
-        <View style={styles.listContainer}>
-          {TEACHERS_DATA.map((teacher) => (
-            <View key={teacher.id} style={styles.card}>
-              
-              <View style={styles.avatarContainer}>
-                <View style={styles.avatarWrapper}>
-                  <Image source={{ uri: teacher.avatar }} style={styles.avatarImage} />
-                </View>
-                <View style={[
-                  styles.statusDot, 
-                  { backgroundColor: teacher.status === 'online' ? '#10B981' : '#D1D5DB' }
-                ]} />
-              </View>
-
-              <View style={styles.detailsContainer}>
-                <Text style={styles.nameText}>{teacher.name}</Text>
-                <Text style={styles.emailText}>{teacher.email}</Text>
+        {/* Teachers List / Loading State */}
+        {loading ? (
+          <ActivityIndicator size="large" color="#3B3CFF" style={{ marginTop: 40 }} />
+        ) : teachers.length === 0 ? (
+          <Text style={{ textAlign: 'center', marginTop: 40, color: '#6B7280' }}>
+            No teachers found in the database.
+          </Text>
+        ) : (
+          <View style={styles.listContainer}>
+            {teachers.map((teacher) => (
+              <TouchableOpacity 
+                key={teacher.id} 
+                style={styles.card}
+                activeOpacity={0.7}
+                onPress={() => router.push({
+                  pathname: '/admin/(user)/teacherdetails',
+                  params: { id: teacher.id }
+                })}
+              >
                 
-                <View style={styles.subjectRow}>
-                  <Ionicons name={teacher.icon} size={14} color={teacher.subjectColor} />
-                  <Text style={[styles.subjectText, { color: teacher.subjectColor }]}>
-                    {teacher.subject}
-                  </Text>
+                <View style={styles.detailsContainer}>
+                  <Text style={styles.nameText}>{teacher.name}</Text>
+                  <Text style={styles.emailText}>{teacher.email}</Text>
                 </View>
-              </View>
 
-              <View style={styles.actionsContainer}>
-                <TouchableOpacity style={styles.iconButton}>
-                  <Ionicons name="trash-outline" size={20} color="#EF4444" />
-                </TouchableOpacity>
-                <TouchableOpacity style={styles.iconButton}>
-                  <Ionicons name="ellipsis-vertical" size={20} color="#9CA3AF" />
-                </TouchableOpacity>
-              </View>
+                <View style={styles.actionsContainer}>
+                  <TouchableOpacity 
+                    style={styles.iconButton}
+                    onPress={() => handleDeleteTeacher(teacher.id)}
+                  >
+                    <Ionicons name="trash-outline" size={20} color="#EF4444" />
+                  </TouchableOpacity>
+                </View>
 
-            </View>
-          ))}
-        </View>
+              </TouchableOpacity>
+            ))}
+          </View>
+        )}
       </ScrollView>
     </View>
   );
@@ -182,14 +231,13 @@ export default function AdminUsersScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#FFF9F0', 
+    backgroundColor: '#ffffff', 
   },
   contentContainer: {
     paddingHorizontal: 20,
     paddingTop: 20,
     paddingBottom: 40,
   },
-  // Dot style for background bubbles
   dot: {
     position: 'absolute',
     borderRadius: 100,
@@ -247,6 +295,9 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#F3F4F6',
   },
+  searchIcon: {
+    marginRight: 8,
+  },
   searchInput: {
     flex: 1,
     fontSize: 15,
@@ -268,7 +319,7 @@ const styles = StyleSheet.create({
   card: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(255, 255, 255, 0.9)', // Slightly translucent to see background
+    backgroundColor: 'rgba(255, 255, 255, 0.9)', 
     borderRadius: 20,
     padding: 16,
     shadowColor: '#000',
@@ -276,31 +327,6 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.04,
     shadowRadius: 10,
     elevation: 2,
-  },
-  avatarContainer: {
-    position: 'relative',
-    marginRight: 16,
-  },
-  avatarWrapper: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    backgroundColor: '#F3F4F6',
-    overflow: 'hidden',
-  },
-  avatarImage: {
-    width: '100%',
-    height: '100%',
-  },
-  statusDot: {
-    position: 'absolute',
-    bottom: 0,
-    right: 0,
-    width: 14,
-    height: 14,
-    borderRadius: 7,
-    borderWidth: 2,
-    borderColor: '#FFF',
   },
   detailsContainer: {
     flex: 1,
@@ -314,16 +340,6 @@ const styles = StyleSheet.create({
   emailText: {
     fontSize: 13,
     color: '#9CA3AF',
-    marginBottom: 6,
-  },
-  subjectRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  subjectText: {
-    fontSize: 12,
-    fontWeight: '600',
-    marginLeft: 6,
   },
   actionsContainer: {
     flexDirection: 'row',

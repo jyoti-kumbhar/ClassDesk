@@ -1,14 +1,31 @@
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, ActivityIndicator } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-// Added SVG imports
 import Svg, { Path, Circle } from 'react-native-svg';
+
+// --- Firebase Imports ---
+import { collection, getDocs } from 'firebase/firestore';
+import { db } from '../../../firebase/firebaseConfig'; // Adjust path if needed
+
+// --- Types ---
+interface Exam {
+  id: string;
+  examId: string;
+  title: string;
+  subject: string;
+  teacher: string;
+  dateTime: string;
+  status: string;
+  statusBg: string;
+  statusColor: string;
+  subjectIcon: string;
+  subjectColor: string;
+}
 
 // --- Background Component ---
 const BackgroundDecorations = () => (
   <View style={StyleSheet.absoluteFill} pointerEvents="none">
-    
     {/* Soft Flowing Background Lines */}
     <View style={StyleSheet.absoluteFill}>
       <Svg height="100%" width="100%">
@@ -50,65 +67,52 @@ const BackgroundDecorations = () => (
   </View>
 );
 
-// --- Mock Data ---
-const EXAMS_DATA = [
-  {
-    id: '1',
-    examId: 'ID: EX-2094',
-    title: 'Midterm Calculus',
-    subject: 'Mathematics',
-    teacher: 'Robert Fox',
-    dateTime: 'Today, 10:30 AM – 12:30 PM',
-    status: 'ONGOING',
-    statusBg: '#FEF3C7',
-    statusColor: '#D97706',
-    subjectIcon: 'book',
-    subjectColor: '#3B3CFF',
-    actionIcon: 'stop-circle',
-    actionText: 'END EXAM',
-    actionColor: '#EF4444',
-  },
-  {
-    id: '2',
-    examId: 'ID: EX-2105',
-    title: 'World War II History',
-    subject: 'History',
-    teacher: 'Guy Hawkins',
-    dateTime: 'Oct 24, 09:00 AM',
-    status: 'DRAFT',
-    statusBg: '#E0E7FF',
-    statusColor: '#3B3CFF',
-    subjectIcon: 'earth',
-    subjectColor: '#D97706',
-    actionIcon: 'trash',
-    actionText: 'DELETE',
-    actionColor: '#EF4444',
-  },
-  {
-    id: '3',
-    examId: 'ID: EX-2088',
-    title: 'Physics Finals',
-    subject: 'Physics',
-    teacher: 'Bessie Cooper',
-    dateTime: 'Oct 18, 02:00 PM',
-    status: 'COMPLETED',
-    statusBg: '#F3F4F6',
-    statusColor: '#6B7280',
-    subjectIcon: 'flask',
-    subjectColor: '#A855F7',
-    actionIcon: 'lock-closed',
-    actionText: 'ENDED',
-    actionColor: '#FCA5A5',
-  },
-];
-
 const TABS = ['All Exams', 'Published', 'Drafts'];
 
 export default function AdminExamsScreen() {
-  const [activeTab, setActiveTab] = useState('All Exams');
   const router = useRouter();
+  
+  const [activeTab, setActiveTab] = useState('All Exams');
+  const [exams, setExams] = useState<Exam[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const filteredExams = EXAMS_DATA.filter(exam => {
+  // Fetch Exams from Firestore
+  useEffect(() => {
+    const fetchExams = async () => {
+      try {
+        const querySnapshot = await getDocs(collection(db, 'exams'));
+        const examsList: Exam[] = [];
+        
+        querySnapshot.forEach((doc) => {
+          const data = doc.data();
+          
+          examsList.push({
+            id: doc.id,
+            examId: data.examId || `ID: EX-${doc.id.substring(0,4).toUpperCase()}`,
+            title: data.title || 'Untitled Exam',
+            subject: data.subject || 'General',
+            teacher: data.teacher || 'Unassigned',
+            dateTime: data.dateTime || 'TBD',
+            status: data.status || 'DRAFT',
+            statusBg: data.statusBg || '#E0E7FF',
+            statusColor: data.statusColor || '#3B3CFF',
+            subjectIcon: data.subjectIcon || 'book',
+            subjectColor: data.subjectColor || '#3B3CFF',
+          });
+        });
+
+        setExams(examsList);
+      } catch (error) {
+        console.error("Error fetching exams:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchExams();
+  }, []);
+
+  const filteredExams = exams.filter(exam => {
     if (activeTab === 'Drafts') return exam.status === 'DRAFT';
     if (activeTab === 'Published') return exam.status !== 'DRAFT';
     return true;
@@ -127,16 +131,6 @@ export default function AdminExamsScreen() {
           <Text style={styles.pageTitle}>Exams</Text>
           <Text style={styles.subtitleText}>Schedule and manage assessments</Text>
         </View>
-
-        {/* Primary Action Button */}
-        <TouchableOpacity 
-          style={styles.createButton} 
-          activeOpacity={0.8}
-          onPress={() => router.push('/admin/createexam' as any)} 
-        >
-          <Ionicons name="add" size={24} color="#FFF" style={styles.createIcon} />
-          <Text style={styles.createButtonText}>Create Exam</Text>
-        </TouchableOpacity>
 
         {/* Search Row */}
         <View style={styles.searchRow}>
@@ -168,92 +162,84 @@ export default function AdminExamsScreen() {
           ))}
         </View>
 
-        {/* List */}
-        <View style={styles.listContainer}>
-          {filteredExams.map((exam) => (
-            <View key={exam.id} style={styles.card}>
-              <View style={styles.cardTagsRow}>
-                <View style={[styles.statusTag, { backgroundColor: exam.statusBg }]}>
-                  <Text style={[styles.statusText, { color: exam.statusColor }]}>{exam.status}</Text>
+        {/* List / Loading State */}
+        {loading ? (
+          <ActivityIndicator size="large" color="#3B3CFF" style={{ marginTop: 40 }} />
+        ) : filteredExams.length === 0 ? (
+          <View style={{ alignItems: 'center', marginTop: 60 }}>
+            <Ionicons name="document-text-outline" size={60} color="#D1D5DB" />
+            <Text style={{ color: '#9CA3AF', marginTop: 10, fontSize: 16, fontWeight: '500' }}>No exams found.</Text>
+          </View>
+        ) : (
+          <View style={styles.listContainer}>
+            {filteredExams.map((exam) => (
+              <View key={exam.id} style={styles.card}>
+                <View style={styles.cardTagsRow}>
+                  <View style={[styles.statusTag, { backgroundColor: exam.statusBg }]}>
+                    <Text style={[styles.statusText, { color: exam.statusColor }]}>{exam.status}</Text>
+                  </View>
+                  <Text style={styles.examIdText}>{exam.examId}</Text>
                 </View>
-                <Text style={styles.examIdText}>{exam.examId}</Text>
-              </View>
 
-              <Text style={styles.examTitle}>{exam.title}</Text>
+                <Text style={styles.examTitle}>{exam.title}</Text>
 
-              <View style={styles.detailsGrid}>
-                <View style={styles.detailItem}>
-                  <View style={[styles.iconBox, { backgroundColor: `${exam.subjectColor}15` }]}>
-                    <Ionicons name={exam.subjectIcon as any} size={16} color={exam.subjectColor} />
+                <View style={styles.detailsGrid}>
+                  <View style={styles.detailItem}>
+                    <View style={[styles.iconBox, { backgroundColor: `${exam.subjectColor}15` }]}>
+                      <Ionicons name={exam.subjectIcon as any} size={16} color={exam.subjectColor} />
+                    </View>
+                    <View>
+                      <Text style={styles.detailLabel}>SUBJECT</Text>
+                      <Text style={styles.detailValue}>{exam.subject}</Text>
+                    </View>
                   </View>
-                  <View>
-                    <Text style={styles.detailLabel}>SUBJECT</Text>
-                    <Text style={styles.detailValue}>{exam.subject}</Text>
+                  <View style={styles.detailItem}>
+                    <View style={[styles.iconBox, { backgroundColor: '#10B98115' }]}>
+                      <Ionicons name="person" size={16} color="#10B981" />
+                    </View>
+                    <View>
+                      <Text style={styles.detailLabel}>TEACHER</Text>
+                      <Text style={styles.detailValue}>{exam.teacher}</Text>
+                    </View>
                   </View>
                 </View>
-                <View style={styles.detailItem}>
-                  <View style={[styles.iconBox, { backgroundColor: '#10B98115' }]}>
-                    <Ionicons name="person" size={16} color="#10B981" />
-                  </View>
-                  <View>
-                    <Text style={styles.detailLabel}>TEACHER</Text>
-                    <Text style={styles.detailValue}>{exam.teacher}</Text>
-                  </View>
-                </View>
-              </View>
-              
-              <View style={styles.detailItemFull}>
-                <View style={[styles.iconBox, { backgroundColor: '#6B728015' }]}>
-                  <Ionicons name="calendar" size={16} color="#6B7280" />
-                </View>
-                <View>
-                  <Text style={styles.detailLabel}>DATE & TIME</Text>
-                  <Text style={styles.detailValue}>{exam.dateTime}</Text>
-                </View>
-              </View>
-
-              <View style={styles.actionsRow}>
-                <TouchableOpacity 
-                  style={styles.actionBtnPrimary}
-                  onPress={() => router.push({ pathname: '/admin/editexam' as any, params: { examId: exam.id } })}
-                >
-                  <Ionicons name="pencil" size={16} color="#4B5563" />
-                  <Text style={styles.actionBtnText}>EDIT</Text>
-                </TouchableOpacity>
                 
-                <TouchableOpacity 
-                  style={styles.actionBtnPrimary}
-                  onPress={() => router.push({ pathname: '/admin/markslist' as any, params: { examId: exam.id } })}
-                >
-                  <Ionicons name="bar-chart" size={16} color="#4B5563" />
-                  <Text style={styles.actionBtnText}>VIEW MARKS</Text>
-                </TouchableOpacity>
+                <View style={styles.detailItemFull}>
+                  <View style={[styles.iconBox, { backgroundColor: '#6B728015' }]}>
+                    <Ionicons name="calendar" size={16} color="#6B7280" />
+                  </View>
+                  <View>
+                    <Text style={styles.detailLabel}>DATE & TIME</Text>
+                    <Text style={styles.detailValue}>{exam.dateTime}</Text>
+                  </View>
+                </View>
 
-                <TouchableOpacity style={[styles.actionBtnDanger, { borderColor: `${exam.actionColor}40` }]}>
-                  <Ionicons name={exam.actionIcon as any} size={16} color={exam.actionColor} />
-                  <Text style={[styles.actionBtnTextDanger, { color: exam.actionColor }]}>
-                    {exam.actionText}
-                  </Text>
-                </TouchableOpacity>
+                <View style={styles.actionsRow}>
+                  {/* View Button */}
+                  <TouchableOpacity 
+                    style={styles.actionBtnPrimary}
+                    onPress={() => router.push({ pathname: '/admin/markslist' as any, params: { examId: exam.id } })}
+                  >
+                    <Ionicons name="eye" size={16} color="#FFF" />
+                    <Text style={[styles.actionBtnText, { color: '#FFF' }]}>VIEW EXAM</Text>
+                  </TouchableOpacity>
+                </View>
               </View>
-            </View>
-          ))}
-        </View>
+            ))}
+          </View>
+        )}
       </ScrollView>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#FFF9F0' },
-  contentContainer: { paddingHorizontal: 20, paddingTop: 20, paddingBottom: 40 },
+  container: { flex: 1, backgroundColor: '#ffffff' },
+  contentContainer: { paddingHorizontal: 20, paddingTop: 40, paddingBottom: 40 },
   dot: { position: 'absolute', borderRadius: 100 },
-  headerSection: { marginBottom: 20 },
+  headerSection: { marginBottom: 24 },
   pageTitle: { fontSize: 28, fontWeight: '800', color: '#111827', marginBottom: 4 },
   subtitleText: { fontSize: 15, color: '#6B7280', fontWeight: '400' },
-  createButton: { backgroundColor: '#3B3CFF', flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingVertical: 14, borderRadius: 16, marginBottom: 24, shadowColor: '#3B3CFF', shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.3, shadowRadius: 10, elevation: 8 },
-  createIcon: { marginRight: 6 },
-  createButtonText: { color: '#FFF', fontSize: 16, fontWeight: '600' },
   searchRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 20, gap: 12 },
   searchContainer: { flex: 1, flexDirection: 'row', alignItems: 'center', backgroundColor: '#FFF', borderRadius: 16, paddingHorizontal: 16, height: 50, borderWidth: 1, borderColor: '#F3F4F6' },
   searchIcon: { marginRight: 10 },
@@ -278,8 +264,6 @@ const styles = StyleSheet.create({
   detailLabel: { fontSize: 10, fontWeight: '600', color: '#9CA3AF', marginBottom: 2 },
   detailValue: { fontSize: 13, fontWeight: '600', color: '#111827' },
   actionsRow: { flexDirection: 'row', gap: 10 },
-  actionBtnPrimary: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingVertical: 12, borderRadius: 12, backgroundColor: 'rgba(249, 250, 251, 0.8)', borderWidth: 1, borderColor: '#F3F4F6' },
-  actionBtnText: { marginLeft: 6, fontSize: 11, fontWeight: '700', color: '#4B5563' },
-  actionBtnDanger: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingVertical: 12, borderRadius: 12, backgroundColor: 'rgba(254, 242, 242, 0.8)', borderWidth: 1 },
-  actionBtnTextDanger: { marginLeft: 6, fontSize: 11, fontWeight: '700' },
+  actionBtnPrimary: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingVertical: 14, borderRadius: 16, backgroundColor: '#3B3CFF', shadowColor: '#3B3CFF', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.2, shadowRadius: 8, elevation: 4 },
+  actionBtnText: { marginLeft: 8, fontSize: 13, fontWeight: '700' },
 });

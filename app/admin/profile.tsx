@@ -9,7 +9,7 @@ import { auth, db } from "../../firebase/firebaseConfig";
 import { doc, getDoc } from "firebase/firestore";
 
 // Static Descent/Professional Avatar URL
-const STATIC_PROFILE_IMAGE = "https://images.unsplash.com/photo-1544717297-fa154da09f9d?q=80&w=200&h=200&auto=format&fit=crop";
+const STATIC_PROFILE_IMAGE = "https://cdn-icons-png.flaticon.com/512/3135/3135715.png";
 
 const BackgroundDecorations = () => (
   <View style={StyleSheet.absoluteFill} pointerEvents="none">
@@ -114,7 +114,9 @@ export default function AdminProfile() {
           <TextInput style={styles.input} value={email} editable={false} placeholder="Email" />
         </View>
 
-        <TouchableOpacity style={styles.saveBtn}><Text style={styles.btnText}>Save Profile Changes</Text></TouchableOpacity>
+        <TouchableOpacity style={styles.saveBtn}>
+          <Text style={styles.btnText}>Save Profile Changes</Text>
+        </TouchableOpacity>
         
         <TouchableOpacity style={styles.dangerBtn} onPress={() => auth.signOut().then(() => router.replace("/login"))}>
           <Text style={styles.btnText}>Logout</Text>

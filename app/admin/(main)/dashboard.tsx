@@ -1,5 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
-import { useRouter } from 'expo-router';
+// import { useRouter } from 'expo-router';
 import React, { useState, useEffect } from 'react';
 import {
   SafeAreaView,
@@ -9,14 +9,13 @@ import {
   Text,
   View,
   ActivityIndicator,
-  Dimensions
 } from 'react-native';
 import Svg, { Circle, Path } from "react-native-svg";
 
 // --- Firebase & Services ---
-import { db } from "../../../firebase/firebaseConfig"; // Adjust path as needed
+import { db } from "../../../firebase/firebaseConfig"; // 1. Database Connected
 import { collection, query, where, getCountFromServer } from "firebase/firestore";
-import { ExamDatabase } from '../../services/examDatabase'; // Adjust path to your service file
+import { ExamDatabase } from '../../services/examDatabase'; 
 
 // --- Types ---
 type IconName = keyof typeof Ionicons.glyphMap;
@@ -26,13 +25,6 @@ interface SummaryCardProps {
   label: string;
   value: string | number;
   color?: string;
-}
-
-interface PerformanceCardProps {
-  grade: string;
-  students: string;
-  attendance: string;
-  trend: 'up' | 'stable' | 'down';
 }
 
 // --- Background Graphics Component ---
@@ -77,25 +69,9 @@ const SummaryCard = ({ icon, label, value, color = "#4461F2" }: SummaryCardProps
   </View>
 );
 
-const ClassPerformanceCard = ({ grade, students, attendance, trend }: PerformanceCardProps) => {
-  const trendIcon = trend === "down" ? "arrow-down" : trend === "stable" ? "arrow-forward" : "arrow-up";
-  const trendColor = trend === "down" ? "#F59E0B" : trend === "stable" ? "#4461F2" : "#10B981";
-
-  return (
-    <View style={styles.performanceCard}>
-      <Ionicons name={trendIcon} size={20} color={trendColor} />
-      <View style={{ flex: 1, marginLeft: 12 }}>
-        <Text style={styles.perfTitle}>{grade}</Text>
-        <Text style={styles.perfSubtitle}>{students}</Text>
-      </View>
-      <Text style={[styles.perfPercent, { color: trendColor }]}>{attendance}</Text>
-    </View>
-  );
-};
-
 // --- Main Screen ---
 export default function AdminDashboard() {
-  const router = useRouter();
+  // const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState({
     students: 0,
@@ -107,12 +83,12 @@ export default function AdminDashboard() {
   useEffect(() => {
     const fetchAllData = async () => {
       try {
-        // 1. Fetch exams via your ExamDatabase service
+        // Fetch exams via your ExamDatabase service
         const examsList = await ExamDatabase.getExams();
 
-        // 2. Fetch counts for Users and Classes via optimized Server Count
-        const studentQuery = query(collection(db, "users"), where("role", "==", "Student"));
-        const teacherQuery = query(collection(db, "users"), where("role", "==", "Teacher"));
+        // 2. Fetch total students and teachers from "users" collection
+        const studentQuery = query(collection(db, "users"), where("role", "==", "student"));
+        const teacherQuery = query(collection(db, "users"), where("role", "==", "teacher"));
         const classQuery = collection(db, "classes");
 
         const [studentSnap, teacherSnap, classSnap] = await Promise.all([
@@ -154,7 +130,6 @@ export default function AdminDashboard() {
         
         <View style={styles.section}>
           <Text style={styles.greetingText}>Good morning, Admin</Text>
-          <Text style={styles.dateSubtext}>Heres whats happening today</Text>
         </View>
 
         {/* Dynamic Summary Cards */}
@@ -165,14 +140,6 @@ export default function AdminDashboard() {
           <SummaryCard icon="checkmark-circle" label="Exams Created" value={stats.exams} color="#F59E0B" />
         </View>
 
-        {/* Placeholder Performance Data */}
-        <View style={[styles.section, { marginTop: 10 }]}>
-          <Text style={styles.sectionTitle}>Class Performance</Text>
-          <ClassPerformanceCard grade="Grade 10-A" students="Active" attendance="94%" trend="up" />
-          <ClassPerformanceCard grade="Grade 11-B" students="Stable" attendance="91%" trend="stable" />
-          <ClassPerformanceCard grade="Grade 9-C" students="Check needed" attendance="88%" trend="down" />
-        </View>
-
       </ScrollView>
     </SafeAreaView>
   );
@@ -181,7 +148,7 @@ export default function AdminDashboard() {
 // --- Styles ---
 const styles = StyleSheet.create({
   dot: { position: "absolute", borderRadius: 999 },
-  container: { flex: 1, backgroundColor: '#FFF9F0' }, 
+  container: { flex: 1, backgroundColor: '#ffffff' }, 
   scrollContent: { padding: 20, paddingTop: 40, paddingBottom: 100 }, 
   section: { marginBottom: 25 },
   greetingText: { fontSize: 26, fontWeight: '800', color: '#111827' },
@@ -209,18 +176,5 @@ const styles = StyleSheet.create({
     backgroundColor: '#F3F4F6' 
   },
   summaryLabel: { fontSize: 11, fontWeight: '700', color: '#9CA3AF', marginBottom: 4, textTransform: 'uppercase' },
-  summaryValue: { fontSize: 24, fontWeight: '800' },
-  sectionTitle: { fontSize: 18, fontWeight: '800', color: '#111827', marginBottom: 15 },
-  performanceCard: { 
-    flexDirection: 'row', 
-    alignItems: 'center', 
-    backgroundColor: '#FFF', 
-    padding: 16, 
-    borderRadius: 20, 
-    marginBottom: 12, 
-    elevation: 1 
-  },
-  perfTitle: { fontSize: 15, fontWeight: '700', color: '#111827' },
-  perfSubtitle: { fontSize: 12, color: '#9CA3AF', fontWeight: '500' },
-  perfPercent: { fontSize: 15, fontWeight: '800' },
+  summaryValue: { fontSize: 24, fontWeight: '800' }
 });

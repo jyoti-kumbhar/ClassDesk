@@ -1,0 +1,64 @@
+<svg width="1000" height="500" xmlns="http://www.w3.org/2000/svg" font-family="Arial">
+
+  <!-- Title -->
+  <text x="380" y="30" font-size="20" font-weight="bold">ClassDesk Project Gantt Chart</text>
+
+  <!-- Week Labels -->
+  <g font-size="12">
+    <text x="250" y="60">W1</text>
+    <text x="310" y="60">W2</text>
+    <text x="370" y="60">W3</text>
+    <text x="430" y="60">W4</text>
+    <text x="490" y="60">W5</text>
+    <text x="550" y="60">W6</text>
+    <text x="610" y="60">W7</text>
+    <text x="670" y="60">W8</text>
+    <text x="730" y="60">W9</text>
+    <text x="790" y="60">W10</text>
+  </g>
+
+  <!-- Grid Lines -->
+  <g stroke="#ccc">
+    <line x1="240" y1="70" x2="240" y2="450"/>
+    <line x1="300" y1="70" x2="300" y2="450"/>
+    <line x1="360" y1="70" x2="360" y2="450"/>
+    <line x1="420" y1="70" x2="420" y2="450"/>
+    <line x1="480" y1="70" x2="480" y2="450"/>
+    <line x1="540" y1="70" x2="540" y2="450"/>
+    <line x1="600" y1="70" x2="600" y2="450"/>
+    <line x1="660" y1="70" x2="660" y2="450"/>
+    <line x1="720" y1="70" x2="720" y2="450"/>
+    <line x1="780" y1="70" x2="780" y2="450"/>
+    <line x1="840" y1="70" x2="840" y2="450"/>
+  </g>
+
+  <!-- Task Labels -->
+  <g font-size="13">
+    <text x="20" y="100">Requirement Analysis</text>
+    <text x="20" y="150">System Design</text>
+    <text x="20" y="200">Database Design</text>
+    <text x="20" y="250">Frontend Development</text>
+    <text x="20" y="300">Backend Development</text>
+    <text x="20" y="350">Integration</text>
+    <text x="20" y="400">Testing</text>
+    <text x="20" y="450">Deployment and Documentation</text>
+  </g>
+
+  <!-- Task Bars -->
+  <!-- Each week width = 60px -->
+
+  <rect x="240" y="85" width="60" height="20" fill="#4CAF50"/>
+  <rect x="300" y="135" width="60" height="20" fill="#2196F3"/>
+  <rect x="360" y="185" width="60" height="20" fill="#FF9800"/>
+
+  <!-- Frontend now 3 weeks (W4-W6) -->
+  <rect x="420" y="235" width="180" height="20" fill="#9C27B0"/>
+
+  <!-- Backend shifted (W7-W8) -->
+  <rect x="600" y="285" width="120" height="20" fill="#F44336"/>
+
+  <rect x="720" y="335" width="60" height="20" fill="#00BCD4"/>
+  <rect x="780" y="385" width="60" height="20" fill="#8BC34A"/>
+  <rect x="780" y="435" width="60" height="20" fill="#795548"/>
+
+</svg>

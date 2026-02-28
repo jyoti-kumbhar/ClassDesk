@@ -35,10 +35,6 @@ const TopBar = () => {
           <Text style={styles.logoText}>ClassDesk</Text>
         </View>
         <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-          <TouchableOpacity style={styles.notifBtn}>
-            <View style={styles.badge} />
-            <Ionicons name="notifications" size={24} color="#1F2937" /> 
-          </TouchableOpacity>
           <TouchableOpacity onPress={() => router.push("/admin/profile")}>
             <Image
               source={{ uri: "https://api.dicebear.com/7.x/avataaars/png?seed=Admin" }}
@@ -73,7 +69,6 @@ function CustomBottomNav({ state, descriptors, navigation }: any) {
         if (route.name === "users") iconName = "people";
         if (route.name === "classes") iconName = "book";
         if (route.name === "exam") iconName = "document-text"; 
-        if (route.name === "report") iconName = "bar-chart";
 
         return (
           <TouchableOpacity 
@@ -112,7 +107,6 @@ export default function AdminLayout() {
           <Tabs.Screen name="users" options={{ title: 'Users' }} />
           <Tabs.Screen name="classes" options={{ title: 'Classes' }} />
           <Tabs.Screen name="exam" options={{ title: 'Exams' }} />
-          <Tabs.Screen name="report" options={{ title: 'Reports' }} />
         </Tabs>
       </View>
     </View>
@@ -121,11 +115,11 @@ export default function AdminLayout() {
 
 // --- Combined Styles ---
 const styles = StyleSheet.create({
-  safeArea: { flex: 1, backgroundColor: '#FFF9F0' }, 
+  safeArea: { flex: 1, backgroundColor: '#ffffff' }, 
   
   // Top Bar Styles
   header: { 
-    backgroundColor: '#FFF9F0', // Base color
+    backgroundColor: '#ffffff', // Base color
     borderBottomLeftRadius: 30, 
     borderBottomRightRadius: 30,
     zIndex: 10,

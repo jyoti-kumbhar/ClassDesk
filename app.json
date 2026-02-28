@@ -1,7 +1,7 @@
 {
   "expo": {
-    "name": "myApp",
-    "slug": "myApp",
+    "name": "ClassDesk",
+    "slug": "classdesk",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
@@ -50,8 +50,9 @@
     "extra": {
       "router": {},
       "eas": {
-        "projectId": "90ee53c6-0110-4c77-8c1c-b3db2430b552"
+        "projectId": "5379697f-eafa-4016-bb89-335e8bf0bce2"
       }
-    }
+    },
+    "owner": "kumbharjyoti"
   }
 }

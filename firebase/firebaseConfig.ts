@@ -4,6 +4,7 @@ import { getAuth } from "firebase/auth";
 import { getFirestore } from "firebase/firestore";
 import { getStorage } from 'firebase/storage';
 
+
 const firebaseConfig = {
   apiKey: "AIzaSyBR4T9AomkgJ-nGwkukNYZJDrSo_kR1ImU",
   authDomain: "exam-attendance-app-5e459.firebaseapp.com",
