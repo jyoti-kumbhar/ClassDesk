@@ -1,96 +1,59 @@
-import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView, ActivityIndicator } from 'react-native';
+import { useGlobalSearchParams } from 'expo-router';
+import React, { useEffect, useState } from 'react';
+import { ActivityIndicator, ScrollView, StyleSheet, Text, View } from 'react-native';
 import Svg, { Circle, Path } from 'react-native-svg';
-import { useLocalSearchParams } from 'expo-router';
-
 // --- Firebase Imports ---
-import { db } from "../../../firebase/firebaseConfig"; 
+import { db } from "../../../firebase/firebaseConfig";
 // Swapped getDocs for onSnapshot for real-time updates and added more specific query filters
-import { collection, query, where, onSnapshot } from "firebase/firestore";
+import { collection, onSnapshot, query, where } from "firebase/firestore";
 
 
 const BackgroundDecorations = () => (
   <View style={StyleSheet.absoluteFill} pointerEvents="none">
-    {/* Top Right Triangle/Shape */}
-    <View style={{ position: "absolute", top: -50, right: -50 }}>
-      <Svg height="200" width="200" viewBox="0 0 100 100">
-        <Path d="M0 0 L100 0 L100 100 Z" fill="#f1db90" />
-        <Path d="M60 5 L90 10 L75 35 Z" fill="#f2444d" /> 
+    <View style={{ position: "absolute", top: 30, right: -40 }}>
+      <Svg height="200" width="200" viewBox="0 0 200 200">
+        <Circle cx="100" cy="100" r="80" fill="#F3E8FF" opacity={0.6} />
+        <Circle cx="100" cy="100" r="50" fill="#E9D5FF" opacity={0.4} />
       </Svg>
     </View>
-
-    {/* Squiggles */}
-    <View style={{ position: "absolute", top: 220, right: 0, opacity: 0.4 }}>
-        <Svg height="100" width="60" viewBox="0 0 60 100">
-            <Path d="M10 10 Q 50 30 10 50 T 10 90" stroke="#FF8A65" strokeWidth="3" fill="none" />
-        </Svg>
-    </View>
-    <View style={{ position: "absolute", top: 180, left: -10, opacity: 0.3, transform: [{ rotate: '20deg' }] }}>
-        <Svg height="60" width="100" viewBox="0 0 100 60">
-            <Path d="M10 30 Q 30 10 50 30 T 90 30" stroke="#4461F2" strokeWidth="3" fill="none" />
-        </Svg>
-    </View>
-    <View style={{ position: "absolute", top: 380, right: 30, opacity: 0.25, transform: [{ rotate: '-15deg' }] }}>
-         <Svg height="80" width="80" viewBox="0 0 80 80">
-            <Path d="M10 40 Q 40 10 70 40 T 10 70" stroke="#FFB74D" strokeWidth="2" strokeDasharray="5, 5" fill="none" />
-         </Svg>
-    </View>
-    <View style={{ position: "absolute", top: 450, left: -20, opacity: 0.2 }}>
-         <Svg height="120" width="60" viewBox="0 0 60 120">
-            <Path d="M30 10 Q 60 40 30 70 T 30 130" stroke="#4FC3F7" strokeWidth="4" fill="none" />
-         </Svg>
-    </View>
-
-    {/* Top Left Yellow Circle */}
-    <View style={[styles.bgCircle, { top: 40, left: -20, backgroundColor: "#f5d29d", width: 100, height: 100 }]} />
-    
-    {/* Scattered Dots */}
-    <View style={[styles.bgDot, { top: 120, right: 80, backgroundColor: "#657cff" }]} />
-    <View style={[styles.bgDot, { top: 250, left: 30, backgroundColor: "#FFB74D" }]} />
-    <View style={[styles.bgDot, { bottom: 150, right: 20, backgroundColor: "#FF8A65" }]} />
-    
-    {/* Bottom Left Shapes */}
-    <View style={{ position: "absolute", bottom: 0, left: 0 }}>
-       <Svg height="150" width="300" viewBox="0 0 100 100">
-         <Circle cx="20" cy="150" r="150" fill="#f39dbec9" />
-         <Path d="M60 80 L30 60 L50 90 Z" fill="#4481f2" opacity={1}/>
-       </Svg>
-    </View>
-
-    {/* Bottom Right Corner */}
-    <View style={{ position: "absolute", bottom: -20, right: -20 }}>
-      <View style={{ width: 150, height: 150, backgroundColor: "#63caf3", borderRadius: 60, opacity: 0.5 }} />
-       <View style={{ position: 'absolute', bottom: 10, right: 10, width: 80, height: 80, backgroundColor: "#e9967c", borderRadius: 40 }} />
+    <View style={{ position: "absolute", bottom: 40, right: -20, opacity: 0.9 }}>
+      <Svg height="220" width="220" viewBox="0 0 200 200">
+        <Circle cx="200" cy="200" r="150" fill="#fdf0fd" />
+        <Path d="M 100 200 Q 120 120 200 100" stroke="#fbccf9" strokeWidth="30" strokeLinecap="round" fill="none" />
+      </Svg>
     </View>
   </View>
 );
 
 export default function MembersScreen() {
-  const { classId, className } = useLocalSearchParams();
+  const params = useGlobalSearchParams();
+  
+  // 1. ROBUST ID PARSING (Fixes the missing ID bug)
+  const extractedId = params.id || params.classId || params.class_id;
+  const currentClassId = typeof extractedId === "string" ? extractedId : (Array.isArray(extractedId) ? extractedId[0] : "");
+  const currentClassName = typeof params.className === "string" ? params.className : (typeof params.grade === "string" ? params.grade : 'Class');
+
   const [students, setStudents] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!classId) {
+    // 2. USE THE ROBUST ID
+    if (!currentClassId) {
       setLoading(false);
       return;
     }
 
     setLoading(true);
 
-    // OPTIMIZED QUERY:
-    // Filters by class membership AND role on the server side to reduce data transfer.
     const q = query(
       collection(db, "users"), 
-      where("joinedClasses", "array-contains", classId),
+      where("joinedClasses", "array-contains", currentClassId),
       where("role", "==", "student") 
     );
     
-    // Use onSnapshot for better performance/caching compared to getDocs.
     const unsubscribe = onSnapshot(q, (querySnapshot) => {
       const studentList = querySnapshot.docs.map(doc => ({
         id: doc.id,
-        // Destructure only needed fields to keep the state light.
         name: doc.data().name,
         email: doc.data().email,
         studentId: doc.data().studentId,
@@ -105,7 +68,7 @@ export default function MembersScreen() {
     });
 
     return () => unsubscribe();
-  }, [classId]);
+  }, [currentClassId]); // <-- Don't forget to update the dependency array!
 
   if (loading) {
     return (
@@ -122,7 +85,8 @@ export default function MembersScreen() {
         <View style={styles.pageHeader}>
           <Text style={styles.pageTitle}>Class Members</Text>
           <Text style={styles.pageSubtitle}>
-            {className || 'Class'} • {students.length} Students joined
+            {/* 3. USE THE ROBUST CLASS NAME */}
+            {currentClassName} • {students.length} Students joined
           </Text>
         </View>
 

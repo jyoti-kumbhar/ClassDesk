@@ -188,13 +188,6 @@ export default function AdminClassesScreen() {
                       <Text style={styles.statValue}>{item.classCode || 'N/A'}</Text>
                     </View>
                   </View>
-                  <View style={styles.statBox}>
-                    <Ionicons name="people" size={16} color="#9CA3AF" />
-                    <View style={styles.statTexts}>
-                      <Text style={styles.statLabel}>Students</Text>
-                      <Text style={styles.statValue}>{item.students || 0} Enrolled</Text>
-                    </View>
-                  </View>
                 </View>
 
                 <View style={styles.actionsRow}>

@@ -1,35 +1,40 @@
-import React, { useState, useEffect } from 'react';
-import { 
-  View, 
-  Text, 
-  StyleSheet, 
-  ScrollView, 
-  TouchableOpacity,
-  Dimensions,
-  Modal,
-  Linking,
-  Alert,
-  ActivityIndicator
-} from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import Svg, { Circle, Path, Line } from "react-native-svg";
-import { useLocalSearchParams } from 'expo-router';
+import { useGlobalSearchParams } from 'expo-router';
+import React, { useEffect, useState } from 'react';
+import {
+  ActivityIndicator,
+  Alert,
+  Dimensions,
+  Linking,
+  Modal,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View
+} from 'react-native';
+import Svg, { Circle, Line, Path } from "react-native-svg";
 
 // Firebase Imports
-import { 
-  collection, 
-  query, 
-  where, 
-  orderBy, 
-  onSnapshot 
+import {
+  arrayUnion,
+  collection,
+  doc,
+  getDoc, // ADDED: to fetch available sections
+  onSnapshot,
+  orderBy,
+  query,
+  updateDoc,
+  where
 } from 'firebase/firestore';
-import { db } from '../../../firebase/firebaseConfig'; 
+import { db } from '../../../firebase/firebaseConfig';
 
 const { width } = Dimensions.get('window');
 
-// --- Background Component ---
 const BackgroundDecorations = () => (
   <View style={StyleSheet.absoluteFill} pointerEvents="none">
+    
     {/* Top Right Large Soft Glow (Purple) */}
     <View style={{ position: "absolute", top: 30, right: -40 }}>
       <Svg height="200" width="200" viewBox="0 0 200 200">
@@ -100,35 +105,65 @@ const BackgroundDecorations = () => (
   </View>
 );
 
+
 export default function ClassHistoryScreen() {
-  // 1. Get Class Details
-  const params = useLocalSearchParams();
-  const currentClassId = (params.id as string) || 'default-id';
-  const className = (params.grade as string) || 'Class History';
-  
-  // State
-  const [activeTab, setActiveTab] = useState('Resources');
+  const params = useGlobalSearchParams();  
+  const currentClassId = (params.id as string) || (params.classId as string) || (params.class_id as string) || ""; 
+  const className = (params.grade as string) || (params.className as string) || 'Class History';  
+
+  const [activeTab, setActiveTab] = useState('Notices');
   const [items, setItems] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedItem, setSelectedItem] = useState<any | null>(null);
+  const [isCreateModalVisible, setCreateModalVisible] = useState(false);
+  const [newSectionName, setNewSectionName] = useState('');
 
-  // 2. Fetch Data from Database (OPTIMIZED)
+  // ADDED: State for filtering by sections
+  const [sections, setSections] = useState<string[]>([]);
+  const [selectedSection, setSelectedSection] = useState<string>('All');
+
+  // ADDED: Fetch available sections for this class
   useEffect(() => {
-    setLoading(true); // Show loader when switching tabs
+    const fetchSections = async () => {
+      if (!currentClassId) return;
+      try {
+        const classRef = doc(db, "classes", currentClassId);
+        const classSnap = await getDoc(classRef);
+        if (classSnap.exists() && classSnap.data().sections) {
+          setSections(classSnap.data().sections);
+        }
+      } catch (error) {
+        console.error("Error fetching sections:", error);
+      }
+    };
+    fetchSections();
+  }, [currentClassId]);
 
-    // Convert UI Tab Name ('Resources') to Database Type Name ('resource')
-    // This allows us to use one flexible query for all three tabs!
-    let queryType = "resource"; 
+  // 1. Listen for data updates based on the current class ID & Section filter
+  useEffect(() => {
+    if (!currentClassId) {
+      setLoading(false);
+      return;
+    }
+    
+    setLoading(true);
+    let queryType = "notice"; 
     if (activeTab === 'Assignments') queryType = "assignment";
-    if (activeTab === 'Notices') queryType = "notice";
+    if (activeTab === 'Resources') queryType = "resource";
 
-    // Ask Firebase ONLY for the specific type we need right now
-    const q = query(
-      collection(db, "notices"), 
+    // Build query constraints dynamically to handle the optional section
+    const queryConstraints: any[] = [
       where("classId", "==", currentClassId),
-      where("type", "==", queryType), // <--- New filter added here!
-      orderBy("createdAt", "desc")
-    );
+      where("type", "==", queryType)
+    ];
+
+    if (selectedSection !== 'All') {
+      queryConstraints.push(where("section", "==", selectedSection));
+    }
+
+    queryConstraints.push(orderBy("createdAt", "desc"));
+
+    const q = query(collection(db, "notices"), ...queryConstraints);
 
     const unsubscribe = onSnapshot(q, (snapshot) => {
       const data = snapshot.docs.map(doc => ({
@@ -143,22 +178,41 @@ export default function ClassHistoryScreen() {
     });
 
     return () => unsubscribe();
-  }, [currentClassId, activeTab]); // <--- Added activeTab to dependency array!
+  }, [currentClassId, activeTab, selectedSection]); // Trigger refresh when section changes
 
-  // 5. Allow Resource Download
-  const handleDownload = (url: string) => {
-    if (url) {
-      Linking.openURL(url).catch(() => Alert.alert("Error", "Could not open link."));
-    } else {
-      Alert.alert("No Attachment", "There is no file or link attached.");
+  // 2. Add section to the specific class document
+  const handleCreateSection = async () => {
+    if (!currentClassId) {
+      Alert.alert("Error", "Class identification lost. Cannot add section.");
+      return;
+    }
+
+    if (!newSectionName.trim()) {
+      Alert.alert("Error", "Please enter a section name.");
+      return;
+    }
+
+    try {
+      const classRef = doc(db, "classes", currentClassId);
+      await updateDoc(classRef, {
+        sections: arrayUnion(newSectionName.trim())
+      });
+
+      // Optimistically add to UI list without reloading
+      setSections(prev => prev.includes(newSectionName.trim()) ? prev : [...prev, newSectionName.trim()]);
+      Alert.alert("Success", `Section "${newSectionName}" added to this class.`);
+      setNewSectionName('');
+      setCreateModalVisible(false);
+    } catch (error) {
+      console.error("Error adding section:", error);
+      Alert.alert("Error", "Could not save section. Ensure the class document exists.");
     }
   };
 
   const formatDate = (timestamp: any) => {
     if (!timestamp) return 'Just now';
-    return new Date(timestamp.seconds * 1000).toLocaleDateString('en-US', {
-      month: 'short', day: 'numeric', year: 'numeric'
-    });
+    const date = timestamp.seconds ? new Date(timestamp.seconds * 1000) : new Date(timestamp);
+    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
   };
 
   return (
@@ -166,138 +220,104 @@ export default function ClassHistoryScreen() {
       <BackgroundDecorations />
 
       <ScrollView style={styles.scrollView} contentContainerStyle={styles.contentContainer} showsVerticalScrollIndicator={false}>
-        
-        {/* Header Section */}
         <View style={styles.headerSection}>
           <Text style={styles.pageTitle}>{className}</Text>
           <Text style={styles.subTitle}>Classroom Activity History</Text>
         </View>
 
-        {/* 3. Toggle Switch */}
         <View style={styles.toggleContainer}>
           {['Notices', 'Assignments', 'Resources'].map((tab) => (
             <TouchableOpacity 
               key={tab}
               style={[styles.toggleBtn, activeTab === tab && styles.toggleBtnActive]}
               onPress={() => setActiveTab(tab)}
-              activeOpacity={0.8}
             >
-              <Text style={[styles.toggleText, activeTab === tab && styles.toggleTextActive]}>
-                {tab}
-              </Text>
+              <Text style={[styles.toggleText, activeTab === tab && styles.toggleTextActive]}>{tab}</Text>
             </TouchableOpacity>
           ))}
         </View>
 
-        {/* --- CONTENT AREA --- */}
+        {/* ADDED: Section Filter List */}
+        {sections.length > 0 && (
+          <View style={styles.sectionFilterContainer}>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8 }}>
+              <TouchableOpacity
+                style={[styles.sectionPill, selectedSection === 'All' && styles.sectionPillActive]}
+                onPress={() => setSelectedSection('All')}
+              >
+                <Text style={[styles.sectionPillText, selectedSection === 'All' && styles.sectionPillTextActive]}>All Sections</Text>
+              </TouchableOpacity>
+              
+              {sections.map(sec => (
+                <TouchableOpacity
+                  key={sec}
+                  style={[styles.sectionPill, selectedSection === sec && styles.sectionPillActive]}
+                  onPress={() => setSelectedSection(sec)}
+                >
+                  <Text style={[styles.sectionPillText, selectedSection === sec && styles.sectionPillTextActive]}>Section {sec}</Text>
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+          </View>
+        )}
+
         {loading ? (
             <ActivityIndicator size="large" color="#3B3CFF" style={{marginTop: 40}} />
         ) : (
-            <>
-                {/* Resources Tab */}
-                {activeTab === 'Resources' && (
-                  <View style={styles.listContainer}>
-                    {items.length === 0 && <Text style={styles.emptyText}>No resources shared yet.</Text>}
-                    {items.map((item) => (
-                      <TouchableOpacity 
-                        key={item.id} 
-                        style={styles.card} 
-                        onPress={() => setSelectedItem(item)}
-                        activeOpacity={0.9}
-                      >
-                        <View style={styles.cardTopRow}>
-                          <View style={[styles.iconBox, { backgroundColor: '#EEF2FF' }]}>
-                            <Ionicons name="document-text" size={24} color="#3B3CFF" />
-                          </View>
-                          <View style={styles.cardTextContainer}>
-                            <Text style={styles.cardTitle} numberOfLines={1}>{item.title}</Text>
-                            {item.subject && <Text style={styles.cardSubject}>{item.subject}</Text>}
-                            <Text style={styles.cardDesc} numberOfLines={2}>{item.description}</Text>
-                          </View>
-                        </View>
-
-                        <View style={styles.cardBottomRow}>
-                          <View>
-                            <Text style={styles.dateLabel}>POSTED DATE</Text>
-                            <Text style={styles.dateValue}>{formatDate(item.createdAt)}</Text>
-                          </View>
-
-                          {item.link && (
-                              <View style={styles.miniLinkBadge}>
-                                  <Ionicons name="link" size={12} color="#3B3CFF" />
-                                  <Text style={styles.miniLinkText}>Has Link</Text>
-                              </View>
-                          )}
-                        </View>
-                      </TouchableOpacity>
-                    ))}
+            <View style={styles.listContainer}>
+              {!currentClassId && <Text style={styles.errorText}>Class ID not found. Return to classes and try again.</Text>}
+              {currentClassId && items.length === 0 && <Text style={styles.emptyText}>No {activeTab.toLowerCase()} found for this selection.</Text>}
+              {items.map((item) => (
+                <TouchableOpacity key={item.id} style={styles.card} onPress={() => setSelectedItem(item)}>
+                  <View style={styles.cardTopRow}>
+                    <View style={[styles.iconBox, { backgroundColor: '#F3F4F6' }]}>
+                      <Ionicons name={item.type === 'assignment' ? 'clipboard-outline' : 'document-text-outline'} size={24} color="#3B3CFF" />
+                    </View>
+                    <View style={styles.cardTextContainer}>
+                      <View style={{flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center'}}>
+                        <Text style={styles.cardTitle}>{item.title}</Text>
+                        {item.section && <Text style={styles.sectionBadge}>Sec {item.section}</Text>}
+                      </View>
+                      <Text style={styles.cardDesc} numberOfLines={2}>{item.description}</Text>
+                      <Text style={styles.dateText}>{formatDate(item.createdAt)}</Text>
+                    </View>
                   </View>
-                )}
-
-                {/* Assignments Tab */}
-                {activeTab === 'Assignments' && (
-                  <View style={styles.listContainer}>
-                    {items.length === 0 && <Text style={styles.emptyText}>No assignments posted.</Text>}
-                    {items.map((item) => (
-                      <TouchableOpacity 
-                        key={item.id} 
-                        style={[styles.card, { paddingVertical: 20 }]}
-                        onPress={() => setSelectedItem(item)}
-                      >
-                          <View style={{flexDirection:'row', justifyContent:'space-between', alignItems:'flex-start'}}>
-                             <View style={{flex: 1}}>
-                                <Text style={styles.cardTitle}>{item.title}</Text>
-                                {item.subject && <Text style={styles.cardSubject}>{item.subject}</Text>}
-                                <Text style={styles.cardDesc} numberOfLines={1}>{item.description}</Text>
-                             </View>
-                             <View style={[styles.iconBox, { width: 36, height: 36, backgroundColor: '#FEF3C7', marginRight: 0 }]}>
-                                <Ionicons name="clipboard" size={18} color="#D97706" />
-                             </View>
-                          </View>
-                          
-                          <View style={[styles.cardBottomRow, { marginTop: 12 }]}>
-                            <Text style={styles.dateValue}>{formatDate(item.createdAt)}</Text>
-                            {item.deadline && (
-                                <Text style={{fontSize:12, color:'#EF4444', fontWeight:'600'}}>
-                                    Due: {formatDate(item.deadline)}
-                                </Text>
-                            )}
-                          </View>
-                      </TouchableOpacity>
-                    ))}
-                  </View>
-                )}
-
-                {/* Notices Tab */}
-                {activeTab === 'Notices' && (
-                  <View style={styles.listContainer}>
-                    {items.length === 0 && <Text style={styles.emptyText}>No notices posted.</Text>}
-                    {items.map((item) => (
-                      <TouchableOpacity 
-                        key={item.id} 
-                        style={[styles.card, { paddingVertical: 20 }]}
-                        onPress={() => setSelectedItem(item)}
-                      >
-                          <View style={{flexDirection:'row', justifyContent:'space-between', alignItems:'flex-start'}}>
-                             <View style={{flex: 1}}>
-                                <Text style={styles.cardTitle}>{item.title}</Text>
-                                <Text style={styles.cardDesc} numberOfLines={2}>{item.description}</Text>
-                             </View>
-                             <Ionicons name="megaphone-outline" size={20} color="#9CA3AF" />
-                          </View>
-                          <Text style={[styles.dateValue, { marginTop: 10, fontSize: 12, color: '#9CA3AF' }]}>
-                             {formatDate(item.createdAt)}
-                          </Text>
-                      </TouchableOpacity>
-                    ))}
-                  </View>
-                )}
-            </>
+                </TouchableOpacity>
+              ))}
+            </View>
         )}
-
       </ScrollView>
 
-      {/* 4. Full Screen Modal - UPDATED TO SHOW ALL DETAILS */}
+      {/* Floating Action Button */}
+      <TouchableOpacity style={styles.fab} onPress={() => setCreateModalVisible(true)}>
+        <Ionicons name="add" size={30} color="#FFF" />
+      </TouchableOpacity>
+
+      {/* Modal for adding sections */}
+      <Modal visible={isCreateModalVisible} animationType="fade" transparent>
+        <View style={styles.modalOverlay}>
+          <View style={styles.smallModalContainer}>
+            <Text style={styles.modalTitle}>Add New Section</Text>
+            <TextInput 
+              style={styles.input}
+              placeholder="e.g. A"
+              value={newSectionName}
+              onChangeText={setNewSectionName}
+              autoCapitalize="characters"
+            />
+            <View style={styles.modalActionRow}>
+              <TouchableOpacity onPress={() => setCreateModalVisible(false)} style={styles.cancelBtn}>
+                <Text style={styles.cancelBtnText}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity onPress={handleCreateSection} style={styles.createBtn}>
+                <Text style={styles.createBtnText}>Save</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Detail View Modal */}
       <Modal visible={selectedItem !== null} animationType="slide" transparent>
         <View style={styles.fullScreenOverlay}>
             <View style={styles.fullScreenContainer}>
@@ -307,58 +327,19 @@ export default function ClassHistoryScreen() {
                             <TouchableOpacity onPress={() => setSelectedItem(null)} style={styles.closeBtn}>
                                 <Ionicons name="close" size={24} color="#111827" />
                             </TouchableOpacity>
-                            <Text style={styles.fsTypeHeader}>{selectedItem.type.toUpperCase()}</Text>
+                            <Text style={styles.fsTypeHeader}>{selectedItem.type?.toUpperCase()}</Text>
                             <View style={{width: 30}} />
                         </View>
-
                         <ScrollView contentContainerStyle={{padding: 24}}>
                             <Text style={styles.fsTitle}>{selectedItem.title}</Text>
-                            
-                            {/* Subject Badge */}
-                            {selectedItem.subject && (
-                                <Text style={styles.fsSubject}>{selectedItem.subject}</Text>
-                            )}
-
-                            <Text style={styles.fsDate}>Posted on {formatDate(selectedItem.createdAt)}</Text>
-                            
-                            {/* Assignment Specific Details */}
-                            {selectedItem.type === 'assignment' && (
-                                <View style={styles.metaRow}>
-                                    {selectedItem.total && (
-                                        <View style={styles.metaItem}>
-                                            <Ionicons name="star" size={14} color="#D97706" />
-                                            <Text style={[styles.metaText, {color: '#D97706'}]}>{selectedItem.total} Points</Text>
-                                        </View>
-                                    )}
-                                    {selectedItem.deadline && (
-                                        <View style={styles.metaItem}>
-                                            <Ionicons name="time" size={14} color="#EF4444" />
-                                            <Text style={[styles.metaText, {color: '#EF4444'}]}>Due: {formatDate(selectedItem.deadline)}</Text>
-                                        </View>
-                                    )}
-                                </View>
-                            )}
-
+                            <Text style={styles.dateText}>Posted on {formatDate(selectedItem.createdAt)}</Text>
                             <View style={styles.divider} />
-                            
-                            <Text style={styles.sectionLabel}>DESCRIPTION</Text>
                             <Text style={styles.fsDesc}>{selectedItem.description}</Text>
-
-                            {/* Download Button inside Modal if Resource or has link */}
                             {selectedItem.link && (
-                                <TouchableOpacity 
-                                    style={styles.fsDownloadBtn}
-                                    onPress={() => handleDownload(selectedItem.link)}
-                                >
-                                    <View style={styles.linkIconBox}>
-                                        <Ionicons name="link" size={24} color="#3B3CFF" />
-                                    </View>
-                                    <View style={{flex:1}}>
-                                        <Text style={styles.linkTitle}>Attached Link</Text>
-                                        <Text style={styles.linkUrl} numberOfLines={1}>{selectedItem.link}</Text>
-                                    </View>
-                                    <Ionicons name="open-outline" size={20} color="#9CA3AF" />
-                                </TouchableOpacity>
+                              <TouchableOpacity style={styles.linkBtn} onPress={() => Linking.openURL(selectedItem.link)}>
+                                <Ionicons name="open-outline" size={20} color="#FFF" style={{marginRight: 8}} />
+                                <Text style={styles.linkBtnText}>Open Attachment</Text>
+                              </TouchableOpacity>
                             )}
                         </ScrollView>
                     </>
@@ -366,307 +347,59 @@ export default function ClassHistoryScreen() {
             </View>
         </View>
       </Modal>
-
     </View>
   );
 }
 
-// --- Styles ---
 const styles = StyleSheet.create({
-  mainContainer: {
-    flex: 1,
-    backgroundColor: '#ffffff',
-  },
-  scrollView: {
-    flex: 1,
-    backgroundColor: 'transparent',
-  },
-  contentContainer: {
-    paddingHorizontal: 20,
-    paddingTop: 16,
-    paddingBottom: 40,
-  },
-  emptyText: {
-    textAlign: 'center',
-    color: '#9CA3AF',
-    marginTop: 20,
-    fontStyle: 'italic'
-  },
+  mainContainer: { flex: 1, backgroundColor: '#ffffff' },
+  scrollView: { flex: 1 },
+  contentContainer: { paddingHorizontal: 20, paddingTop: 16, paddingBottom: 100 },
+  headerSection: { marginBottom: 20 },
+  pageTitle: { fontSize: 24, fontWeight: '800', color: '#111827' },
+  subTitle: { fontSize: 14, color: '#6B7280' },
+  toggleContainer: { flexDirection: 'row', backgroundColor: '#F3F4F6', borderRadius: 12, padding: 4, marginBottom: 16 }, // Tweaked margin
+  toggleBtn: { flex: 1, paddingVertical: 12, alignItems: 'center', borderRadius: 8 },
+  toggleBtnActive: { backgroundColor: '#FFF', elevation: 2 },
+  toggleText: { fontSize: 13, fontWeight: '600', color: '#6B7280' },
+  toggleTextActive: { color: '#111827' },
   
-  // Header
-  headerSection: {
-    marginBottom: 20,
-  },
-  pageTitle: {
-    fontSize: 24,
-    fontWeight: '800',
-    color: '#111827',
-    marginBottom: 4,
-  },
-  subTitle: {
-    fontSize: 14,
-    color: '#6B7280',
-    fontWeight: '500',
-  },
+  // ADDED: Styles for Section Filter
+  sectionFilterContainer: { marginBottom: 24, flexDirection: 'row' },
+  sectionPill: { paddingHorizontal: 16, paddingVertical: 8, borderRadius: 20, backgroundColor: '#F3F4F6', borderWidth: 1, borderColor: '#E5E7EB' },
+  sectionPillActive: { backgroundColor: '#EEF2FF', borderColor: '#3B3CFF' },
+  sectionPillText: { fontSize: 12, fontWeight: '600', color: '#6B7280' },
+  sectionPillTextActive: { color: '#3B3CFF' },
 
-  // Toggle Switch
-  toggleContainer: {
-    flexDirection: 'row',
-    backgroundColor: '#F3F4F6',
-    borderRadius: 12,
-    padding: 4,
-    marginBottom: 24,
-  },
-  toggleBtn: {
-    flex: 1,
-    paddingVertical: 12,
-    alignItems: 'center',
-    borderRadius: 8,
-  },
-  toggleBtnActive: {
-    backgroundColor: '#FFF',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 4,
-    elevation: 2,
-  },
-  toggleText: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: '#6B7280',
-  },
-  toggleTextActive: {
-    color: '#111827',
-  },
-
-  // List Container
-  listContainer: {
-    gap: 16,
-  },
-  
-  // Card Styles
-  card: {
-    backgroundColor: '#FFF',
-    borderRadius: 20,
-    padding: 20,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.03,
-    shadowRadius: 6,
-    elevation: 2,
-    borderWidth: 1,
-    borderColor: '#F3F4F6',
-  },
-  
-  cardTopRow: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    marginBottom: 20,
-  },
-  iconBox: {
-    width: 48,
-    height: 48,
-    borderRadius: 14,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: 16,
-  },
-  cardTextContainer: {
-    flex: 1,
-  },
-  cardTitle: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: '#111827',
-    marginBottom: 4,
-  },
-  cardSubject: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: '#3B3CFF',
-    marginBottom: 4,
-    textTransform: 'uppercase',
-    letterSpacing: 0.5
-  },
-  cardDesc: {
-    fontSize: 13,
-    color: '#6B7280',
-    lineHeight: 18,
-  },
-
-  cardBottomRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-end',
-  },
-  dateLabel: {
-    fontSize: 10,
-    fontWeight: '700',
-    color: '#9CA3AF',
-    letterSpacing: 0.5,
-    marginBottom: 2,
-  },
-  dateValue: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#111827',
-  },
-  
-  miniLinkBadge: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      backgroundColor: '#EEF2FF',
-      paddingHorizontal: 8,
-      paddingVertical: 4,
-      borderRadius: 6
-  },
-  miniLinkText: {
-      fontSize: 10,
-      color: '#3B3CFF',
-      fontWeight: '700',
-      marginLeft: 4
-  },
-
-  // Download Button
-  downloadBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#3B3CFF',
-    paddingVertical: 10,
-    paddingHorizontal: 16,
-    borderRadius: 10,
-  },
-  downloadIcon: {
-    marginRight: 6,
-  },
-  downloadBtnText: {
-    color: '#FFF',
-    fontSize: 14,
-    fontWeight: '600',
-  },
-
-  // --- Full Screen Modal Styles ---
-  fullScreenOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.5)',
-    justifyContent: 'flex-end',
-  },
-  fullScreenContainer: {
-    backgroundColor: 'white',
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
-    height: '90%',
-    overflow: 'hidden'
-  },
-  fsHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    padding: 20,
-    borderBottomWidth: 1,
-    borderColor: '#F3F4F6'
-  },
-  closeBtn: {
-    padding: 4,
-    backgroundColor: '#F3F4F6',
-    borderRadius: 20
-  },
-  fsTypeHeader: {
-    fontSize: 14,
-    fontWeight: '700',
-    color: '#6B7280',
-    letterSpacing: 1
-  },
-  fsTitle: {
-    fontSize: 24,
-    fontWeight: '800',
-    color: '#111827',
-    marginBottom: 4
-  },
-  fsSubject: {
-    fontSize: 14,
-    fontWeight: '700',
-    color: '#3B3CFF',
-    marginBottom: 8,
-    textTransform: 'uppercase',
-    letterSpacing: 0.5
-  },
-  fsDate: {
-    fontSize: 14,
-    color: '#9CA3AF',
-    marginBottom: 16
-  },
-  
-  // Meta Row (Marks/Deadline)
-  metaRow: {
-      flexDirection: 'row',
-      gap: 12,
-      marginBottom: 20
-  },
-  metaItem: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      backgroundColor: '#F9FAFB',
-      paddingHorizontal: 10,
-      paddingVertical: 6,
-      borderRadius: 8,
-      borderWidth: 1,
-      borderColor: '#F3F4F6'
-  },
-  metaText: {
-      fontSize: 13,
-      fontWeight: '700',
-      marginLeft: 6
-  },
-
-  divider: {
-    height: 1,
-    backgroundColor: '#E5E7EB',
-    marginBottom: 20
-  },
-  sectionLabel: {
-      fontSize: 11,
-      fontWeight: '800',
-      color: '#9CA3AF',
-      letterSpacing: 1,
-      marginBottom: 8
-  },
-  fsDesc: {
-    fontSize: 16,
-    lineHeight: 26,
-    color: '#374151',
-    marginBottom: 40
-  },
-  
-  // Link Card in Modal
-  fsDownloadBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#F3F4F6',
-    padding: 16,
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: '#E5E7EB'
-  },
-  linkIconBox: {
-      width: 40, 
-      height: 40,
-      borderRadius: 10,
-      backgroundColor: '#EEF2FF',
-      alignItems: 'center',
-      justifyContent: 'center',
-      marginRight: 12
-  },
-  linkTitle: {
-      fontSize: 12,
-      color: '#6B7280',
-      fontWeight: '600',
-      marginBottom: 2
-  },
-  linkUrl: {
-      fontSize: 14,
-      color: '#3B3CFF',
-      fontWeight: '700'
-  }
+  listContainer: { gap: 16 },
+  emptyText: { textAlign: 'center', color: '#9CA3AF', marginTop: 20 },
+  errorText: { textAlign: 'center', color: '#EF4444', marginTop: 20, fontWeight: '600' },
+  card: { backgroundColor: '#FFF', borderRadius: 20, padding: 16, elevation: 2, borderWidth: 1, borderColor: '#F3F4F6' },
+  cardTopRow: { flexDirection: 'row' },
+  iconBox: { width: 48, height: 48, borderRadius: 14, justifyContent: 'center', alignItems: 'center', marginRight: 12 },
+  cardTextContainer: { flex: 1 },
+  cardTitle: { fontSize: 16, fontWeight: '700', color: '#111827' },
+  sectionBadge: { fontSize: 10, color: '#3B3CFF', fontWeight: '700', backgroundColor: '#EEF2FF', paddingHorizontal: 6, paddingVertical: 2, borderRadius: 4 },
+  cardDesc: { fontSize: 13, color: '#6B7280', marginTop: 4 },
+  dateText: { fontSize: 11, color: '#9CA3AF', marginTop: 8 },
+  fab: { position: 'absolute', bottom: 30, right: 20, width: 60, height: 60, borderRadius: 30, backgroundColor: '#3B3CFF', justifyContent: 'center', alignItems: 'center', elevation: 5 },
+  modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', alignItems: 'center' },
+  smallModalContainer: { width: '85%', backgroundColor: '#FFF', borderRadius: 20, padding: 24 },
+  modalTitle: { fontSize: 18, fontWeight: '700', marginBottom: 16, color: '#111827' },
+  input: { backgroundColor: '#F3F4F6', borderRadius: 10, padding: 12, fontSize: 16, marginBottom: 20 },
+  modalActionRow: { flexDirection: 'row', justifyContent: 'flex-end', gap: 12 },
+  cancelBtn: { paddingVertical: 10, paddingHorizontal: 16 },
+  cancelBtnText: { color: '#6B7280', fontWeight: '600' },
+  createBtn: { backgroundColor: '#3B3CFF', paddingVertical: 10, paddingHorizontal: 20, borderRadius: 10 },
+  createBtnText: { color: '#FFF', fontWeight: '600' },
+  fullScreenOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end' },
+  fullScreenContainer: { backgroundColor: 'white', borderTopLeftRadius: 24, borderTopRightRadius: 24, height: '90%' },
+  fsHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 20, borderBottomWidth: 1, borderColor: '#F3F4F6' },
+  closeBtn: { padding: 4, backgroundColor: '#F3F4F6', borderRadius: 20 },
+  fsTypeHeader: { fontSize: 14, fontWeight: '700', color: '#6B7280' },
+  fsTitle: { fontSize: 24, fontWeight: '800', color: '#111827' },
+  divider: { height: 1, backgroundColor: '#E5E7EB', marginVertical: 20 },
+  fsDesc: { fontSize: 16, color: '#374151', lineHeight: 24 },
+  linkBtn: { backgroundColor: '#3B3CFF', flexDirection: 'row', padding: 15, borderRadius: 12, alignItems: 'center', justifyContent: 'center', marginTop: 20 },
+  linkBtnText: { color: '#FFF', fontWeight: '700', marginLeft: 8 }
 });

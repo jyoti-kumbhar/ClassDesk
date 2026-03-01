@@ -1,28 +1,28 @@
-import React, { useState, useEffect } from 'react';
-import { 
-  View, 
-  Text, 
-  StyleSheet, 
-  ScrollView, 
-  TouchableOpacity, 
-  TextInput, 
-  Dimensions,
-  Alert,
-  ActivityIndicator
-} from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import Svg, { Circle, Path, Line } from "react-native-svg";
-import { useLocalSearchParams } from 'expo-router';
+import { useGlobalSearchParams } from 'expo-router';
+import React, { useEffect, useState } from 'react';
+import {
+  ActivityIndicator,
+  Alert,
+  Dimensions,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View
+} from 'react-native';
+import Svg, { Circle, Line, Path } from "react-native-svg";
 
 // Firebase Imports
-import { 
-  collection, 
-  query, 
-  where, 
-  onSnapshot, 
-  updateDoc, 
+import {
+  arrayRemove,
+  collection,
   doc,
-  arrayRemove
+  onSnapshot,
+  query,
+  updateDoc,
+  where
 } from 'firebase/firestore';
 import { db } from '../../../firebase/firebaseConfig';
 
@@ -76,11 +76,10 @@ const BackgroundDecorations = () => (
 
 
 export default function ClassMembersScreen() {
-  const params = useLocalSearchParams();
-  const currentClassId = (params.id as string) || 'default-id';
-  const className = (params.grade as string) || 'Class';
-
-  const [activeTab, setActiveTab] = useState<'Teachers' | 'Students'>('Students');
+  const params = useGlobalSearchParams();  
+  // Robust parsing with your 'default-id' fallback
+const currentClassId = (params.id as string) || (params.classId as string) || (params.class_id as string) || 'default-id';
+  const className = (params.grade as string) || (params.className as string) || 'Class';  const [activeTab, setActiveTab] = useState<'Teachers' | 'Students'>('Students');
   const [members, setMembers] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");

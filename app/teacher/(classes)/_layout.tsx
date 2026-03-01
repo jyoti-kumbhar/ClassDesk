@@ -1,8 +1,8 @@
-import React from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Platform, Image, StatusBar, Dimensions } from 'react-native';
-import { Tabs, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import Svg, { Circle, Path, Defs, LinearGradient, Stop } from "react-native-svg";
+import { Tabs, useRouter } from 'expo-router';
+import React from 'react';
+import { Dimensions, Image, Platform, StatusBar, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import Svg, { Circle, Defs, LinearGradient, Path, Stop } from "react-native-svg";
 
 const { width: W } = Dimensions.get('window');
 
@@ -113,7 +113,6 @@ function CustomBottomNav({ state, descriptors, navigation }: any) {
         // Mapping icons based on your file names in the (classes) folder
         let iconName: keyof typeof Ionicons.glyphMap = "home";
         if (route.name === "notice") iconName = "megaphone";
-        if (route.name === "assignments") iconName = "clipboard";
         if (route.name === "history") iconName = "time"; 
         if (route.name === "members") iconName = "people";
 
@@ -153,7 +152,6 @@ export default function ClassDetailsLayout() {
             Since these are inside (classes), the URLs are /teacher/notice, etc.
           */}
           <Tabs.Screen name="notice" options={{ title: 'Notices' }} />
-          <Tabs.Screen name="assignments" options={{ title: 'Assignments' }} />
           <Tabs.Screen name="history" options={{ title: 'History' }} />
           <Tabs.Screen name="members" options={{ title: 'Members' }} />
         </Tabs>

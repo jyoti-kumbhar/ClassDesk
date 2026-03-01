@@ -1,66 +1,89 @@
-import React, { useState, useEffect, useMemo } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, ScrollView, TextInput, ActivityIndicator } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useGlobalSearchParams } from 'expo-router';
+import React, { useEffect, useMemo, useState } from 'react';
+import { ActivityIndicator, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import Svg, { Circle, Path } from 'react-native-svg';
-import { useLocalSearchParams } from 'expo-router';
-
 // --- Firebase Imports ---
-import { db } from "../../../firebase/firebaseConfig"; 
-import { collection, query, where, onSnapshot, orderBy, doc, getDoc } from "firebase/firestore";
+import { collection, doc, getDoc, onSnapshot, orderBy, query, where } from "firebase/firestore";
+import { db } from "../../../firebase/firebaseConfig";
 
 // --- Background Graphics ---
 const BackgroundDecorations = () => (
   <View style={StyleSheet.absoluteFill} pointerEvents="none">
-    <View style={{ position: "absolute", top: 30, right: -40 }}>
-      <Svg height="200" width="200" viewBox="0 0 200 200">
-        <Circle cx="100" cy="100" r="80" fill="#F3E8FF" opacity={0.6} />
-        <Circle cx="100" cy="100" r="50" fill="#E9D5FF" opacity={0.4} />
+    <View style={StyleSheet.absoluteFill}>
+      <Svg height="100%" width="100%">
+        <Path d="M-50 150 Q 150 50 450 250" stroke="#93C5FD" strokeWidth="2" fill="none" opacity={0.4} />
+        <Path d="M-20 350 Q 150 450 400 300" stroke="#6EE7B7" strokeWidth="2" strokeDasharray="6, 6" fill="none" opacity={0.5} />
+        <Path d="M-50 600 Q 200 750 450 550" stroke="#F9A8D4" strokeWidth="2" fill="none" opacity={0.4} />
       </Svg>
     </View>
-    <View style={{ position: "absolute", bottom: 40, right: -20, opacity: 0.9 }}>
-      <Svg height="220" width="220" viewBox="0 0 200 200">
-        <Circle cx="200" cy="200" r="150" fill="#fdf0fd" />
-        <Path d="M 100 200 Q 120 120 200 100" stroke="#fbccf9" strokeWidth="30" strokeLinecap="round" fill="none" />
+
+    <View style={{ position: "absolute", top: -60, right: -40, opacity: 0.6 }}>
+      <Svg height="300" width="400" viewBox="0 0 100 100">
+        <Circle cx="90" cy="70" r="50" fill="#93C5FD" opacity={0.5} />
+        <Circle cx="30" cy="80" r="40" fill="#C4B5FD" opacity={0.5} />
+        <Circle cx="60" cy="70" r="25" fill="#F9A8D4" opacity={0.6} />
       </Svg>
     </View>
+
+    <View style={{ position: "absolute", bottom: -50, right: -20, opacity: 0.6 }}>
+      <Svg height="200" width="300" viewBox="0 0 100 100">
+        <Circle cx="50" cy="80" r="60" fill="#FDBA74" opacity={0.5} />
+        <Circle cx="80" cy="40" r="30" fill="#FCA5A5" opacity={0.4} />
+      </Svg>
+    </View>
+
+    <View style={[styles.dot, { top: 180, left: 40, backgroundColor: "#93C5FD", width: 14, height: 14, opacity: 0.7 }]} />
+    <View style={[styles.dot, { top: 350, right: 60, backgroundColor: "#C4B5FD", width: 20, height: 20, opacity: 0.6 }]} />
   </View>
 );
 
 const FILTERS = ['All', 'Notices', 'Assignments', 'Resources'];
 
 export default function HistoryScreen() {
-  const { classId, className } = useLocalSearchParams();
+  const params = useGlobalSearchParams();
+  
+  // 1. Robust ID Extraction
+  const extractedId = params.id || params.classId || params.class_id;
+  const currentClassId = typeof extractedId === "string" ? extractedId : (Array.isArray(extractedId) ? extractedId[0] : "");
+  const currentClassName = typeof params.className === "string" ? params.className : (typeof params.grade === "string" ? params.grade : 'Class Activity');
   
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [activeFilter, setActiveFilter] = useState('All');
-  const [sections, setSections] = useState<string[]>([]);
-  const [selectedSection, setSelectedSection] = useState<string>('');
   const [historyData, setHistoryData] = useState<any[]>([]);
 
-  // 1. Fetch available sections for this class from the 'classes' collection
+  // --- ADDED: SECTION STATE ---
+  const [activeSection, setActiveSection] = useState('All');
+  const [sections, setSections] = useState<string[]>([]);
+
+  // --- ADDED: FETCH AVAILABLE SECTIONS (WITH FALLBACK) ---
   useEffect(() => {
-    const fetchClassSections = async () => {
-      if (!classId) return;
+    const fetchSections = async () => {
+      if (!currentClassId) return;
       try {
-        const classRef = doc(db, 'classes', classId as string);
+        const classRef = doc(db, 'classes', currentClassId);
         const classSnap = await getDoc(classRef);
+        
         if (classSnap.exists()) {
           const data = classSnap.data();
-          const availableSections = data.sections || (data.section ? [data.section] : []);
-          setSections(availableSections);
-          if (availableSections.length > 0) setSelectedSection(availableSections[0]);
+          const fetchedSections = data.sections || (data.section ? [data.section] : []);
+          setSections(fetchedSections.length > 0 ? fetchedSections : ['A', 'B', 'C']);
+        } else {
+          setSections(['A', 'B', 'C']); // Fallback defaults
         }
       } catch (error) {
         console.error("Error fetching sections:", error);
+        setSections(['A', 'B', 'C']); // Fallback on error
       }
     };
-    fetchClassSections();
-  }, [classId]);
+    fetchSections();
+  }, [currentClassId]);
 
-  // 2. Fetch History filtered by Class, Tab, and Section
+  // 2. Fetch History filtered only by Class and Tab
   useEffect(() => {
-    if (!classId || !selectedSection) return;
+    if (!currentClassId) return;
+    
     setLoading(true);
 
     const baseCol = collection(db, 'notices');
@@ -69,25 +92,23 @@ export default function HistoryScreen() {
     if (activeFilter === 'All') {
       q = query(
         baseCol, 
-        where("classId", "==", classId), 
-        where("section", "==", selectedSection),
+        where("classId", "==", currentClassId), 
         orderBy("createdAt", "desc")
       );
     } else {
       const typeFilter = activeFilter.slice(0, -1).toLowerCase(); 
       q = query(
         baseCol, 
-        where("classId", "==", classId), 
+        where("classId", "==", currentClassId), 
         where("type", "==", typeFilter), 
-        where("section", "==", selectedSection),
         orderBy("createdAt", "desc")
       );
     }
 
     const unsubscribe = onSnapshot(q, (snap) => {
       const results: any[] = [];
-      snap.forEach(doc => {
-        const data = doc.data();
+      snap.forEach(docSnap => {
+        const data = docSnap.data();
         let config = { icon: 'megaphone', color: '#D97706', bg: '#FEF3C7', label: 'Notice' };
 
         if (data.type === 'assignment') {
@@ -97,10 +118,10 @@ export default function HistoryScreen() {
         }
 
         results.push({
-          id: doc.id,
+          id: docSnap.id,
           title: data.title || data.subject || 'Untitled',
           subject: data.subject || '-',
-          section: data.section,
+          section: data.section || '', // Capture section safely
           time: data.createdAt?.toDate().toLocaleDateString() || 'Recently',
           type: config.label,
           icon: config.icon,
@@ -117,15 +138,20 @@ export default function HistoryScreen() {
     });
 
     return () => unsubscribe();
-  }, [classId, activeFilter, selectedSection]);
+  }, [currentClassId, activeFilter]);
 
+  // Include Section and Search Filtering Locally
   const filteredData = useMemo(() => {
-    if (!searchQuery) return historyData;
-    return historyData.filter(item => 
-      item.title.toLowerCase().includes(searchQuery.toLowerCase()) || 
-      item.subject.toLowerCase().includes(searchQuery.toLowerCase())
-    );
-  }, [historyData, searchQuery]);
+    return historyData.filter(item => {
+      const matchesSearch = !searchQuery || 
+        item.title.toLowerCase().includes(searchQuery.toLowerCase()) || 
+        item.subject.toLowerCase().includes(searchQuery.toLowerCase());
+      
+      const matchesSection = activeSection === 'All' || item.section === activeSection;
+
+      return matchesSearch && matchesSection;
+    });
+  }, [historyData, searchQuery, activeSection]);
 
   return (
     <View style={styles.container}>
@@ -134,24 +160,8 @@ export default function HistoryScreen() {
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
         <View style={styles.pageHeader}>
           <Text style={styles.pageTitle}>Classroom History</Text>
-          <Text style={styles.pageSubtitle}>{className || 'Class Activity'}</Text>
+          <Text style={styles.pageSubtitle}>{currentClassName}</Text>
         </View>
-
-        {/* Section Selector */}
-        <Text style={styles.filterLabel}>Select Section</Text>
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.filterWrapper} contentContainerStyle={{ gap: 10 }}>
-          {sections.map((sec) => (
-            <TouchableOpacity 
-              key={sec} 
-              onPress={() => setSelectedSection(sec)}
-              style={[styles.sectionChip, selectedSection === sec && styles.sectionChipActive]}
-            >
-              <Text style={[styles.sectionChipText, selectedSection === sec && styles.sectionChipTextActive]}>
-                Section {sec}
-              </Text>
-            </TouchableOpacity>
-          ))}
-        </ScrollView>
 
         <View style={styles.searchContainer}>
           <Ionicons name="search" size={20} color="#9CA3AF" style={{ marginLeft: 12 }} />
@@ -163,8 +173,33 @@ export default function HistoryScreen() {
           />
         </View>
 
+        {/* --- ADDED: SECTION FILTER PILLS --- */}
         <View style={styles.filterWrapper}>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 10 }}>
+          <Text style={styles.filterLabel}>Filter by Section:</Text>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 10, paddingRight: 20 }}>
+            <TouchableOpacity 
+              onPress={() => setActiveSection('All')}
+              style={[styles.sectionPill, activeSection === 'All' && styles.sectionPillActive]}
+            >
+              <Text style={[styles.filterText, activeSection === 'All' && styles.filterTextActive]}>All Sections</Text>
+            </TouchableOpacity>
+            
+            {sections.map((sec) => (
+              <TouchableOpacity 
+                key={sec} 
+                onPress={() => setActiveSection(sec)}
+                style={[styles.sectionPill, activeSection === sec && styles.sectionPillActive]}
+              >
+                <Text style={[styles.filterText, activeSection === sec && styles.filterTextActive]}>Section {sec}</Text>
+              </TouchableOpacity>
+            ))}
+          </ScrollView>
+        </View>
+
+        {/* --- ACTIVITY TYPE PILLS --- */}
+        <View style={styles.filterWrapper}>
+          <Text style={styles.filterLabel}>Activity Type:</Text>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 10, paddingRight: 20 }}>
             {FILTERS.map((filter) => (
               <TouchableOpacity 
                 key={filter} 
@@ -184,7 +219,7 @@ export default function HistoryScreen() {
             {filteredData.length === 0 ? (
               <View style={styles.emptyBox}>
                 <Ionicons name="search-outline" size={48} color="#D1D5DB" />
-                <Text style={styles.emptyText}>No activities found for Section {selectedSection}</Text>
+                <Text style={styles.emptyText}>No activities found</Text>
               </View>
             ) : (
               filteredData.map((item) => (
@@ -196,6 +231,12 @@ export default function HistoryScreen() {
                     <Text style={styles.itemTitle}>{item.title}</Text>
                     <View style={{ flexDirection: 'row', alignItems: 'center' }}>
                       <Text style={styles.itemType}>{item.type}</Text>
+                      {item.section ? (
+                         <>
+                           <Text style={styles.dotSeparator}>•</Text>
+                           <Text style={styles.itemTime}>Sec {item.section}</Text>
+                         </>
+                      ) : null}
                       <Text style={styles.dotSeparator}>•</Text>
                       <Text style={styles.itemTime}>{item.time}</Text>
                     </View>
@@ -217,18 +258,24 @@ const styles = StyleSheet.create({
   pageHeader: { marginBottom: 20 },
   pageTitle: { fontSize: 24, fontWeight: '900', color: '#111827', marginBottom: 4 },
   pageSubtitle: { fontSize: 14, fontWeight: '600', color: '#4461F2' },
-  filterLabel: { fontSize: 12, fontWeight: '700', color: '#9CA3AF', marginBottom: 8, textTransform: 'uppercase' },
-  sectionChip: { paddingHorizontal: 16, paddingVertical: 8, borderRadius: 12, backgroundColor: '#F3F4F6', borderWidth: 1, borderColor: '#E5E7EB' },
-  sectionChipActive: { backgroundColor: '#EEF2FF', borderColor: '#4461F2' },
-  sectionChipText: { fontSize: 13, fontWeight: '700', color: '#6B7280' },
-  sectionChipTextActive: { color: '#4461F2' },
   searchContainer: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#FFF', borderRadius: 12, borderWidth: 1, borderColor: '#E5E7EB', marginVertical: 20 },
   searchInput: { flex: 1, padding: 12, fontSize: 14, color: '#111827' },
+  
+  // Added Labels
+  filterLabel: { fontSize: 12, fontWeight: '800', color: '#9CA3AF', marginBottom: 8, textTransform: 'uppercase', letterSpacing: 1 },
   filterWrapper: { marginBottom: 15 },
+  
+  // Section Pills (Green accent)
+  sectionPill: { paddingHorizontal: 16, paddingVertical: 8, backgroundColor: '#FFF', borderRadius: 12, borderWidth: 1, borderColor: '#E5E7EB' },
+  sectionPillActive: { backgroundColor: '#10B981', borderColor: '#10B981' }, 
+  
+  // Type Pills (Blue accent)
   filterPill: { paddingHorizontal: 18, paddingVertical: 10, backgroundColor: '#FFF', borderRadius: 20, borderWidth: 1, borderColor: '#E5E7EB' },
   filterPillActive: { backgroundColor: '#4461F2', borderColor: '#4461F2' },
+  
   filterText: { fontSize: 13, fontWeight: '700', color: '#6B7280' },
   filterTextActive: { color: '#FFF' },
+  dot: { position: "absolute", borderRadius: 999 },
   listContainer: { gap: 12 },
   historyCard: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#FFF', padding: 16, borderRadius: 16, elevation: 1, borderWidth: 1, borderColor: '#F9FAFB' },
   iconBox: { width: 48, height: 48, borderRadius: 12, alignItems: 'center', justifyContent: 'center', marginRight: 16 },
