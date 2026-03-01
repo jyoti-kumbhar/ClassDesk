@@ -1,33 +1,46 @@
-import React, { useState, useEffect } from "react";
-import { SafeAreaView, View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, Image, StatusBar, Alert, ActivityIndicator } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
-import Svg, { Circle, Path, G } from "react-native-svg";
+import React, { useEffect, useState } from "react";
+import { ActivityIndicator, Alert, Image, SafeAreaView, ScrollView, StatusBar, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
+import Svg, { Circle, Path } from "react-native-svg";
 
 // --- Firebase Imports ---
-import { auth, db } from "../../firebase/firebaseConfig"; 
-import { doc, getDoc, updateDoc, arrayUnion, collection, query, where, getDocs } from "firebase/firestore";
+import { arrayUnion, collection, doc, getDoc, getDocs, query, updateDoc, where } from "firebase/firestore";
+import { auth, db } from "../../firebase/firebaseConfig";
 
 // Static Descent/Professional Avatar URL
 const STATIC_PROFILE_IMAGE = "https://cdn-icons-png.flaticon.com/512/3135/3135715.png";
+
 const BackgroundDecorations = () => (
   <View style={StyleSheet.absoluteFill} pointerEvents="none">
-    <Svg height="100%" width="100%" viewBox="0 0 400 800" preserveAspectRatio="xMidYMid slice">
-      <G strokeWidth="2" fill="none" opacity={0.6}>
-        <Path d="M -20 80 Q 80 180 20 350 T 60 650 T -20 800" stroke="#7E8FB8" />
-        <Path d="M 420 50 Q 320 200 380 400 T 320 650 T 420 780" stroke="#D18F84" />
-      </G>
-      <Path d="M 60 250v10M 55 255h10M 350 350v10M 345 355h10M 40 520v10M 35 525h10M 320 700v10M 315 705h10" stroke="#B89C94" strokeWidth="2" />
-      <G fill="none" stroke="#2D3142" strokeWidth="1.5" x="2" y="2">
-        <Circle cx="40" cy="140" r="14" /><Circle cx="370" cy="240" r="14" /><Circle cx="70" cy="650" r="8" />
-      </G>
-      <Circle cx="40" cy="140" r="14" fill="#F4AE63" /><Circle cx="370" cy="240" r="14" fill="#F4AE63" /><Circle cx="70" cy="650" r="8" fill="#E25865" />
-      <G fill="none" stroke="#2D3142" strokeWidth="2" strokeLinejoin="round" x="4" y="4">
-        <Path d="M 310 -10L420 50L420 -10Z" /><Path d="M -10 320A60 60 0 0 1 -10 440Z" /><Path d="M 420 620L350 560A75 75 0 0 0 350 680Z" /><Path d="M 0 760L80 760A80 80 0 0 1 0 840Z" />
-      </G>
-      <Path d="M 310 -10L420 50L420 -10Z" fill="#5C73D1" /><Path d="M -10 320A60 60 0 0 1 -10 440Z" fill="#E25865" />
-      <Path d="M 420 620L350 560A75 75 0 0 0 350 680Z" fill="#F4AE63" /><Path d="M 0 760L80 760A80 80 0 0 1 0 840Z" fill="#5C73D1" />
-    </Svg>
+    {/* Top Right Pastel Blobs */}
+    <View style={{ position: "absolute", top: -40, right: -40, opacity: 0.8 }}>
+      <Svg height="250" width="250" viewBox="0 0 200 200">
+        <Circle cx="120" cy="80" r="90" fill="#E0E7FF" /> {/* Pastel Indigo */}
+        <Circle cx="160" cy="120" r="60" fill="#DBEAFE" /> {/* Pastel Blue */}
+      </Svg>
+    </View>
+
+    {/* Center Left Floating Wave */}
+    <View style={{ position: "absolute", top: "30%", left: -20, opacity: 0.6 }}>
+      <Svg height="150" width="150" viewBox="0 0 100 100">
+        <Path d="M -20 50 Q 30 10 80 50 T 180 50" stroke="#D1FAE5" strokeWidth="8" fill="none" strokeLinecap="round" />
+        <Path d="M -20 70 Q 30 30 80 70 T 180 70" stroke="#FEF3C7" strokeWidth="4" fill="none" strokeLinecap="round" strokeDasharray="10, 10" />
+      </Svg>
+    </View>
+
+    {/* Bottom Left Pastel Blobs */}
+    <View style={{ position: "absolute", bottom: -60, left: -60, opacity: 0.8 }}>
+      <Svg height="300" width="300" viewBox="0 0 200 200">
+        <Circle cx="80" cy="120" r="100" fill="#FCE7F3" /> {/* Pastel Pink */}
+        <Circle cx="120" cy="160" r="60" fill="#EDE9FE" /> {/* Pastel Purple */}
+      </Svg>
+    </View>
+
+    {/* Floating Pastel Dots */}
+    <View style={[styles.bgDot, { top: "15%", left: "10%", backgroundColor: "#FCA5A5", width: 14, height: 14 }]} />
+    <View style={[styles.bgDot, { top: "45%", right: "15%", backgroundColor: "#A7F3D0", width: 18, height: 18 }]} />
+    <View style={[styles.bgDot, { bottom: "25%", right: "10%", backgroundColor: "#FDE047", width: 12, height: 12 }]} />
   </View>
 );
 
@@ -39,7 +52,7 @@ const AppLogo = ({ scale = 1 }: AppLogoProps) => (
 );
 
 const logoStyles = StyleSheet.create({
-  logoBox: { width: 80, height: 80, backgroundColor: "#4461F2", borderRadius: 20, justifyContent: "center", alignItems: "center", shadowColor: "#4461F2", shadowOffset: { width: 0, height: 10 }, shadowOpacity: 0.3, shadowRadius: 10, elevation: 8 },
+  logoBox: { width: 80, height: 80, backgroundColor: "#4461F2", borderRadius: 20, justifyContent: "center", alignItems: "center", shadowColor: "#8DA0E2", shadowOffset: { width: 0, height: 10 }, shadowOpacity: 0.3, shadowRadius: 10, elevation: 8 },
 });
 
 const flexCenter = { justifyContent: 'center' as const, alignItems: 'center' as const };
@@ -109,7 +122,7 @@ export default function AdminProfile() {
     }
   };
 
-  if (loading) return <View style={[styles.container, flexCenter]}><ActivityIndicator size="large" color="#4461F2" /></View>;
+  if (loading) return <View style={[styles.container, flexCenter]}><ActivityIndicator size="large" color="#8DA0E2" /></View>;
 
   return (
     <SafeAreaView style={styles.container}>
@@ -123,7 +136,7 @@ export default function AdminProfile() {
             <Text style={styles.logoText}>ClassDesk</Text>
           </View>
           <TouchableOpacity onPress={() => router.back()}>
-            <Ionicons name="arrow-back" size={24} color="#374151" />
+            <Ionicons name="arrow-back" size={24} color="#475569" />
           </TouchableOpacity>
         </View>
 
@@ -138,21 +151,22 @@ export default function AdminProfile() {
           </View>
         </View>
 
-        {/* User Info Card */}
-        <View style={styles.card}>
-          <Text style={styles.cardLabel}>Account Details</Text>
-          <TextInput style={styles.input} value={name} onChangeText={setName} placeholder="Full Name" />
-          <TextInput style={styles.input} value={username} onChangeText={setUsername} placeholder="Username" />
-          <TextInput style={styles.input} value={email} editable={false} placeholder="Email" />
+        {/* User Info Card (Soft Periwinkle) */}
+        <View style={styles.accountCard}>
+          <Text style={styles.accountCardLabel}>Account Details</Text>
+          <TextInput style={styles.input} value={name} onChangeText={setName} placeholder="Full Name" placeholderTextColor="#94A3B8" />
+          <TextInput style={styles.input} value={username} onChangeText={setUsername} placeholder="Username" placeholderTextColor="#94A3B8" />
+          <TextInput style={[styles.input, { opacity: 0.7 }]} value={email} editable={false} placeholder="Email" placeholderTextColor="#94A3B8" />
         </View>
 
-        {/* Join Class Field */}
-        <View style={[styles.card, { backgroundColor: '#F4AE63' }]}>
-          <Text style={[styles.cardLabel, { color: '#2D3142' }]}>Join a New Class</Text>
+        {/* Join Class Field (Soft Peach) */}
+        <View style={styles.joinCard}>
+          <Text style={styles.joinCardLabel}>Join a New Class</Text>
           <View style={{ flexDirection: 'row', gap: 10 }}>
             <TextInput 
               style={[styles.input, { flex: 1, marginBottom: 0 }]} 
               placeholder="Enter Class Code" 
+              placeholderTextColor="#94A3B8"
               value={classCodeInput}
               onChangeText={setClassCodeInput}
               autoCapitalize="characters"
@@ -162,15 +176,17 @@ export default function AdminProfile() {
               style={styles.joinIconBtn}
               disabled={isJoining}
             >
-              {isJoining ? <ActivityIndicator color="#FFF" /> : <Ionicons name="add" size={28} color="#FFF" />}
+              {isJoining ? <ActivityIndicator color="#C2410C" /> : <Ionicons name="add" size={28} color="#C2410C" />}
             </TouchableOpacity>
           </View>
         </View>
 
-        <TouchableOpacity style={styles.saveBtn}><Text style={styles.btnText}>Save Profile Changes</Text></TouchableOpacity>
+        <TouchableOpacity style={styles.saveBtn}>
+          <Text style={styles.saveBtnText}>Save Profile Changes</Text>
+        </TouchableOpacity>
         
         <TouchableOpacity style={styles.dangerBtn} onPress={() => auth.signOut().then(() => router.replace("/login"))}>
-          <Text style={styles.btnText}>Logout</Text>
+          <Text style={styles.dangerBtnText}>Logout</Text>
         </TouchableOpacity>
       </ScrollView>
     </SafeAreaView>
@@ -180,17 +196,28 @@ export default function AdminProfile() {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: "#ffffff" },
   scrollContent: { padding: 20, paddingBottom: 100 },
+  bgDot: { position: "absolute", borderRadius: 999, opacity: 0.7 },
   header: { ...rowBetween, marginTop: 30, marginBottom: 20 },
-  logoText: { fontSize: 20, fontWeight: '700', color: '#000', marginLeft: -10 },
-  title: { fontSize: 28, fontWeight: "800", color: "#2D3142", marginBottom: 20 },
+  logoText: { fontSize: 20, fontWeight: '700', color: '#1E293B', marginLeft: -10 },
+  title: { fontSize: 28, fontWeight: "800", color: "#1E293B", marginBottom: 20 },
   profileSection: { alignItems: "center", marginBottom: 25 },
-  avatarContainer: { shadowColor: "#000", shadowOffset: { width: 4, height: 4 }, shadowOpacity: 0.1, shadowRadius: 10 },
-  profileImage: { width: 120, height: 120, borderRadius: 60, borderWidth: 3, borderColor: "#FFF" },
-  card: { backgroundColor: "#5C73D1", padding: 20, borderRadius: 20, marginBottom: 20, elevation: 4, shadowColor: "#2D3142", shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.05, shadowRadius: 15 },
-  cardLabel: { color: 'white', fontWeight: '800', marginBottom: 15, fontSize: 16 },
-  input: { backgroundColor: "#F4F0EA", padding: 16, borderRadius: 14, marginBottom: 12, fontSize: 15, fontWeight: "500", color: "#2D3142" },
-  joinIconBtn: { backgroundColor: '#2D3142', width: 55, borderRadius: 14, ...flexCenter },
-  saveBtn: { ...flexCenter, backgroundColor: "#5C73D1", padding: 18, borderRadius: 14, marginBottom: 12 },
-  dangerBtn: { ...flexCenter, backgroundColor: "#E25865", padding: 18, borderRadius: 14, marginBottom: 12 },
-  btnText: { fontWeight: "800", color: "#FFF", fontSize: 15 },
+  avatarContainer: { shadowColor: "#000", shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.08, shadowRadius: 15 },
+  profileImage: { width: 120, height: 120, borderRadius: 60, borderWidth: 4, borderColor: "#FFF" },
+  
+  // Soft Pastel Cards
+  accountCard: { backgroundColor: "#E0E7FF", padding: 20, borderRadius: 24, marginBottom: 20, elevation: 2, shadowColor: "#000", shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.03, shadowRadius: 10 },
+  accountCardLabel: { color: '#3730A3', fontWeight: '800', marginBottom: 15, fontSize: 16 },
+  
+  joinCard: { backgroundColor: "#FFEDD5", padding: 20, borderRadius: 24, marginBottom: 24, elevation: 2, shadowColor: "#000", shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.03, shadowRadius: 10 },
+  joinCardLabel: { color: '#9A3412', fontWeight: '800', marginBottom: 15, fontSize: 16 },
+  
+  input: { backgroundColor: "#FFFFFF", padding: 16, borderRadius: 16, marginBottom: 12, fontSize: 15, fontWeight: "600", color: "#334155", borderWidth: 1, borderColor: "rgba(0,0,0,0.03)" },
+  joinIconBtn: { backgroundColor: '#FDBA74', width: 55, borderRadius: 16, ...flexCenter },
+  
+  // Buttons
+  saveBtn: { ...flexCenter, backgroundColor: "#C7D2FE", padding: 18, borderRadius: 18, marginBottom: 14 },
+  saveBtnText: { fontWeight: "800", color: "#312E81", fontSize: 15 },
+  
+  dangerBtn: { ...flexCenter, backgroundColor: "#FECDD3", padding: 18, borderRadius: 18, marginBottom: 12 },
+  dangerBtnText: { fontWeight: "800", color: "#9F1239", fontSize: 15 },
 });
