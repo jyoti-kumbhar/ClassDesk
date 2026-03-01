@@ -2,7 +2,7 @@ import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Platform, Image, StatusBar, Dimensions } from 'react-native';
 import { Tabs, useRouter } from 'expo-router'; 
 import { Ionicons } from '@expo/vector-icons';
-import Svg, { Circle, Path, Line, Defs, LinearGradient, Stop } from "react-native-svg";
+import Svg, { Circle, Path, Defs, LinearGradient, Stop } from "react-native-svg";
 import { BottomTabBarProps } from '@react-navigation/bottom-tabs';
 
 const { width: W } = Dimensions.get('window');
@@ -91,7 +91,7 @@ const TopBar = () => {
   );
 };
 
-// --- Custom Bottom Nav Adapter (Fixed Types) ---
+// --- Custom Bottom Nav Adapter ---
 function CustomBottomNav({ state, descriptors, navigation }: BottomTabBarProps) {
   return (
     <View style={styles.bottomNav}>
@@ -107,7 +107,6 @@ function CustomBottomNav({ state, descriptors, navigation }: BottomTabBarProps) 
           }
         };
 
-        // Explicitly type the icon name so TypeScript accepts it
         let iconName: keyof typeof Ionicons.glyphMap = "home";
         
         if (route.name === "dashboard") iconName = "home";
@@ -115,7 +114,7 @@ function CustomBottomNav({ state, descriptors, navigation }: BottomTabBarProps) 
         if (route.name === "exam") iconName = "clipboard-outline"; 
         if (route.name === "attendance") iconName = "people-outline";
 
-        const NavItemBlock = (
+        return (
           <TouchableOpacity 
             key={route.key} 
             onPress={onPress} 
@@ -131,22 +130,6 @@ function CustomBottomNav({ state, descriptors, navigation }: BottomTabBarProps) 
             </Text>
           </TouchableOpacity>
         );
-
-        if (index === 1) {
-          return (
-            <React.Fragment key={route.key + "_fragment"}>
-              {NavItemBlock}
-              <View style={styles.fabContainer} key="fab">
-                <TouchableOpacity style={styles.fab}>
-                  <Ionicons name="add" size={30} color="#4461F2" />
-                </TouchableOpacity>
-                <Text style={styles.fabLabel}>Create</Text>
-              </View>
-            </React.Fragment>
-          );
-        }
-
-        return NavItemBlock;
       })}
     </View>
   );
@@ -178,8 +161,6 @@ export default function StudentLayout() {
 // --- Layout Styles ---
 const styles = StyleSheet.create({
   safeArea: { flex: 1, backgroundColor: '#ffffff' },
-  
-  // Top Bar 
   header: { 
     backgroundColor: '#ffffff', 
     borderBottomLeftRadius: 30, 
@@ -202,11 +183,8 @@ const styles = StyleSheet.create({
     justifyContent: "center", alignItems: "center" 
   },
   logoText: { fontSize: 22, fontWeight: '700', marginLeft: 10 },
-  notifBtn: { marginRight: 15, position: 'relative' },
-  badge: { position: 'absolute', top: 0, right: 2, width: 8, height: 8, borderRadius: 4, backgroundColor: '#EF4444', zIndex: 10 },
   avatar: { width: 40, height: 40, borderRadius: 20, borderWidth: 2, borderColor: '#4461F2' }, 
 
-  // --- Bottom Nav Styles ---
   bottomNav: { 
     position: 'absolute', 
     bottom: 0,
@@ -215,8 +193,8 @@ const styles = StyleSheet.create({
     backgroundColor: '#4461F2', 
     flexDirection: 'row', 
     alignItems: 'center', 
-    height: 85,              
-    paddingBottom: 10,        
+    height: 85,               
+    paddingBottom: 10,         
     paddingHorizontal: 8, 
     borderTopLeftRadius: 30,
     borderTopRightRadius: 30,
@@ -226,53 +204,18 @@ const styles = StyleSheet.create({
     shadowRadius: 10,
     elevation: 15,
   }, 
-
   navItem: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
   },
-
   navText: { 
     fontSize: 11, 
     fontWeight: '600', 
     color: '#9CA3AF', 
     marginTop: 4 
   },
-
   navTextActive: { 
     color: '#fff' 
   },
-
-  // --- FAB Styles ---
-  fabContainer: { 
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-
-  fab: { 
-    position: 'absolute', 
-    top: -30, 
-    width: 60, 
-    height: 60, 
-    backgroundColor: '#fff', 
-    borderRadius: 30, 
-    borderWidth: 4, 
-    borderColor: '#4461F2',
-    alignItems: 'center',
-    justifyContent: 'center',
-    shadowColor: "#000", 
-    shadowOffset: { width: 0, height: 4 }, 
-    shadowOpacity: 0.2, 
-    shadowRadius: 5, 
-    elevation: 8 
-  },
-
-  fabLabel: { 
-    fontSize: 11, 
-    fontWeight: '700', 
-    color: '#fff', 
-    marginTop: 34
-  }
 });

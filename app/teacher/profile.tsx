@@ -54,6 +54,7 @@ export default function AdminProfile() {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [username, setUsername] = useState("");
+  const [password, setPassword] = useState(""); // 1. Added password state
   
   // Join Class State
   const [classCodeInput, setClassCodeInput] = useState("");
@@ -67,9 +68,9 @@ export default function AdminProfile() {
           const userDoc = await getDoc(doc(db, "users", user.uid));
           if (userDoc.exists()) {
             const data = userDoc.data();
-            setName(data.name || "Admin User");
+            setName(data.name || ""); // 2. Placeholder fix: setting to empty if null so placeholder shows
             setEmail(user.email || "");
-            setUsername(data.username || "admin_user");
+            setUsername(data.username || ""); // 2. Placeholder fix
           }
         }
       } catch (error) {
@@ -142,9 +143,35 @@ export default function AdminProfile() {
         {/* User Info Card */}
         <View style={styles.card}>
           <Text style={styles.cardLabel}>Account Details</Text>
-          <TextInput style={styles.input} value={name} onChangeText={setName} placeholder="Full Name" />
-          <TextInput style={styles.input} value={username} onChangeText={setUsername} placeholder="Username" />
-          <TextInput style={styles.input} value={email} editable={false} placeholder="Email" />
+          <TextInput 
+            style={styles.input} 
+            value={name} 
+            onChangeText={setName} 
+            placeholder="Full Name" 
+            placeholderTextColor="#9CA3AF" 
+          />
+          <TextInput 
+            style={styles.input} 
+            value={username} 
+            onChangeText={setUsername} 
+            placeholder="Username" 
+            placeholderTextColor="#9CA3AF" 
+          />
+          <TextInput 
+            style={styles.input} 
+            value={email} 
+            editable={false} 
+            placeholder="Email" 
+            placeholderTextColor="#9CA3AF" 
+          />
+          <TextInput 
+            style={styles.input} 
+            value={password} 
+            onChangeText={setPassword} 
+            placeholder="New Password" 
+            secureTextEntry={true} 
+            placeholderTextColor="#9CA3AF" 
+          />
         </View>
 
         {/* Join Class Field */}
@@ -154,6 +181,7 @@ export default function AdminProfile() {
             <TextInput 
               style={[styles.input, { flex: 1, marginBottom: 0 }]} 
               placeholder="Enter Class Code" 
+              placeholderTextColor="#2D3142"
               value={classCodeInput}
               onChangeText={setClassCodeInput}
               autoCapitalize="characters"

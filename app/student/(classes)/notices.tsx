@@ -5,7 +5,7 @@ import Svg, { Circle, Path } from 'react-native-svg';
 import { useLocalSearchParams } from 'expo-router';
 
 // --- Firebase Imports ---
-import { collection, query, where, orderBy, onSnapshot } from 'firebase/firestore';
+import { collection, query, where, onSnapshot } from 'firebase/firestore';
 import { db } from '../../../firebase/firebaseConfig'; 
 
 // --- Background Graphics ---

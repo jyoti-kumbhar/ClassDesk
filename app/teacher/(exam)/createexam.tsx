@@ -15,13 +15,13 @@ import {
     TextInput,
     TouchableOpacity,
     View,
-    Dimensions
+    // Dimensions
 } from 'react-native';
 import Svg, { Circle, Line, Path } from "react-native-svg";
 import { db } from '../../../firebase/firebaseConfig';
 import { ExamDatabase } from '../../services/examDatabase';
 
-const { width } = Dimensions.get('window');
+// const { width } = Dimensions.get('window');
 
 // --- Helper: Default Empty Question Structure ---
 const DEFAULT_QUESTION = () => ({
@@ -151,7 +151,6 @@ export default function CreateExamScreen() {
     return (
         <View style={styles.mainContainer}>
             <BackgroundDecorations />
-            {/* Added offset and proper behavior for better keyboard handling */}
             <KeyboardAvoidingView 
                 style={styles.keyboardContainer} 
                 behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
@@ -167,7 +166,6 @@ export default function CreateExamScreen() {
                     </View>
                 </View>
 
-                {/* Added keyboardShouldPersistTaps to allow clicking inputs while keyboard is up */}
                 <ScrollView 
                     style={styles.scrollArea} 
                     contentContainerStyle={styles.contentContainer} 
@@ -242,6 +240,7 @@ export default function CreateExamScreen() {
                                         value={String(q.marks)} 
                                         onChangeText={(t) => updateQuestion(qIndex, 'marks', t)} 
                                         keyboardType="numeric" 
+                                        placeholder="1"
                                     />
                                 </View>
                             </View>
@@ -290,7 +289,7 @@ export default function CreateExamScreen() {
 }
 
 const styles = StyleSheet.create({
-    mainContainer: { flex: 1, backgroundColor: '#FFF9F0' }, // Updated to match pastel theme
+    mainContainer: { flex: 1, backgroundColor: '#FFF9F0' }, 
     keyboardContainer: { flex: 1 },
     header: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 20, paddingTop: 50, paddingBottom: 20 },
     backButton: { marginRight: 16 },
@@ -298,7 +297,7 @@ const styles = StyleSheet.create({
     headerTitle: { fontSize: 24, fontWeight: '800', color: '#111827' },
     headerSubtitle: { fontSize: 13, color: '#6B7280' },
     scrollArea: { flex: 1 },
-    contentContainer: { padding: 20, paddingBottom: 100, gap: 20 }, // Increased paddingBottom for bottomBar clearance
+    contentContainer: { padding: 20, paddingBottom: 100, gap: 20 }, 
     card: { backgroundColor: '#FFF', borderRadius: 20, padding: 20, borderWidth: 1, borderColor: '#F3F4F6', elevation: 1 },
     inputLabel: { fontSize: 10, fontWeight: '800', color: '#9CA3AF', marginBottom: 8, letterSpacing: 1 },
     textInput: { 
@@ -315,7 +314,7 @@ const styles = StyleSheet.create({
     dropdownText: { fontSize: 16, fontWeight: '600', color: '#111827' },
     row: { flexDirection: 'row' },
     questionTextArea: { 
-        height: 100, // Increased height
+        height: 100, 
         paddingTop: 14, 
         marginBottom: 15, 
         textAlignVertical: 'top' 
@@ -329,7 +328,7 @@ const styles = StyleSheet.create({
     optionLabelText: { fontSize: 14, fontWeight: '800', color: '#6B7280' },
     optionInput: { 
         flex: 1, 
-        height: 44, // Increased height
+        height: 44, 
         borderBottomWidth: 1, 
         borderBottomColor: '#E5E7EB', 
         fontSize: 14, 
@@ -337,9 +336,20 @@ const styles = StyleSheet.create({
         color: '#111827'
     },
     questionFooter: { marginTop: 15, paddingTop: 10, borderTopWidth: 1, borderTopColor: '#F3F4F6' },
-    marksContainer: { flexDirection: 'row', alignItems: 'center' },
-    marksLabel: { fontSize: 10, fontWeight: '800', color: '#9CA3AF', marginRight: 10 },
-    marksInput: { width: 50, height: 36, backgroundColor: '#F3F4F6', borderRadius: 8, textAlign: 'center', fontWeight: '700' },
+    marksContainer: { flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-start' },
+    marksLabel: { fontSize: 10, fontWeight: '800', color: '#9CA3AF', marginRight: 8 },
+    marksInput: { 
+        width: 100, // Increased width to fit content properly
+        height: 50, // Increased height for better tap target
+        backgroundColor: '#F3F4F6', 
+        borderRadius: 10, 
+        textAlign: 'center', 
+        fontWeight: '700',
+        fontSize: 15,
+        color: '#111827',
+        borderWidth: 1,
+        borderColor: '#E5E7EB'
+    },
     addQuestionBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: '#D1D5DB', borderStyle: 'dashed', borderRadius: 15, padding: 15, backgroundColor: '#FFF' },
     addQuestionText: { color: '#6B7280', fontSize: 15, fontWeight: '600', marginLeft: 8 },
     bottomBar: { 
@@ -349,7 +359,7 @@ const styles = StyleSheet.create({
         backgroundColor: '#FFF', 
         borderTopWidth: 1, 
         borderTopColor: '#F3F4F6',
-        paddingBottom: Platform.OS === 'ios' ? 40 : 20 // Safer padding for iOS
+        paddingBottom: Platform.OS === 'ios' ? 40 : 20 
     },
     draftButton: { flex: 1, height: 50, borderRadius: 12, backgroundColor: '#F3F4F6', justifyContent: 'center', alignItems: 'center' },
     draftButtonText: { fontWeight: '700' },

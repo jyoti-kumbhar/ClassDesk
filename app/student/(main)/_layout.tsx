@@ -1,7 +1,7 @@
-import React from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Platform, Image, StatusBar, Dimensions } from 'react-native';
-import { Tabs, useRouter, usePathname } from 'expo-router'; 
 import { Ionicons } from '@expo/vector-icons';
+import { Tabs, usePathname, useRouter } from 'expo-router';
+import React from 'react';
+import { Dimensions, Image, Platform, StatusBar, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import Svg, { Circle, Path } from "react-native-svg";
 
 const { width: W } = Dimensions.get('window');
@@ -131,7 +131,7 @@ export default function StudentLayout() {
 const styles = StyleSheet.create({
   safeArea: { flex: 1, backgroundColor: '#ffffff' },
   header: { 
-    backgroundColor: '#FFF9F0',
+    backgroundColor: '#ffffff',
     borderBottomLeftRadius: 30, 
     borderBottomRightRadius: 30,
     zIndex: 10,

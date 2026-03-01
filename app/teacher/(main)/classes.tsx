@@ -5,7 +5,6 @@ import {
   TouchableOpacity, 
   StyleSheet, 
   ScrollView, 
-  // Dimensions,
   Modal,
   TextInput,
   ActivityIndicator,
@@ -22,15 +21,14 @@ import {
   collection, 
   addDoc, 
   updateDoc, 
-  deleteDoc,
   doc, 
   getDocs, 
   query, 
-  orderBy 
+  orderBy,
+  where,
+  writeBatch
 } from 'firebase/firestore';
 import { db } from '../../../firebase/firebaseConfig'; 
-
-// const { width } = Dimensions.get('window');
 
 // --- Helper: Random UI Styles ---
 const getRandomStyle = () => {
@@ -101,10 +99,10 @@ export default function ClassesScreen() {
     }
   };
 
-  const handleDelete = (id: string, className: string) => {
+  const handleDelete = (id: string, className: string, classCode: string) => {
     Alert.alert(
       "Delete Class",
-      `Are you sure you want to delete "${className}"?`,
+      `Are you sure you want to delete "${className}"? This will remove it from all students' dashboards.`,
       [
         { text: "Cancel", style: "cancel" },
         { 
@@ -113,9 +111,28 @@ export default function ClassesScreen() {
           onPress: async () => {
             try {
               setLoading(true);
-              await deleteDoc(doc(db, 'classes', id));
+              const batch = writeBatch(db);
+
+              // 1. Delete the class document
+              const classRef = doc(db, 'classes', id);
+              batch.delete(classRef);
+
+              // 2. Remove classCode from all users in 'users' collection
+              const usersRef = collection(db, 'users');
+              const q = query(usersRef, where('classes', 'array-contains', classCode));
+              const userDocs = await getDocs(q);
+
+              userDocs.forEach((userDoc) => {
+                const userData = userDoc.data();
+                const updatedClasses = (userData.classes || []).filter((c: string) => c !== classCode);
+                batch.update(doc(db, 'users', userDoc.id), { classes: updatedClasses });
+              });
+
+              await batch.commit();
               fetchClasses();
-            } catch {
+              Alert.alert("Deleted", "Class and user enrollments updated.");
+            } catch (error) {
+              console.error(error);
               Alert.alert("Error", "Could not delete class.");
             } finally {
               setLoading(false);
@@ -165,23 +182,19 @@ export default function ClassesScreen() {
         teacher,
         classCode: classCode.toUpperCase().trim(), 
         tags: tagArray,
-        notices: [],
-        assignments: [],
-        resources: []
       };
 
       if (isEditing && currentId) {
         const classRef = doc(db, 'classes', currentId);
         await updateDoc(classRef, {
-            grade: classData.grade,
-            subject: classData.subject,
-            teacher: classData.teacher,
-            classCode: classData.classCode,
-            tags: classData.tags
+            ...classData
         });
       } else {
         await addDoc(collection(db, 'classes'), {
           ...classData,
+          notices: [],
+          assignments: [],
+          resources: [],
           icon: style.icon,
           iconColor: style.color,
           iconBg: style.bg,
@@ -249,7 +262,7 @@ export default function ClassesScreen() {
                     </View>
                     <TouchableOpacity 
                       style={styles.deleteIconButton} 
-                      onPress={() => handleDelete(item.id, item.grade)}
+                      onPress={() => handleDelete(item.id, item.grade, item.classCode)}
                     >
                       <Ionicons name="trash-outline" size={20} color="#EF4444" />
                     </TouchableOpacity>

@@ -36,8 +36,8 @@ const getExamStyles = (status: string, subject: string) => {
     styles.action = 'DELETE'; styles.actionColor = '#EF4444';
   } else if (status === 'COMPLETED') {
     styles.bg = '#DCFCE7'; styles.color = '#166534';
-    styles.icon = 'checkmark-done-circle' as keyof typeof Ionicons.glyphMap; 
-    styles.action = 'ENDED'; styles.actionColor = '#166534';
+    styles.icon = 'trash-outline' as keyof typeof Ionicons.glyphMap; // Changed to trash for delete option
+    styles.action = 'DELETE'; styles.actionColor = '#EF4444'; // Action changed to Delete
   }
 
   const normalizedSubject = subject?.toLowerCase() || '';
@@ -47,19 +47,15 @@ const getExamStyles = (status: string, subject: string) => {
   return styles;
 };
 
-// --- Updated Background Component ---
+// ... BackgroundDecorations remains unchanged ...
 const BackgroundDecorations = () => (
   <View style={StyleSheet.absoluteFill} pointerEvents="none">
-    
-    {/* Top Right Large Soft Glow (Purple) */}
     <View style={{ position: "absolute", top: 30, right: -40 }}>
       <Svg height="200" width="200" viewBox="0 0 200 200">
         <Circle cx="100" cy="100" r="80" fill="#F3E8FF" opacity={0.6} />
         <Circle cx="100" cy="100" r="50" fill="#E9D5FF" opacity={0.4} />
       </Svg>
     </View>
-
-    {/* Top Left - Dashed Connection Line */}
     <View style={{ position: "absolute", top: 60, left: 20 }}>
        <Svg height="100" width="120" viewBox="0 0 120 100">
           <Line x1="10" y1="0" x2="10" y2="60" stroke="#BAE6FD" strokeWidth="2" strokeDasharray="5, 5" />
@@ -67,48 +63,25 @@ const BackgroundDecorations = () => (
           <Circle cx="80" cy="90" r="4" fill="#60A5FA" opacity={0.6} />
        </Svg>
     </View>
-
-    {/* Middle - The "Data Wave" */}
     <View style={{ position: "absolute", top: 220, width: width, alignItems: 'center', opacity: 0.4 }}>
        <Svg height="150" width={width} viewBox={`0 0 ${width} 150`}>
-          <Path 
-            d={`M -20 75 C ${width * 0.3} 120, ${width * 0.7} 30, ${width + 20} 75`} 
-            stroke="#99F6E4" 
-            strokeWidth="3" 
-            fill="none" 
-          />
-          <Path 
-            d={`M -20 90 C ${width * 0.3} 135, ${width * 0.7} 45, ${width + 20} 90`} 
-            stroke="#CCFBF1" 
-            strokeWidth="2" 
-            fill="none" 
-            strokeDasharray="10, 10"
-          />
+          <Path d={`M -20 75 C ${width * 0.3} 120, ${width * 0.7} 30, ${width + 20} 75`} stroke="#99F6E4" strokeWidth="3" fill="none" />
+          <Path d={`M -20 90 C ${width * 0.3} 135, ${width * 0.7} 45, ${width + 20} 90`} stroke="#CCFBF1" strokeWidth="2" fill="none" strokeDasharray="10, 10" />
           <Circle cx={width * 0.2} cy="85" r="3" fill="#34D399" />
           <Circle cx={width * 0.8} cy="65" r="5" stroke="#34D399" strokeWidth="2" fill="#FFF" />
        </Svg>
     </View>
-
-    {/* Middle Right - Dot Grid Matrix */}
     <View style={{ position: "absolute", top: 380, right: 10, opacity: 0.3 }}>
        <Svg height="80" width="60">
-             {[0, 15, 30].map((x) => 
-               [0, 15, 30, 45].map((y) => (
-                 <Circle key={`${x}-${y}`} cx={x + 5} cy={y + 5} r="1.5" fill="#FDBA74" />
-               ))
-             )}
+             {[0, 15, 30].map((x) => [0, 15, 30, 45].map((y) => (<Circle key={`${x}-${y}`} cx={x + 5} cy={y + 5} r="1.5" fill="#FDBA74" />)))}
        </Svg>
     </View>
-
-    {/* Bottom Left - Geometric Stack */}
     <View style={{ position: "absolute", bottom: 100, left: -20 }}>
        <Svg height="120" width="120" viewBox="0 0 100 100">
              <Line x1="0" y1="50" x2="100" y2="50" stroke="#FDE68A" strokeWidth="40" opacity={0.3} transform="rotate(-45 50 50)" />
              <Line x1="20" y1="50" x2="80" y2="50" stroke="#F59E0B" strokeWidth="2" transform="rotate(-45 50 50)" />
        </Svg>
     </View>
-
-    {/* Bottom Right - Abstract Playground */}
     <View style={{ position: "absolute", bottom: 40, right: -20, opacity: 0.9 }}>
       <Svg height="220" width="220" viewBox="0 0 200 200">
         <Circle cx="200" cy="200" r="150" fill="#fdf0fd" />
@@ -158,11 +131,15 @@ export default function AdminExamsScreen() {
   };
 
   const handleDelete = (id: string) => {
-    Alert.alert("Delete Draft", "Are you sure? This cannot be undone.", [
+    Alert.alert("Delete Exam", "Are you sure? This will remove the exam permanently.", [
       { text: "Cancel", style: 'cancel' },
       { text: "Delete", style: 'destructive', onPress: async () => {
-          await ExamDatabase.deleteExam(id);
-          loadExams();
+          try {
+            await ExamDatabase.deleteExam(id);
+            loadExams();
+          } catch{
+            Alert.alert("Error", "Could not delete exam.");
+          }
       }}
     ]);
   };
@@ -189,7 +166,13 @@ export default function AdminExamsScreen() {
 
         <View style={styles.searchContainer}>
           <Ionicons name="search" size={20} color="#9CA3AF" />
-          <TextInput style={styles.searchInput} placeholder="Search..." value={searchQuery} onChangeText={setSearchQuery} />
+          <TextInput 
+            style={styles.searchInput} 
+            placeholder="Search by title..." 
+            placeholderTextColor="#9CA3AF" // Fix: Made placeholder visible
+            value={searchQuery} 
+            onChangeText={setSearchQuery} 
+          />
         </View>
 
         <View style={styles.tabsContainer}>
@@ -206,14 +189,14 @@ export default function AdminExamsScreen() {
               const ui = getExamStyles(exam.status, exam.subject);
               const isPublished = exam.status === 'PUBLISHED' || exam.status === 'ONGOING';
               const isDraft = exam.status === 'DRAFT';
+              const isCompleted = exam.status === 'COMPLETED';
 
               return (
                 <View key={exam.id} style={styles.card}>
                   <Text style={styles.examTitle}>{exam.title}</Text>
                   
                   <View style={styles.actionsRow}>
-                    {/* Requirement 1: Hide Edit for Published */}
-                    {!isPublished && exam.status !== 'COMPLETED' && (
+                    {!isPublished && !isCompleted && (
                       <TouchableOpacity style={styles.actionBtnPrimary} onPress={() => router.push({ pathname: '/teacher/(exam)/editexam', params: { examId: exam.id } })}>
                         <Ionicons name="pencil" size={14} color="#4B5563" />
                         <Text style={styles.actionBtnText}>EDIT</Text>
@@ -225,11 +208,9 @@ export default function AdminExamsScreen() {
                       <Text style={styles.actionBtnText}>MARKS</Text>
                     </TouchableOpacity>
 
-                    {/* Requirement 2 & 3: End or Delete */}
                     <TouchableOpacity 
                       style={[styles.actionBtnDanger, { borderColor: ui.actionColor + '40' }]}
-                      disabled={exam.status === 'COMPLETED'}
-                      onPress={() => isDraft ? handleDelete(exam.id) : isPublished ? handleEndExam(exam.id) : null}
+                      onPress={() => (isDraft || isCompleted) ? handleDelete(exam.id) : isPublished ? handleEndExam(exam.id) : null}
                     >
                       <Ionicons name={ui.icon} size={14} color={ui.actionColor} />
                       <Text style={[styles.actionBtnTextDanger, { color: ui.actionColor }]}>{ui.action}</Text>
@@ -252,15 +233,25 @@ const styles = StyleSheet.create({
   pageTitle: { fontSize: 28, fontWeight: '800', color: '#111827' },
   createButton: { backgroundColor: '#4461F2', flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingVertical: 14, borderRadius: 16, marginBottom: 24 },
   createButtonText: { color: '#FFF', fontSize: 16, fontWeight: '600', marginLeft: 6 },
-  searchContainer: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#FFF', borderRadius: 16, paddingHorizontal: 16, height: 50, marginBottom: 20 },
-  searchInput: { flex: 1, marginLeft: 10 },
+  searchContainer: { 
+    flexDirection: 'row', 
+    alignItems: 'center', 
+    backgroundColor: '#FFF', 
+    borderRadius: 16, 
+    paddingHorizontal: 16, 
+    height: 50, 
+    marginBottom: 20,
+    borderWidth: 1, // Fix: Added border
+    borderColor: '#E5E7EB' // Fix: Light gray border color
+  },
+  searchInput: { flex: 1, marginLeft: 10, color: '#111827' },
   tabsContainer: { flexDirection: 'row', marginBottom: 24, gap: 10 },
-  tabButton: { paddingVertical: 10, paddingHorizontal: 16, borderRadius: 20, backgroundColor: '#FFF' },
+  tabButton: { paddingVertical: 10, paddingHorizontal: 16, borderRadius: 20, backgroundColor: '#F3F4F6' },
   tabButtonActive: { backgroundColor: '#4461F2' },
   tabText: { fontSize: 13, fontWeight: '600', color: '#4B5563' },
   tabTextActive: { color: '#FFF' },
   listContainer: { gap: 16 },
-  card: { backgroundColor: '#FFF', borderRadius: 24, padding: 20, elevation: 2 },
+  card: { backgroundColor: '#FFF', borderRadius: 24, padding: 20, elevation: 2, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 10 },
   examTitle: { fontSize: 19, fontWeight: '700', color: '#111827', marginBottom: 18 },
   actionsRow: { flexDirection: 'row', gap: 10 },
   actionBtnPrimary: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingVertical: 12, borderRadius: 12, backgroundColor: '#F9FAFB', borderWidth: 1, borderColor: '#F3F4F6' },

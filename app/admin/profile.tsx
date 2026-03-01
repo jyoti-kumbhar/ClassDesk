@@ -1,16 +1,15 @@
 import React, { useState, useEffect } from "react";
-import { SafeAreaView, View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, Image, StatusBar, ActivityIndicator } from "react-native";
+import { SafeAreaView, View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, Image, StatusBar, Alert, ActivityIndicator } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import Svg, { Circle, Path, G } from "react-native-svg";
 
 // --- Firebase Imports ---
 import { auth, db } from "../../firebase/firebaseConfig"; 
-import { doc, getDoc } from "firebase/firestore";
+import { doc, getDoc, updateDoc, arrayUnion, collection, query, where, getDocs } from "firebase/firestore";
 
 // Static Descent/Professional Avatar URL
 const STATIC_PROFILE_IMAGE = "https://cdn-icons-png.flaticon.com/512/3135/3135715.png";
-
 const BackgroundDecorations = () => (
   <View style={StyleSheet.absoluteFill} pointerEvents="none">
     <Svg height="100%" width="100%" viewBox="0 0 400 800" preserveAspectRatio="xMidYMid slice">
@@ -54,6 +53,10 @@ export default function AdminProfile() {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [username, setUsername] = useState("");
+  
+  // Join Class State
+  const [classCodeInput, setClassCodeInput] = useState("");
+  const [isJoining, setIsJoining] = useState(false);
 
   useEffect(() => {
     const fetchUserData = async () => {
@@ -76,6 +79,35 @@ export default function AdminProfile() {
     };
     fetchUserData();
   }, []);
+
+  const handleJoinClass = async () => {
+    if (!classCodeInput) return Alert.alert("Error", "Please enter a class code");
+    
+    setIsJoining(true);
+    try {
+      const q = query(collection(db, "classes"), where("classCode", "==", classCodeInput.toUpperCase().trim()));
+      const querySnapshot = await getDocs(q);
+
+      if (querySnapshot.empty) {
+        Alert.alert("Invalid Code", "No class found with this code.");
+      } else {
+        const classDoc = querySnapshot.docs[0];
+        const user = auth.currentUser;
+        
+        if (user) {
+          await updateDoc(doc(db, "users", user.uid), {
+            joinedClasses: arrayUnion(classDoc.id)
+          });
+          Alert.alert("Success!", `You have joined ${classDoc.data().subject}`);
+          setClassCodeInput("");
+        }
+      }
+    } catch  {
+      Alert.alert("Error", "Something went wrong while joining the class.");
+    } finally {
+      setIsJoining(false);
+    }
+  };
 
   if (loading) return <View style={[styles.container, flexCenter]}><ActivityIndicator size="large" color="#4461F2" /></View>;
 
@@ -114,9 +146,28 @@ export default function AdminProfile() {
           <TextInput style={styles.input} value={email} editable={false} placeholder="Email" />
         </View>
 
-        <TouchableOpacity style={styles.saveBtn}>
-          <Text style={styles.btnText}>Save Profile Changes</Text>
-        </TouchableOpacity>
+        {/* Join Class Field */}
+        <View style={[styles.card, { backgroundColor: '#F4AE63' }]}>
+          <Text style={[styles.cardLabel, { color: '#2D3142' }]}>Join a New Class</Text>
+          <View style={{ flexDirection: 'row', gap: 10 }}>
+            <TextInput 
+              style={[styles.input, { flex: 1, marginBottom: 0 }]} 
+              placeholder="Enter Class Code" 
+              value={classCodeInput}
+              onChangeText={setClassCodeInput}
+              autoCapitalize="characters"
+            />
+            <TouchableOpacity 
+              onPress={handleJoinClass}
+              style={styles.joinIconBtn}
+              disabled={isJoining}
+            >
+              {isJoining ? <ActivityIndicator color="#FFF" /> : <Ionicons name="add" size={28} color="#FFF" />}
+            </TouchableOpacity>
+          </View>
+        </View>
+
+        <TouchableOpacity style={styles.saveBtn}><Text style={styles.btnText}>Save Profile Changes</Text></TouchableOpacity>
         
         <TouchableOpacity style={styles.dangerBtn} onPress={() => auth.signOut().then(() => router.replace("/login"))}>
           <Text style={styles.btnText}>Logout</Text>
@@ -138,6 +189,7 @@ const styles = StyleSheet.create({
   card: { backgroundColor: "#5C73D1", padding: 20, borderRadius: 20, marginBottom: 20, elevation: 4, shadowColor: "#2D3142", shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.05, shadowRadius: 15 },
   cardLabel: { color: 'white', fontWeight: '800', marginBottom: 15, fontSize: 16 },
   input: { backgroundColor: "#F4F0EA", padding: 16, borderRadius: 14, marginBottom: 12, fontSize: 15, fontWeight: "500", color: "#2D3142" },
+  joinIconBtn: { backgroundColor: '#2D3142', width: 55, borderRadius: 14, ...flexCenter },
   saveBtn: { ...flexCenter, backgroundColor: "#5C73D1", padding: 18, borderRadius: 14, marginBottom: 12 },
   dangerBtn: { ...flexCenter, backgroundColor: "#E25865", padding: 18, borderRadius: 14, marginBottom: 12 },
   btnText: { fontWeight: "800", color: "#FFF", fontSize: 15 },

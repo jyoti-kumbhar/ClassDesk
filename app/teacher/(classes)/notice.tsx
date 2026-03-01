@@ -12,12 +12,11 @@ import {
   ActivityIndicator,
   KeyboardAvoidingView,
   Platform,
-  Dimensions // Added Dimensions
+  Dimensions
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import Svg, { Circle, Line, Path } from "react-native-svg"; // Added Line and Path
+import Svg, { Circle, Line, Path } from "react-native-svg";
 import { useLocalSearchParams, router } from 'expo-router'; 
-import DateTimePicker from '@react-native-community/datetimepicker'; 
 
 // Firebase Imports
 import { 
@@ -39,16 +38,12 @@ const { width } = Dimensions.get('window');
 
 const BackgroundDecorations = () => (
   <View style={StyleSheet.absoluteFill} pointerEvents="none">
-    
-    {/* Existing Top Right Large Soft Glow (Purple) */}
     <View style={{ position: "absolute", top: 30, right: -40 }}>
       <Svg height="200" width="200" viewBox="0 0 200 200">
         <Circle cx="100" cy="100" r="80" fill="#F3E8FF" opacity={0.6} />
         <Circle cx="100" cy="100" r="50" fill="#E9D5FF" opacity={0.4} />
       </Svg>
     </View>
-
-    {/* Top Left - Dashed Connection Line */}
     <View style={{ position: "absolute", top: 60, left: 20 }}>
        <Svg height="100" width="120" viewBox="0 0 120 100">
           <Line x1="10" y1="0" x2="10" y2="60" stroke="#BAE6FD" strokeWidth="2" strokeDasharray="5, 5" />
@@ -56,48 +51,25 @@ const BackgroundDecorations = () => (
           <Circle cx="80" cy="90" r="4" fill="#60A5FA" opacity={0.6} />
        </Svg>
     </View>
-
-    {/* Middle - The "Data Wave" */}
     <View style={{ position: "absolute", top: 220, width: width, alignItems: 'center', opacity: 0.4 }}>
        <Svg height="150" width={width} viewBox={`0 0 ${width} 150`}>
-          <Path 
-            d={`M -20 75 C ${width * 0.3} 120, ${width * 0.7} 30, ${width + 20} 75`} 
-            stroke="#99F6E4" 
-            strokeWidth="3" 
-            fill="none" 
-          />
-          <Path 
-            d={`M -20 90 C ${width * 0.3} 135, ${width * 0.7} 45, ${width + 20} 90`} 
-            stroke="#CCFBF1" 
-            strokeWidth="2" 
-            fill="none" 
-            strokeDasharray="10, 10"
-          />
+          <Path d={`M -20 75 C ${width * 0.3} 120, ${width * 0.7} 30, ${width + 20} 75`} stroke="#99F6E4" strokeWidth="3" fill="none" />
+          <Path d={`M -20 90 C ${width * 0.3} 135, ${width * 0.7} 45, ${width + 20} 90`} stroke="#CCFBF1" strokeWidth="2" fill="none" strokeDasharray="10, 10" />
           <Circle cx={width * 0.2} cy="85" r="3" fill="#34D399" />
           <Circle cx={width * 0.8} cy="65" r="5" stroke="#34D399" strokeWidth="2" fill="#FFF" />
        </Svg>
     </View>
-
-    {/* Middle Right - Dot Grid Matrix */}
     <View style={{ position: "absolute", top: 380, right: 10, opacity: 0.3 }}>
        <Svg height="80" width="60">
-             {[0, 15, 30].map((x) => 
-               [0, 15, 30, 45].map((y) => (
-                 <Circle key={`${x}-${y}`} cx={x + 5} cy={y + 5} r="1.5" fill="#FDBA74" />
-               ))
-             )}
+             {[0, 15, 30].map((x) => [0, 15, 30, 45].map((y) => (<Circle key={`${x}-${y}`} cx={x + 5} cy={y + 5} r="1.5" fill="#FDBA74" />)))}
        </Svg>
     </View>
-
-    {/* Bottom Left - Geometric Stack */}
     <View style={{ position: "absolute", bottom: 100, left: -20 }}>
        <Svg height="120" width="120" viewBox="0 0 100 100">
              <Line x1="0" y1="50" x2="100" y2="50" stroke="#FDE68A" strokeWidth="40" opacity={0.3} transform="rotate(-45 50 50)" />
              <Line x1="20" y1="50" x2="80" y2="50" stroke="#F59E0B" strokeWidth="2" transform="rotate(-45 50 50)" />
        </Svg>
     </View>
-
-    {/* Bottom Right - Abstract Playground */}
     <View style={{ position: "absolute", bottom: 40, right: -20, opacity: 0.9 }}>
       <Svg height="220" width="220" viewBox="0 0 200 200">
         <Circle cx="200" cy="200" r="150" fill="#fdf0fd" />
@@ -112,32 +84,27 @@ const BackgroundDecorations = () => (
 
 export default function ClassNoticesScreen() {
   const params = useLocalSearchParams();
-  // Safe fallback to prevent undefined error
   const currentClassId = (params.id as string) || ""; 
   const currentClassName = (params.grade as string) || 'Classroom'; 
   const currentSubject = (params.subject as string) || 'General';
 
-  // UI State
   const [showDropdown, setShowDropdown] = useState(false);
   const [activeForm, setActiveForm] = useState<'notice' | 'assignment' | 'resource' | null>(null);
   const [loading, setLoading] = useState(false);
   
-  // Data State
   const [notices, setNotices] = useState<any[]>([]);
   const [dbClassCode, setDbClassCode] = useState("Loading...");
+  const [availableSections, setAvailableSections] = useState<string[]>([]); // New state for sections
 
-  // Form Input State
   const [editingId, setEditingId] = useState<string | null>(null);
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [link, setLink] = useState(""); 
   const [formSubject, setFormSubject] = useState("");
+  const [selectedSection, setSelectedSection] = useState(""); // New state for form
   const [totalMarks, setTotalMarks] = useState("100");
-  const [deadline, setDeadline] = useState(new Date());
-  const [showDatePicker, setShowDatePicker] = useState(false);
   const [viewNotice, setViewNotice] = useState<any | null>(null);
 
-  // 1. Fetch Class Code from DB specifically
   useEffect(() => {
     const fetchClassDetails = async () => {
       if (!currentClassId) return;
@@ -145,7 +112,10 @@ export default function ClassNoticesScreen() {
         const classRef = doc(db, 'classes', currentClassId);
         const classSnap = await getDoc(classRef);
         if (classSnap.exists()) {
-          setDbClassCode(classSnap.data().classCode || "N/A");
+          const data = classSnap.data();
+          setDbClassCode(data.classCode || "N/A");
+          // Assuming sections are stored as an array or we can use the main section
+          setAvailableSections(data.sections || [data.section] || ["A"]); 
         }
       } catch (error) {
         console.error("Error fetching class code:", error);
@@ -154,7 +124,6 @@ export default function ClassNoticesScreen() {
     fetchClassDetails();
   }, [currentClassId]);
 
-  // 4. Fetch only notices belonging to this class
   useEffect(() => {
     if (!currentClassId) return;
 
@@ -185,31 +154,29 @@ export default function ClassNoticesScreen() {
       setEditingId(item.id);
       setTitle(item.title);
       setFormSubject(item.subject || currentSubject);
+      setSelectedSection(item.section || "");
       setDescription(item.description);
       setLink(item.link || "");
       setTotalMarks(item.total ? String(item.total) : "100");
-      setDeadline(item.deadline ? new Date(item.deadline.seconds * 1000) : new Date());
     } else {
       setEditingId(null);
       setTitle("");
       setFormSubject(currentSubject);
+      setSelectedSection(availableSections[0] || "");
       setDescription("");
       setLink("");
       setTotalMarks("100");
-      setDeadline(new Date());
     }
   };
 
-  // 3. Save notice, assignment, resource with class name and code
   const handleSave = async (status: 'published' | 'draft') => {
-    // FIX: Ensure classId is not undefined before calling Firebase
     if (!currentClassId) {
       Alert.alert("Error", "Class identification lost. Please reload the screen.");
       return;
     }
 
-    if (!title) {
-      Alert.alert("Missing Fields", "Please add a title.");
+    if (!title || !selectedSection) {
+      Alert.alert("Missing Fields", "Please add a title and select a section.");
       return;
     }
 
@@ -220,13 +187,13 @@ export default function ClassNoticesScreen() {
         className: currentClassName, 
         classCode: dbClassCode,       
         subject: formSubject || currentSubject, 
+        section: selectedSection, // Added section to DB update
         title: title || "",
         description: description || "",
         type: activeForm || "notice", 
         status: status, 
         link: link || null, 
         total: activeForm === 'assignment' ? totalMarks : null,
-        deadline: activeForm === 'assignment' ? deadline : null,
         updatedAt: serverTimestamp(),
       };
 
@@ -254,11 +221,6 @@ export default function ClassNoticesScreen() {
       { text: "Cancel", style: "cancel" },
       { text: "Delete", style: "destructive", onPress: async () => await deleteDoc(doc(db, "notices", id)) }
     ]);
-  };
-
-  const onDateChange = (event: any, selectedDate?: Date) => {
-    setShowDatePicker(Platform.OS === 'ios');
-    if (selectedDate) setDeadline(selectedDate);
   };
 
   const getTypeIcon = (type: string) => {
@@ -302,23 +264,21 @@ export default function ClassNoticesScreen() {
           </View>
         )}
 
-        {/* --- NEW BUTTON: View & Grade Assignments --- */}
         <TouchableOpacity 
           style={[styles.createButton, { backgroundColor: '#10B981', marginTop: -10, marginBottom: 24 }]} 
           onPress={() => router.push({ 
-            pathname: '/teacher/(classes)/assignments', 
-            params: { 
-              className: currentClassName, 
-              id: currentClassId 
-            } 
-          })}
+  pathname: '/teacher/(classes)/assignments', 
+  params: { 
+    className: currentClassName, 
+    id: currentClassId  // This is the important one!
+  } 
+})}
         >
           <View style={styles.createButtonInner}>
             <Ionicons name="book" size={20} color="#FFF" style={{marginRight: 8}} />
             <Text style={styles.createButtonText}>View & Grade Assignments</Text>
           </View>
         </TouchableOpacity>
-        {/* ------------------------------------------- */}
 
         <View style={styles.joiningCard}>
           <View style={styles.joiningHeader}>
@@ -347,7 +307,10 @@ export default function ClassNoticesScreen() {
                   <View style={[styles.typeIcon, { backgroundColor: notice.type === 'resource' ? '#E0E7FF' : '#F3F4F6' }]}>
                     <Ionicons name={getTypeIcon(notice.type)} size={16} color="#374151" />
                   </View>
-                  <Text style={styles.noticeTitle} numberOfLines={1}>{notice.title}</Text>
+                  <View>
+                    <Text style={styles.noticeTitle} numberOfLines={1}>{notice.title}</Text>
+                    {notice.section && <Text style={styles.sectionBadge}>Section {notice.section}</Text>}
+                  </View>
                 </View>
                 <View style={{flexDirection: 'row', gap: 15}}>
                   <TouchableOpacity onPress={() => openForm(notice.type, notice)}><Ionicons name="pencil" size={18} color="#6B7280" /></TouchableOpacity>
@@ -361,7 +324,6 @@ export default function ClassNoticesScreen() {
         </View>
       </ScrollView>
 
-      {/* Forms Modal (Notice/Assignment/Resource) */}
       <Modal visible={activeForm !== null} animationType="slide" transparent>
         <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"} style={styles.modalOverlay}>
           <View style={styles.modalContent}>
@@ -371,6 +333,19 @@ export default function ClassNoticesScreen() {
                 <TouchableOpacity onPress={() => setActiveForm(null)} style={styles.closeBtn}><Ionicons name="close" size={24} color="#111827" /></TouchableOpacity>
               </View>
 
+              <Text style={styles.inputLabel}>SELECT SECTION</Text>
+              <View style={styles.sectionPickerRow}>
+                {availableSections.map((sec) => (
+                  <TouchableOpacity 
+                    key={sec} 
+                    style={[styles.sectionOption, selectedSection === sec && styles.sectionOptionActive]}
+                    onPress={() => setSelectedSection(sec)}
+                  >
+                    <Text style={[styles.sectionOptionText, selectedSection === sec && styles.sectionOptionTextActive]}>Section {sec}</Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+
               <Text style={styles.inputLabel}>TITLE</Text>
               <TextInput style={styles.inputField} value={title} onChangeText={setTitle} placeholder="Enter title..." />
 
@@ -378,12 +353,6 @@ export default function ClassNoticesScreen() {
                 <>
                   <Text style={styles.inputLabel}>TOTAL POINTS</Text>
                   <TextInput style={styles.inputField} value={totalMarks} onChangeText={setTotalMarks} keyboardType="numeric" />
-                  
-                  <Text style={styles.inputLabel}>DEADLINE</Text>
-                  <TouchableOpacity onPress={() => setShowDatePicker(true)} style={styles.datePickerBtn}>
-                    <Text>{deadline.toLocaleDateString()}</Text>
-                  </TouchableOpacity>
-                  {showDatePicker && <DateTimePicker value={deadline} mode="date" display="default" onChange={onDateChange} />}
                 </>
               )}
 
@@ -410,7 +379,6 @@ export default function ClassNoticesScreen() {
         </KeyboardAvoidingView>
       </Modal>
 
-      {/* Details View Modal */}
       <Modal visible={viewNotice !== null} animationType="fade" transparent>
         <View style={styles.fullScreenOverlay}>
           <View style={styles.fullScreenContainer}>
@@ -418,6 +386,7 @@ export default function ClassNoticesScreen() {
               <ScrollView contentContainerStyle={{padding: 20}}>
                 <TouchableOpacity onPress={() => setViewNotice(null)}><Ionicons name="arrow-back" size={24} /></TouchableOpacity>
                 <Text style={styles.fsTitle}>{viewNotice.title}</Text>
+                <Text style={styles.fsSection}>Section {viewNotice.section}</Text>
                 <Text style={styles.fsDesc}>{viewNotice.description}</Text>
                 {viewNotice.link && (
                   <TouchableOpacity style={styles.downloadBtn} onPress={() => Linking.openURL(viewNotice.link)}>
@@ -457,17 +426,22 @@ const styles = StyleSheet.create({
   noticeCard: { backgroundColor: '#FFF', borderRadius: 20, padding: 20, borderWidth: 1, borderColor: '#F3F4F6' },
   noticeHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 },
   typeIcon: { width: 28, height: 28, borderRadius: 8, alignItems:'center', justifyContent:'center', marginRight: 10},
-  noticeTitle: { flex: 1, fontSize: 16, fontWeight: '700' },
+  noticeTitle: { fontSize: 16, fontWeight: '700' },
+  sectionBadge: { fontSize: 10, color: '#3B3CFF', fontWeight: '700' },
   noticeDesc: { fontSize: 14, color: '#6B7280', marginBottom: 12 },
   noticeTime: { fontSize: 12, color: '#9CA3AF', fontWeight: '600' },
   modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end' },
-  modalContent: { backgroundColor: '#FFF', borderTopLeftRadius: 30, borderTopRightRadius: 30, padding: 24, height: '80%' },
+  modalContent: { backgroundColor: '#FFF', borderTopLeftRadius: 30, borderTopRightRadius: 30, padding: 24, height: '85%' },
   modalHeaderRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 20 },
   formTitle: { fontSize: 22, fontWeight: '800' },
   inputLabel: { fontSize: 12, fontWeight: '700', color: '#9CA3AF', marginTop: 15, marginBottom: 8 },
+  sectionPickerRow: { flexDirection: 'row', gap: 10, flexWrap: 'wrap' },
+  sectionOption: { paddingHorizontal: 16, paddingVertical: 8, borderRadius: 10, backgroundColor: '#F3F4F6', borderWidth: 1, borderColor: '#E5E7EB' },
+  sectionOptionActive: { backgroundColor: '#EEF2FF', borderColor: '#3B3CFF' },
+  sectionOptionText: { fontSize: 12, color: '#6B7280', fontWeight: '600' },
+  sectionOptionTextActive: { color: '#3B3CFF' },
   inputField: { backgroundColor: '#F3F4F6', borderRadius: 12, padding: 15 },
   textArea: { height: 100, textAlignVertical: 'top' },
-  datePickerBtn: { backgroundColor: '#F3F4F6', padding: 15, borderRadius: 12 },
   actionRow: { flexDirection: 'row', gap: 10, marginTop: 25 },
   primaryActionBtn: { flex: 1, height: 55, borderRadius: 15, justifyContent: 'center', alignItems: 'center', backgroundColor: '#3B3CFF' },
   draftBtn: { backgroundColor: '#E5E7EB' },
@@ -475,6 +449,7 @@ const styles = StyleSheet.create({
   fullScreenOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.8)', justifyContent: 'center', padding: 20 },
   fullScreenContainer: { backgroundColor: '#FFF', borderRadius: 25, maxHeight: '80%' },
   fsTitle: { fontSize: 22, fontWeight: '800', marginTop: 15 },
+  fsSection: { fontSize: 12, color: '#3B3CFF', fontWeight: '700', marginTop: 5 },
   fsDesc: { fontSize: 16, color: '#4B5563', marginVertical: 20 },
   downloadBtn: { backgroundColor: '#3B3CFF', padding: 15, borderRadius: 12, alignItems: 'center' },
   downloadText: { color: '#FFF', fontWeight: '700' },

@@ -1,12 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, ScrollView, ActivityIndicator } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, ScrollView, ActivityIndicator, Alert } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from "expo-router";
 import Svg, { Path, Circle } from 'react-native-svg';
 
 // --- Firebase Imports ---
 import { auth, db } from "../../../firebase/firebaseConfig"; 
-import { doc, getDoc, collection, query, where, getDocs, documentId } from "firebase/firestore";
+import { doc, getDoc, collection, query, where, getDocs, documentId, updateDoc, arrayRemove } from "firebase/firestore";
 
 // --- Background Decoration Component ---
 const BackgroundDecorations = () => (
@@ -41,43 +41,74 @@ export default function ClassesScreen() {
   const [classes, setClasses] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    const fetchJoinedClasses = async () => {
-      try {
-        const user = auth.currentUser;
-        if (!user) return;
+  const fetchJoinedClasses = async () => {
+    try {
+      const user = auth.currentUser;
+      if (!user) return;
 
-        // 1. Fetch user document to get IDs of classes they joined
-        const userDocRef = doc(db, "users", user.uid);
-        const userDoc = await getDoc(userDocRef);
-        const joinedClassIds = userDoc.data()?.joinedClasses || [];
+      const userDocRef = doc(db, "users", user.uid);
+      const userDoc = await getDoc(userDocRef);
+      const joinedClassIds = userDoc.data()?.joinedClasses || [];
 
-        if (joinedClassIds.length === 0) {
-          setClasses([]);
-          setLoading(false);
-          return;
-        }
-
-        // 2. Query classes collection for documents matching those IDs
-        const classesRef = collection(db, "classes");
-        const q = query(classesRef, where(documentId(), "in", joinedClassIds));
-        const querySnapshot = await getDocs(q);
-        
-        const fetchedClasses = querySnapshot.docs.map(doc => ({
-          id: doc.id,
-          ...doc.data()
-        }));
-
-        setClasses(fetchedClasses);
-      } catch (error) {
-        console.error("Error fetching classes:", error);
-      } finally {
+      if (joinedClassIds.length === 0) {
+        setClasses([]);
         setLoading(false);
+        return;
       }
-    };
 
+      const classesRef = collection(db, "classes");
+      const q = query(classesRef, where(documentId(), "in", joinedClassIds));
+      const querySnapshot = await getDocs(q);
+      
+      const fetchedClasses = querySnapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      }));
+
+      setClasses(fetchedClasses);
+    } catch (error) {
+      console.error("Error fetching classes:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
     fetchJoinedClasses();
   }, []);
+
+  const handleLeaveClass = (classId: string, className: string) => {
+    Alert.alert(
+      "Leave Class",
+      `Are you sure you want to leave ${className}? You will lose access to all assignments and resources.`,
+      [
+        { text: "Cancel", style: "cancel" },
+        { 
+          text: "Leave", 
+          style: "destructive", 
+          onPress: async () => {
+            try {
+              const user = auth.currentUser;
+              if (!user) return;
+
+              // Update Users Collection: Remove from joinedClasses array
+              const userDocRef = doc(db, "users", user.uid);
+              await updateDoc(userDocRef, {
+                joinedClasses: arrayRemove(classId)
+              });
+
+              // Update local state
+              setClasses(prev => prev.filter(c => c.id !== classId));
+              Alert.alert("Success", `You have left ${className}`);
+            } catch (error) {
+              console.error("Error leaving class:", error);
+              Alert.alert("Error", "Could not leave the class. Please try again.");
+            }
+          }
+        }
+      ]
+    );
+  };
 
   if (loading) {
     return (
@@ -116,12 +147,19 @@ export default function ClassesScreen() {
                 <View style={[styles.iconWrapper, { backgroundColor: item.iconBg || '#EEF2FF' }]}>
                   <Ionicons name={(item.icon || 'book') as any} size={24} color={item.iconColor || '#4461F2'} />
                 </View>
-                <View>
+                <View style={{ flex: 1 }}>
                   <Text style={styles.gradeText}>{item.grade || item.subject}</Text>
                 </View>
+                {/* Delete/Leave Button */}
+                <TouchableOpacity 
+                  onPress={() => handleLeaveClass(item.id, item.grade || item.subject)}
+                  style={styles.deleteBtn}
+                >
+                  <Ionicons name="trash-outline" size={20} color="#EF4444" />
+                </TouchableOpacity>
               </View>
 
-              {/* Info Row with Clickable Students Section */}
+              {/* Info Row */}
               <View style={styles.infoRow}>
                 <TouchableOpacity 
                   style={styles.infoBlock} 
@@ -149,7 +187,7 @@ export default function ClassesScreen() {
                 ))}
               </View>
 
-              {/* View Course Button - UPDATED SECTION */}
+              {/* Action Button */}
               <View style={styles.actionRow}>
                 <TouchableOpacity 
                   style={styles.viewBtn}
@@ -188,7 +226,7 @@ const styles = StyleSheet.create({
   cardHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: 20 },
   iconWrapper: { width: 48, height: 48, borderRadius: 14, alignItems: 'center', justifyContent: 'center', marginRight: 15 },
   gradeText: { fontSize: 18, fontWeight: 'bold', color: '#111827' },
-  classCodeText: { fontSize: 12, color: '#9CA3AF', fontWeight: '600', letterSpacing: 1 },
+  deleteBtn: { padding: 8, borderRadius: 10, backgroundColor: '#FEF2F2' },
   infoRow: { flexDirection: 'row', marginBottom: 20, borderTopWidth: 1, borderBottomWidth: 1, borderColor: '#F3F4F6', paddingVertical: 15 },
   infoBlock: { flex: 1 },
   infoLabel: { fontSize: 11, color: '#9CA3AF', marginBottom: 4, textTransform: 'uppercase', letterSpacing: 0.5 },

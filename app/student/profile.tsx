@@ -102,7 +102,7 @@ export default function AdminProfile() {
           setClassCodeInput("");
         }
       }
-    } catch (error) {
+    } catch  {
       Alert.alert("Error", "Something went wrong while joining the class.");
     } finally {
       setIsJoining(false);

@@ -97,9 +97,7 @@ export default function MembersScreen() {
   const [students, setStudents] = useState<Student[]>([]);
   const [loading, setLoading] = useState(true);
 
-  // --- Lightning Fast Data Fetching ---
   useEffect(() => {
-    // Prevent fetching if params haven't loaded yet
     if (!classId || typeof classId !== 'string') {
       setLoading(false);
       return;
@@ -107,10 +105,13 @@ export default function MembersScreen() {
 
     setLoading(true);
 
+    setLoading(true);
+
     // 1. Fetch EVERYONE in the class (This avoids the need for a complex composite index)
     const q = query(
       collection(db, "users"), 
-      where("joinedClasses", "array-contains", classId)
+      where("joinedClasses", "array-contains", classId),
+      where("role", "==", "student") 
     );
     
     const unsubscribe = onSnapshot(q, (querySnapshot) => {
@@ -118,14 +119,14 @@ export default function MembersScreen() {
 
       querySnapshot.forEach((doc) => {
         const data = doc.data();
-        
-        // 2. Filter by role LOCALLY on the phone. This is instantaneous!
-        if (data.role === 'student') {
-          studentList.push({
-            id: doc.id,
-            ...(data as Omit<Student, 'id'>)
-          });
-        }
+        studentList.push({
+          id: doc.id,
+          name: data.name,
+          email: data.email,
+          studentId: data.studentId,
+          username: data.username,
+          role: data.role,
+        });
       });
 
       setStudents(studentList);
