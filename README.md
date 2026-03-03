@@ -1,50 +1,70 @@
-# Welcome to your Expo app 👋
+# 📚 ClassDesk – Classroom Management Mobile App
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+ClassDesk is a role-based classroom management mobile application built using **React Native and Expo Router**.  
+The app helps educational institutions manage **classes, attendance, exams, notices, and users** efficiently through separate dashboards for Admin, Teacher, and Student.
 
-## Get started
+This project demonstrates a complete mobile system with modular architecture and structured routing.
 
-1. Install dependencies
+---
 
-   ```bash
-   npm install
-   ```
+# 🚀 Download APK
 
-2. Start the app
+📲 Download the latest Android version here:
 
-   ```bash
-   npx expo start
-   ```
+👉 **[Download ClassDesk APK](https://github.com/jyoti-kumbhar/ClassDesk/releases/download/v1.0.0/application-b4d98738-2922-4ea3-913b-204c33cb04af.apk)**
 
-In the output, you'll find options to open the app in a
+---
 
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
+# 👥 User Roles
 
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
+ClassDesk provides separate modules for:
 
-## Get a fresh project
+- 👨‍💼 Admin  
+- 👩‍🏫 Teacher  
+- 👨‍🎓 Student  
 
-When you're ready, run:
+Each role has controlled access and dedicated features.
 
-```bash
-npm run reset-project
-```
+---
 
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
+# ✨ Features
 
-## Learn more
+## 👨‍💼 Admin
+- Manage users (teachers & students)
+- Create and manage classes
+- View exams and marks
+- Monitor attendance records
+- Access dashboard overview
 
-To learn more about developing your project with Expo, look at the following resources:
+## 👩‍🏫 Teacher
+- Create & edit exams
+- View marks list
+- Mark daily attendance
+- View monthly attendance
+- Manage class notices
+- View class members
 
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
+## 👨‍🎓 Student
+- View dashboard summary
+- View class notices
+- Check attendance history
+- Take online exams
+- View exam details
+- Manage profile
 
-## Join the community
+---
 
-Join our community of developers creating universal apps.
+# 🏗 Architecture
 
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+The app follows:
+
+- ✅ Role-Based Modular Architecture  
+- ✅ File-Based Routing (Expo Router)  
+- ✅ Feature-Based Folder Organization  
+- ✅ Service Layer for database operations  
+- ✅ Reusable Components  
+- ✅ TypeScript Support  
+
+This structure improves scalability, maintainability, and code clarity.
+
+---
