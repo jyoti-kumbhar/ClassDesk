@@ -11,7 +11,7 @@ This project demonstrates a complete mobile system with modular architecture and
 
 📲 Download the latest Android version here:
 
-👉 **[Download ClassDesk APK](https://github.com/jyoti-kumbhar/ClassDesk/releases/download/v1.0.0/application-b4d98738-2922-4ea3-913b-204c33cb04af.apk)**
+👉 **[Download ClassDesk APK](https://github.com/jyoti-kumbhar/ClassDesk/releases/download/v1.0.0/application-f3d8985d-05be-4242-a640-bfbcce352e26.apk)**
 
 ---
 
